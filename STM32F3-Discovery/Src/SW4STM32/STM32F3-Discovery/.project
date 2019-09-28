@@ -33,6 +33,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/readme.txt</locationURI>
 		</link>
 		<link>
+			<name>Src/adc</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/drivers/adc</locationURI>
+		</link>
+		<link>
 			<name>Src/dac</name>
 			<type>2</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/drivers/dac</locationURI>
@@ -43,6 +48,16 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Src/main.cpp</locationURI>
 		</link>
 		<link>
+			<name>Src/main.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/Inc/main.h</locationURI>
+		</link>
+		<link>
+			<name>Src/stm32f3xx_hal_conf.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/Inc/stm32f3xx_hal_conf.h</locationURI>
+		</link>
+		<link>
 			<name>Src/stm32f3xx_hal_msp.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/stm32f3xx_hal_msp.c</locationURI>
@@ -51,6 +66,11 @@
 			<name>Src/stm32f3xx_it.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Src/stm32f3xx_it.c</locationURI>
+		</link>
+		<link>
+			<name>Src/stm32f3xx_it.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/Inc/stm32f3xx_it.h</locationURI>
 		</link>
 		<link>
 			<name>Drivers/CMSIS/system_stm32f3xx.c</name>

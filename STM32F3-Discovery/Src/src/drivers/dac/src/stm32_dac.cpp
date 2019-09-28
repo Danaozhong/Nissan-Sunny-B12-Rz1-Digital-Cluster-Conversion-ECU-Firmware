@@ -8,6 +8,9 @@
 
 #include "stm32_dac.hpp"
 
+#define DACx_FORCE_RESET()              __HAL_RCC_DAC1_FORCE_RESET()
+#define DACx_RELEASE_RESET()            __HAL_RCC_DAC1_RELEASE_RESET()
+
 namespace drivers
 {
 
@@ -27,11 +30,13 @@ namespace drivers
 			__HAL_RCC_DAC1_CLK_ENABLE();
 		}
 
+		/*
 		GPIO_InitTypeDef GPIO_InitStruct;
 		GPIO_InitStruct.Pin = u16_gpio_pin;
 		GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 		GPIO_InitStruct.Pull = GPIO_NOPULL;
 		HAL_GPIO_Init(pt_gpio_block, &GPIO_InitStruct);
+*/
 
 		 if (HAL_DAC_Init(&this->m_dac_handle) != HAL_OK)
 		 {
@@ -52,7 +57,11 @@ namespace drivers
 
 	STM32DAC::~STM32DAC()
 	{
+		/* Enable DAC reset state */
+		DACx_FORCE_RESET();
 
+		/* Release DAC from reset state */
+		DACx_RELEASE_RESET();
 	}
 
 	/** Function to set the output by value */
@@ -119,8 +128,6 @@ namespace drivers
 
 }
 
-#define DACx_FORCE_RESET()              __HAL_RCC_DAC1_FORCE_RESET()
-#define DACx_RELEASE_RESET()            __HAL_RCC_DAC1_RELEASE_RESET()
 
 extern "C"
 {
@@ -137,10 +144,6 @@ extern "C"
 
 	void HAL_DAC_MspDeInit(DAC_HandleTypeDef *hdac)
 	{
-	  /* Enable DAC reset state */
-	  DACx_FORCE_RESET();
 
-	  /* Release DAC from reset state */
-	  DACx_RELEASE_RESET();
 	}
 }

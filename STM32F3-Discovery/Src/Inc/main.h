@@ -65,6 +65,35 @@ extern "C"
 /* Definition for DACx's Channel */
 //#define DACx_CHANNEL                    DAC_CHANNEL_1
 
+
+/* ## Definition of ADC related resources ################################### */
+/* Definition of ADCx clock resources */
+#define ADCx                            ADC2
+#define ADCx_CLK_ENABLE()               __HAL_RCC_ADC2_CLK_ENABLE()
+
+#define ADCx_FORCE_RESET()              __HAL_RCC_ADC2_FORCE_RESET()
+#define ADCx_RELEASE_RESET()            __HAL_RCC_ADC2_RELEASE_RESET()
+
+/* Definition of ADCx channels */
+#define ADCx_CHANNELa                   ADC_CHANNEL_1
+
+/* Definition of ADCx channels pins */
+#define ADCx_CHANNELa_GPIO_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
+#define ADCx_CHANNELa_GPIO_PORT         GPIOA
+#define ADCx_CHANNELa_PIN               GPIO_PIN_4
+
+/* Definition of ADCx DMA resources */
+#define ADCx_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
+#define ADCx_DMA                        DMA2_Channel1
+
+#define ADCx_DMA_IRQn                   DMA2_Channel1_IRQn
+#define ADCx_DMA_IRQHandler             DMA2_Channel1_IRQHandler
+
+/* Definition of ADCx NVIC resources */
+#define ADCx_IRQn                       ADC1_2_IRQn
+#define ADCx_IRQHandler                 ADC1_2_IRQHandler
+
+
 #ifdef __cplusplus
 }
 #endif

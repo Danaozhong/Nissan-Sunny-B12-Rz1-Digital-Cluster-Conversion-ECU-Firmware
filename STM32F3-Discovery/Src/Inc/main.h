@@ -71,8 +71,6 @@ extern "C"
 #define ADCx                            ADC2
 #define ADCx_CLK_ENABLE()               __HAL_RCC_ADC2_CLK_ENABLE()
 
-#define ADCx_FORCE_RESET()              __HAL_RCC_ADC2_FORCE_RESET()
-#define ADCx_RELEASE_RESET()            __HAL_RCC_ADC2_RELEASE_RESET()
 
 /* Definition of ADCx channels */
 #define ADCx_CHANNELa                   ADC_CHANNEL_1

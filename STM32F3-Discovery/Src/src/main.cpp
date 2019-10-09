@@ -37,6 +37,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32_dac.hpp"
+#include "stm32_adc.hpp"
+#include <thread>
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -52,7 +54,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* ADC handler declaration */
-ADC_HandleTypeDef    AdcHandle;
+
 
 /* Variable containing ADC conversions results */
 __IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
@@ -63,12 +65,20 @@ static void Error_Handler(void);
 static void ADC_Config(void);
 
 /* Private functions ---------------------------------------------------------*/
-
+ADC_HandleTypeDef    AdcHandle;
 /**
   * @brief  Main program
   * @param  None
   * @retval None
   */
+
+int test(void)
+{
+	while(true)
+	{
+
+	}
+}
 int main(void)
 {
 
@@ -81,6 +91,8 @@ int main(void)
      */
   HAL_Init();
 
+  std::thread randomthread(test);
+
   /* Configure LED2 */
   BSP_LED_Init(LED_RED);
   BSP_LED_Init(LED_GREEN);
@@ -88,7 +100,7 @@ int main(void)
 
   /* Configure the system clock to 64 MHz */
   SystemClock_Config();
-
+#if 0
   /* Configure the ADC peripheral */
   ADC_Config();
 
@@ -100,8 +112,7 @@ int main(void)
   }
 
   HAL_ADC_Start(&AdcHandle);
-
-
+#endif
   /*##-1- Configure the DAC peripheral #######################################*/
 #if 0
   DacHandle.Instance = DACx;
@@ -138,6 +149,7 @@ int main(void)
 #endif
 
   drivers::STM32DAC o_stm32_dac(DAC1, GPIOA, GPIO_PIN_4);
+  drivers::STM32ADC o_stm32_adc(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_1, GPIOA, GPIO_PIN_4);
 
 
   /*## Start ADC conversions #################################################*/
@@ -157,39 +169,35 @@ int main(void)
   /* Infinite loop */
   uint8_t u8_dac_value = 0u;
   uint32_t g_ADCValue = 0u;
+  bool bo_ramup = true;
   while (1)
   {
 	    BSP_LED_Toggle(LED_GREEN);
 
+	    if (bo_ramup)
+	    {
+	    	u8_dac_value += 1;
 
-	    u8_dac_value += 5;
+			if (u8_dac_value == 255)
+			{
+				bo_ramup = false;
+			}
+	    }
+	    else
+	    {
+	    	u8_dac_value -= 1;
+			if (u8_dac_value == 0)
+			{
+				bo_ramup = true;
+			}
+	    }
+
 	    o_stm32_dac.set_output_value(static_cast<uint32_t>(u8_dac_value));
 
-	    HAL_Delay(10);
+	    HAL_Delay(5);
 
-        if (HAL_ADC_PollForConversion(&AdcHandle, 1) == HAL_OK)
-        {
-            g_ADCValue = HAL_ADC_GetValue(&AdcHandle);
-            //printf("ADC read!");
-        }
+	    uint32_t u32_adc_value = o_stm32_adc.read_adc_value();
 
-#if 0
-
-
-	    /*##-3- Set DAC Channel1 DHR register ######################################*/
-	    if (HAL_DAC_SetValue(&DacHandle, DACx_CHANNEL, DAC_ALIGN_8B_R, u8_adc_value) != HAL_OK)
-	    {
-	      /* Setting value Error */
-	      Error_Handler();
-	    }
-
-	    /*##-4- Enable DAC Channel1 ################################################*/
-	    if (HAL_DAC_Start(&DacHandle, DACx_CHANNEL) != HAL_OK)
-	    {
-	      /* Start Error */
-	      Error_Handler();
-	    }
-#endif
   }
 }
 
@@ -238,10 +246,6 @@ static void SystemClock_Config(void)
     Error_Handler();
   }
 }
-
-/**
-
-
 
 /**
   * @brief  ADC configuration

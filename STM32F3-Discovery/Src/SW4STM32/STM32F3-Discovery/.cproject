@@ -54,6 +54,7 @@
 									<listOptionValue builtIn="false" value="../../../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../Inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/drivers/dac/inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/drivers/adc/inc&quot;"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.definedsymbols.720769002" name="Define symbols (-D)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.definedsymbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="STM32F303xC"/>
@@ -78,6 +79,7 @@
 									<listOptionValue builtIn="false" value="../../../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../Inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/drivers/dac/inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/drivers/adc/inc&quot;"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.definedsymbols.1276336135" name="Define symbols (-D)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.definedsymbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="STM32F303xC"/>
@@ -133,8 +135,8 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration artifactName="STM32F3-Discovery" configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="STM32F3-Discovery"/>
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/STM32F3-Discovery"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>

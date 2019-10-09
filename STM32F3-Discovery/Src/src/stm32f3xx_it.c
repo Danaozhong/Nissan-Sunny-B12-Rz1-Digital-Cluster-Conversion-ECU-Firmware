@@ -121,6 +121,7 @@ void UsageFault_Handler(void)
   }
 }
 
+#if 0 // handled by FreeRTOS now
 /**
   * @brief  This function handles SVCall exception.
   * @param  None
@@ -129,7 +130,7 @@ void UsageFault_Handler(void)
 void SVC_Handler(void)
 {
 }
-
+#endif
 /**
   * @brief  This function handles Debug Monitor exception.
   * @param  None
@@ -138,7 +139,7 @@ void SVC_Handler(void)
 void DebugMon_Handler(void)
 {
 }
-
+#if 0 // handled by FreeRTOS now
 /**
   * @brief  This function handles PendSVC exception.
   * @param  None
@@ -147,6 +148,7 @@ void DebugMon_Handler(void)
 void PendSV_Handler(void)
 {
 }
+
 
 /**
   * @brief  This function handles SysTick Handler.
@@ -157,7 +159,7 @@ void SysTick_Handler(void)
 {
     HAL_IncTick();
 }
-
+#endif
 /******************************************************************************/
 /*                 STM32F3xx Peripherals Interrupt Handlers                   */
 /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */

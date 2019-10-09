@@ -153,6 +153,11 @@
 			<locationURI>PARENT-1-PROJECT_LOC/startup_stm32f303xc.s</locationURI>
 		</link>
 		<link>
+			<name>Src/src/midware</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/midware</locationURI>
+		</link>
+		<link>
 			<name>Drivers/BSP/STM32F3-Discovery/stm32f3_discovery.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Drivers/BSP/STM32F3-Discovery/stm32f3_discovery.c</locationURI>

@@ -35,10 +35,15 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
+
+/* OS headers */
+#include "FreeRTOS.h"
+#include "task.h"
+
+
 #include "main.h"
 #include "stm32_dac.hpp"
 #include "stm32_adc.hpp"
-#include <thread>
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -72,11 +77,24 @@ ADC_HandleTypeDef    AdcHandle;
   * @retval None
   */
 
-int test(void)
+extern "C"
 {
-	while(true)
+
+	void vApplicationTickHook( void )
 	{
 
+	}
+
+	void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
+	{
+		( void ) pcTaskName;
+		( void ) pxTask;
+
+		/* Run time stack overflow checking is performed if
+		configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
+		function is called if a stack overflow is detected. */
+		taskDISABLE_INTERRUPTS();
+		for( ;; );
 	}
 }
 int main(void)
@@ -91,7 +109,6 @@ int main(void)
      */
   HAL_Init();
 
-  std::thread randomthread(test);
 
   /* Configure LED2 */
   BSP_LED_Init(LED_RED);

@@ -1,15 +1,6 @@
 #ifndef _EVENT_HANDLER_H_
 #define _EVENT_HANDLER_H_
 
-
-//typedef struct timespec __gthread_time_t;
-
-//#include <FreeRTOS_POSIX/pthread.h>
-//#define _GLIBCXX_HAS_GTHREADS
-//#include <bits/gthr-posix.h>
-// tried imitating boost::signals2
-//#include "stdlib_preparations.h"
-//#include <bits/gthr-posix.h>
 #include <functional>
 #include <vector>
 #include <memory>
@@ -17,7 +8,6 @@
 
 #include <mutex>
 
-#include <mutex>
 
 #include "midware/trace/trace.h"
 namespace boost

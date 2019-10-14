@@ -241,6 +241,18 @@ extern "C" {
 	#define configASSERT_DEFINED 1
 #endif
 
+/* configPRECONDITION should be resolve to configASSERT.
+   The CBMC proofs need a way to track assumptions and assertions.
+   A configPRECONDITION statement should express an implicit invariant or assumption made.
+   A configASSERT statement should express an invariant that must hold explicit before calling
+   the code. */
+#ifndef configPRECONDITION
+	#define configPRECONDITION( X ) configASSERT(X)
+	#define configPRECONDITION_DEFINED 0
+#else
+	#define configPRECONDITION_DEFINED 1
+#endif
+
 #ifndef portMEMORY_BARRIER
 	#define portMEMORY_BARRIER()
 #endif
@@ -819,7 +831,7 @@ extern "C" {
 #endif
 
 #ifndef configUSE_POSIX_ERRNO
-	#define configUSE_POSIX_ERRNO 0
+	#define configUSE_POSIX_ERRNO 1
 #endif
 
 #ifndef portTICK_TYPE_IS_ATOMIC

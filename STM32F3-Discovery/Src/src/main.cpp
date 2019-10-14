@@ -44,6 +44,7 @@
 #include "main.h"
 #include "stm32_dac.hpp"
 #include "stm32_adc.hpp"
+#include "thread.hpp"
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{

@@ -127,26 +127,64 @@ void vApplicationMallocFailedHook( void )
 		for( ;; );
 	}
 }
+extern "C"
+{
+	void dummythread_main2(void)
+	{
+		while(true)
+		{
+			std_ex::sleep_for(std::chrono::milliseconds(100));
+			BSP_LED_Toggle(LED_RED);
+		}
+	}
+
+	void dummythread_main(void*)
+	{
+		bool start = false;
+		while(true)
+		{
+			std_ex::sleep_for(std::chrono::milliseconds(100));
+			BSP_LED_Toggle(LED_BLUE);
+
+			if (start == false)
+			{
+				start = true;
+				std::thread mythread(dummythread_main2);
+				mythread.detach();
+			}
+		}
+	}
+}
+
 int main(void)
 {
 
 
-  /* STM32F3xx HAL library initialization:
-       - Configure the Flash prefetch
-       - Configure the Systick to generate an interrupt each 1 msec
-       - Set NVIC Group Priority to 4
-       - Low Level Initialization
-     */
-  HAL_Init();
+	/* STM32F3xx HAL library initialization:
+	   - Configure the Flash prefetch
+	   - Configure the Systick to generate an interrupt each 1 msec
+	   - Set NVIC Group Priority to 4
+	   - Low Level Initialization
+	 */
+	HAL_Init();
 
+	/* Configure LED2 */
+	BSP_LED_Init(LED_RED);
+	BSP_LED_Init(LED_GREEN);
+	BSP_LED_Init(LED_BLUE);
 
-  /* Configure LED2 */
-  BSP_LED_Init(LED_RED);
-  BSP_LED_Init(LED_GREEN);
-  BSP_LED_Init(LED_BLUE);
+	/* Configure the system clock to 64 MHz */
+	SystemClock_Config();
 
-  /* Configure the system clock to 64 MHz */
-  SystemClock_Config();
+	BaseType_t xReturned;
+	TaskHandle_t xHandle = NULL;
+
+    xTaskCreate( dummythread_main,
+                 "Test123",
+                 0x200,
+                 NULL,
+                 2,
+                 &xHandle );
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();
@@ -156,6 +194,7 @@ int main(void)
 	insufficient FreeRTOS heap memory available for the idle and/or timer tasks
 	to be created.  See the memory management section on the FreeRTOS web site
 	for more details. */
+
 	for( ;; );
 #if 0
   /* Configure the ADC peripheral */

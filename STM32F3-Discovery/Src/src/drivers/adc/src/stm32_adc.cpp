@@ -14,7 +14,6 @@ namespace drivers
 		: m_en_adc_resolution(en_resolution), m_u32_adc_channel(u32_adc_channel),
 		  m_u16_gpio_pin(u16_gpio_pin), m_pt_gpio_block(pt_gpio_block)
 	{
-
 		GPIO_InitTypeDef          GPIO_InitStruct;
 		static DMA_HandleTypeDef  DmaHandle;
 		RCC_PeriphCLKInitTypeDef  RCC_PeriphCLKInitStruct;
@@ -51,6 +50,8 @@ namespace drivers
 
 		/* Enable clock of DMA associated to the peripheral */
 		//ADCx_DMA_CLK_ENABLE();
+		//__HAL_RCC_DMA2_CLK_ENABLE();
+
 
 		/*##-2- Configure peripheral GPIO ##########################################*/
 		/* Configure GPIO pin of the selected ADC channel */
@@ -65,6 +66,9 @@ namespace drivers
 		HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
 
 		/* Configuration of ADCx init structure: ADC parameters and regular group */
+
+		// TODO make sure to zero-initialize the structure
+		m_adc_handle.State = 0u;
 		m_adc_handle.Instance = pt_adc_peripheral;
 
 		m_adc_handle.Init.ClockPrescaler        = ADC_CLOCK_SYNC_PCLK_DIV4;
@@ -146,7 +150,11 @@ namespace drivers
 
 	uint32_t STM32ADC::get_adc_max_value() const
 	{
-		return 0xFFFFFF;
+		if (ADC_RESOLUTION_12BIT == m_en_adc_resolution)
+		{
+			return 0x0FFF;
+		}
+		return 0xFFFF;
 	}
 
 	uint32_t STM32ADC::read_adc_value()

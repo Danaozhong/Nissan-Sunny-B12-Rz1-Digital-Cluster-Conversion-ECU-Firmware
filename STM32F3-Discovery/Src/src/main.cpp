@@ -41,10 +41,14 @@
 #include "task.h"
 
 
+/* Own headers */
+#include "fuel_gauge_input.hpp"
+#include "lookup_table.hpp"
 #include "main.h"
 #include "stm32_dac.hpp"
 #include "stm32_adc.hpp"
 #include "thread.hpp"
+
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -127,32 +131,36 @@ void vApplicationMallocFailedHook( void )
 		for( ;; );
 	}
 }
-extern "C"
+
+void MAIN_startup_thread(void*)
 {
-	void dummythread_main2(void)
-	{
-		while(true)
-		{
-			std_ex::sleep_for(std::chrono::milliseconds(100));
-			BSP_LED_Toggle(LED_RED);
-		}
-	}
+	// This is the initial thread running after bootup.
 
-	void dummythread_main(void*)
-	{
-		bool start = false;
-		while(true)
-		{
-			std_ex::sleep_for(std::chrono::milliseconds(100));
-			BSP_LED_Toggle(LED_BLUE);
+	// wait for the scheduler to be ready.
+	std_ex::sleep_for(std::chrono::milliseconds(100));
 
-			if (start == false)
-			{
-				start = true;
-				std::thread mythread(dummythread_main2);
-				mythread.detach();
-			}
-		}
+	// integrate all your tasks here.
+
+	//drivers::STM32DAC o_stm32_dac(DAC1, GPIOA, GPIO_PIN_4);
+
+	auto p_adc = std::make_shared<drivers::STM32ADC>(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_1, GPIOA, GPIO_PIN_4);
+
+	/* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full) */
+	std::vector<std::pair<double, double>> a_lut = {std::make_pair(0, 100), std::make_pair(100, 10)};
+
+	auto p_o_fuel_sensor_characteristic = std::make_shared<app::CharacteristicCurve>(a_lut);
+
+
+	// start the data acquisition thread
+	app::FuelGaugeInputFromADC o_fuel_gauge_input(p_adc, p_o_fuel_sensor_characteristic);
+
+	while (true)
+	{
+		// do some other stuff here....
+		std_ex::sleep_for(std::chrono::milliseconds(100));
+
+		// listen on the serial input, etc.
+
 	}
 }
 
@@ -179,8 +187,10 @@ int main(void)
 	BaseType_t xReturned;
 	TaskHandle_t xHandle = NULL;
 
-    xTaskCreate( dummythread_main,
-                 "Test123",
+	// first thread still needs to be created with xTaskCreate, only after the scheduler has started, std::thread can be used.
+
+    xTaskCreate( MAIN_startup_thread,
+                 "MAIN_startup_thread",
                  0x200,
                  NULL,
                  2,
@@ -244,8 +254,8 @@ int main(void)
   }
 #endif
 
-  drivers::STM32DAC o_stm32_dac(DAC1, GPIOA, GPIO_PIN_4);
-  drivers::STM32ADC o_stm32_adc(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_1, GPIOA, GPIO_PIN_4);
+  //drivers::STM32DAC o_stm32_dac(DAC1, GPIOA, GPIO_PIN_4);
+ // drivers::STM32ADC o_stm32_adc(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_1, GPIOA, GPIO_PIN_4);
 
 
   /*## Start ADC conversions #################################################*/
@@ -262,6 +272,7 @@ int main(void)
   }
 #endif
 
+#if 0
   /* Infinite loop */
   uint8_t u8_dac_value = 0u;
   uint32_t g_ADCValue = 0u;
@@ -295,6 +306,7 @@ int main(void)
 	    uint32_t u32_adc_value = o_stm32_adc.read_adc_value();
 
   }
+#endif
 }
 
 /**

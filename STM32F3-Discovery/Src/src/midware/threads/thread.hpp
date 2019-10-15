@@ -21,7 +21,7 @@
 namespace std_ex
 {
 	void sleep_for(std::chrono::milliseconds milliceconds);
-
+#if 0
 	class thread
 	{
 	public:
@@ -153,10 +153,10 @@ namespace std_ex
 		}
 
 	};
-
+#endif
 
 }
-
+#if 0
 namespace OSManager
 {
 
@@ -179,6 +179,7 @@ namespace OSManager
 	};
 
 }
+#endif
 
 // UGLY FROM HERE BELOW - use std::thread in the future
 /** C++ wrapper for the RTOS tasks */

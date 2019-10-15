@@ -369,7 +369,6 @@ HAL_StatusTypeDef HAL_ADC_Init(ADC_HandleTypeDef* hadc)
     }
   }
 
-  
   /* Configuration of ADC parameters if previous preliminary actions are      */ 
   /* correctly completed and if there is no conversion on going on regular    */
   /* group (ADC may already be enabled at this point if HAL_ADC_Init() is     */

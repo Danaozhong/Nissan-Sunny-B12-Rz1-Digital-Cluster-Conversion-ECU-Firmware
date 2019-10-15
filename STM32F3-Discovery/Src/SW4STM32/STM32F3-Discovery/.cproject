@@ -93,6 +93,9 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/midware/FreeRTOS/src/freertos&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/midware/FreeRTOS/src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/app/lookup_table/inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/app/fuel_gauge_input/inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../src/app/fuel_gauge_output/inc&quot;"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.definedsymbols.1276336135" name="Define symbols (-D)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.definedsymbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="STM32F303xC"/>

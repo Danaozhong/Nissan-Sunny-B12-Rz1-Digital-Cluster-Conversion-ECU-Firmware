@@ -9,8 +9,12 @@
 #endif
 
 #include <cstdarg>
+#include <cstring>
 #include <string>
 #include <mutex>
+
+
+#include "stm32f3xx.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -30,7 +34,19 @@ void print_serial(const char character)
 void print_serial(const char *buffer)
 {
 	//mutex_serial_if.lock();
-	//Serial.println(buffer);
+
+	printf(buffer);
+#if 1
+	  int i=0;
+	  for(i=0 ; i<strlen(buffer) ; i++)
+	  {
+		  ITM_SendChar(buffer[i]);
+	  }
+	  //return len;
+#else
+	// For Arduino systems
+	Serial.println(buffer);
+#endif
 	//mutex_serial_if.unlock();
 }
 

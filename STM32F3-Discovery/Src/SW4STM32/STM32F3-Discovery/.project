@@ -153,6 +153,11 @@
 			<locationURI>PARENT-1-PROJECT_LOC/startup_stm32f303xc.s</locationURI>
 		</link>
 		<link>
+			<name>Src/src/app</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/app</locationURI>
+		</link>
+		<link>
 			<name>Src/src/midware</name>
 			<type>2</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/midware</locationURI>

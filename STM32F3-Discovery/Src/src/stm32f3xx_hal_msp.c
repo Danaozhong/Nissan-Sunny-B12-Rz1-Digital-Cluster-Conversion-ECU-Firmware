@@ -56,7 +56,6 @@
   */
 void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 {
-
 }
 
 /**

@@ -20,7 +20,7 @@ int CyclicThread::start()
 {
 	DEBUG_PRINTF("Starting cyclic Thread " + this->name + "...");
 	this->start_task(4096, 1, [](void* o){ static_cast<CyclicThread*>(o)->main(); });
-
+	return 0;
 }
 
 void CyclicThread::initial()

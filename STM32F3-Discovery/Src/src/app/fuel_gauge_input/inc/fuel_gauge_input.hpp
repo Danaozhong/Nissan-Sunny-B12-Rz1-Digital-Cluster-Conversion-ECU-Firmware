@@ -4,6 +4,7 @@
 #include <memory>
 #include "generic_adc.hpp"
 #include "lookup_table.hpp"
+#include "event_handler.h"
 
 
 /* Enable this if you want to have additional log output for the fuel sensor acquisition module */
@@ -20,7 +21,6 @@ namespace app
 
 		double get_resistor_2_value(double d_resistor_2_voltage) const;
 		double get_resistor_2_voltage(double get_resistor_2_value) const;
-
 	private:
 		double m_d_resistor_1;
 		double m_d_supply_voltage;
@@ -45,7 +45,8 @@ namespace app
 	public:
 		FuelGaugeInputFromADC(std::shared_ptr<drivers::GenericADC> p_adc, std::shared_ptr<app::CharacteristicCurve> p_fuel_input_characteristic);
 
-
+		/// Signal triggered when a new value from the fuel sensor was retrieved
+		boost::signals2::signal<double> m_sig_fuel_level_changed;
 	private:
 		void thread_main(void);
 

@@ -82,8 +82,12 @@ namespace app
 			{
 				m_d_read_fuel_percentage = m_p_fuel_input_characteristic->get_x(m_d_last_read_resistor_value);
 				FUEL_GAUGE_LOG("Current calculated fuel input level: %f", m_d_read_fuel_percentage);
+
+				// Send a signal that the fuel level has changed
+				this->m_sig_fuel_level_changed(m_d_read_fuel_percentage);
+
 			}
-			std_ex::sleep_for(std::chrono::milliseconds(100));
+			std_ex::sleep_for(std::chrono::milliseconds(10));
 		}
 
 	}

@@ -65,11 +65,11 @@ namespace drivers
 	}
 
 	/** Function to set the output by value */
-	void STM32DAC::set_output_value(uint32_t value)
+	int32_t STM32DAC::set_output_value(uint32_t value)
 	{
 		if (value > this->get_max_value() || value < this->get_min_value())
 		{
-			Error_Handler();
+			return -1;
 		}
 
 		/*##-3- Set DAC Channel1 DHR register ######################################*/
@@ -105,6 +105,19 @@ namespace drivers
 	float STM32DAC::get_min_voltage() const
 	{
 		return 0.2f; // 0.2V
+	}
+
+	int32_t STM32DAC::set_output_voltage(float value)
+	{
+		if (value > get_max_voltage() || value < get_min_voltage())
+		{
+			return -1;
+		}
+
+		const uint32_t u32_adc_value = static_cast<uint32_t>((value / 3.3) * static_cast<double>(get_max_value()));
+		return set_output_value(u32_adc_value);
+
+
 	}
 
 	uint32_t STM32DAC::get_dac_channel() const

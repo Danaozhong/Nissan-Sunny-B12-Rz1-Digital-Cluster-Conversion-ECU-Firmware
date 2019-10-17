@@ -4,12 +4,10 @@
 #include <functional>
 #include <vector>
 #include <memory>
-
-
 #include <mutex>
 
+#include "trace.h"
 
-#include "midware/trace/trace.h"
 namespace boost
 {
 	namespace signals2

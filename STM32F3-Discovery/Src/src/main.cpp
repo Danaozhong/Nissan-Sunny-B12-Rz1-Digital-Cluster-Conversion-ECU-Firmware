@@ -43,6 +43,7 @@
 
 /* Own headers */
 #include "fuel_gauge_input.hpp"
+#include "fuel_gauge_output.hpp"
 #include "lookup_table.hpp"
 #include "main.h"
 #include "stm32_dac.hpp"
@@ -132,6 +133,70 @@ void vApplicationMallocFailedHook( void )
 	}
 }
 
+class MainApplication
+{
+public:
+	MainApplication()
+	{
+		// create the low-level hardware interfaces
+		m_p_adc = std::make_shared<drivers::STM32ADC>(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);
+		m_p_dac = std::make_shared<drivers::STM32DAC>(DAC1, GPIOA, GPIO_PIN_4);
+		/* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full) */
+		std::vector<std::pair<double, double>> a_input_lut =
+		{
+				std::make_pair(0, 110),
+				std::make_pair(100, 8)
+		};
+
+		m_p_o_fuel_gauge_input_characteristic = std::make_shared<app::CharacteristicCurve>(a_input_lut);
+
+		/* Characteristics of the digital cluster fuel gauge */
+		std::vector<std::pair<double, double>> a_output_lut =
+		{
+				std::make_pair(0, 4.7),
+				std::make_pair(7.14, 4.34),
+				std::make_pair(21.43, 4.04),
+				std::make_pair(42.86, 3.30),
+				std::make_pair(64.29, 2.24),
+				std::make_pair(92.86, 1.10),
+				std::make_pair(100, 0.7)
+		};
+
+		m_p_o_fuel_gauge_output_characteristic = std::make_shared<app::CharacteristicCurve>(a_output_lut);
+
+		// start the data output thread
+		m_p_o_fuel_gauge_output = std::make_shared<app::FuelGaugeOutput>(m_p_dac, m_p_o_fuel_gauge_output_characteristic, 1.5, 0.0);
+		// start the data acquisition thread
+		m_p_o_fuel_gauge_input = std::make_shared<app::FuelGaugeInputFromADC>(m_p_adc, m_p_o_fuel_gauge_input_characteristic);
+
+		// attach to the signal of the fuel sensor input
+		auto event_handler = std::bind(&MainApplication::fuel_sensor_input_received, this, std::placeholders::_1);
+		m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
+	}
+
+	void fuel_sensor_input_received(double d_value)
+	{
+		if (m_p_o_fuel_gauge_output != nullptr)
+		{
+			m_p_o_fuel_gauge_output->set_fuel_level(d_value);
+		}
+	}
+private:
+
+	// prevent copying
+	MainApplication(MainApplication &other) = delete;
+
+	std::shared_ptr<drivers::GenericADC> m_p_adc;
+	std::shared_ptr<drivers::GenericDAC> m_p_dac;
+
+	std::shared_ptr<app::CharacteristicCurve> m_p_o_fuel_gauge_input_characteristic;
+	std::shared_ptr<app::CharacteristicCurve> m_p_o_fuel_gauge_output_characteristic;
+
+	std::shared_ptr<app::FuelGaugeInputFromADC> m_p_o_fuel_gauge_input;
+	std::shared_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
+};
+
+
 void MAIN_startup_thread(void*)
 {
 	// This is the initial thread running after bootup.
@@ -142,17 +207,8 @@ void MAIN_startup_thread(void*)
 	// integrate all your tasks here.
 
 	//drivers::STM32DAC o_stm32_dac(DAC1, GPIOA, GPIO_PIN_4);
+	MainApplication o_application;
 
-	auto p_adc = std::make_shared<drivers::STM32ADC>(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_1, GPIOA, GPIO_PIN_4);
-
-	/* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full) */
-	std::vector<std::pair<double, double>> a_lut = {std::make_pair(0, 100), std::make_pair(100, 10)};
-
-	auto p_o_fuel_sensor_characteristic = std::make_shared<app::CharacteristicCurve>(a_lut);
-
-
-	// start the data acquisition thread
-	app::FuelGaugeInputFromADC o_fuel_gauge_input(p_adc, p_o_fuel_sensor_characteristic);
 
 	while (true)
 	{

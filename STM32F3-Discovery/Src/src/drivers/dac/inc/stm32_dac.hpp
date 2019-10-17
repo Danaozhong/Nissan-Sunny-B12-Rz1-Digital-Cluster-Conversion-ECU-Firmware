@@ -36,17 +36,18 @@ namespace drivers
 	/** Generic base class to handle the functionality of an DAC. Can be a STM32 internal DAC, or
 	 * an DAC controlled by a PWM, or whatever...
 	 */
-	class STM32DAC
+	class STM32DAC : public GenericDAC
 	{
 	public:
 		STM32DAC(DAC_TypeDef* pt_dac_peripheral, GPIO_TypeDef* pt_gpio_block, uint16_t u16_gpio_pin);
 		virtual ~STM32DAC();
 
 		/** Function to set the output by value */
-		virtual void set_output_value(uint32_t value);
+		virtual int32_t set_output_value(uint32_t value);
 		virtual uint32_t get_max_value() const;
 		virtual uint32_t get_min_value() const;
 
+		virtual int32_t set_output_voltage(float value);
 		virtual float get_max_voltage() const;
 		virtual float get_min_voltage() const;
 

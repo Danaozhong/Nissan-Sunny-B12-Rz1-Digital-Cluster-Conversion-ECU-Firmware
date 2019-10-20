@@ -58,7 +58,7 @@ namespace app
 
 	void FuelGaugeInputFromADC::thread_main(void)
 	{
-		FUEL_GAUGE_LOG("Fuel Sensor Input Data Acquisition thread started!");
+		FUEL_GAUGE_LOG("Fuel Sensor Input Data Acquisition thread started!\n");
 		// the voltage divider is supplied by 5V, and has a 220Ohm resistor on top,
 		// and a 330Ohm resistor in parallel to the fuel gauge.
 		ParallelVoltageDivider o_voltage_divider(220, 330, 5);
@@ -68,26 +68,26 @@ namespace app
 		{
 			// read from the ADC
 			uint32_t u32_adc_value = m_p_adc->read_adc_value();
-			FUEL_GAUGE_LOG("Current ADC value: %u", u32_adc_value);
+			FUEL_GAUGE_LOG("Current ADC value: %u\n", u32_adc_value);
 
 			// covert to voltage
 			double d_adc_pin_voltage = 3.3 * static_cast<double>(u32_adc_value) / static_cast<double>(m_p_adc->get_adc_max_value());
 
 			// convert to resistor value of the fuel sensor
 			m_d_last_read_resistor_value = o_voltage_divider.get_resistor_2_value(d_adc_pin_voltage);
-			FUEL_GAUGE_LOG("Current calculated resistor value: %f", m_d_last_read_resistor_value);
+			FUEL_GAUGE_LOG("Current calculated resistor value: %f\n", m_d_last_read_resistor_value);
 
 			// find the percentage
 			if (nullptr != m_p_fuel_input_characteristic)
 			{
 				m_d_read_fuel_percentage = m_p_fuel_input_characteristic->get_x(m_d_last_read_resistor_value);
-				FUEL_GAUGE_LOG("Current calculated fuel input level: %f", m_d_read_fuel_percentage);
+				FUEL_GAUGE_LOG("Current calculated fuel input level: %f\n", m_d_read_fuel_percentage);
 
 				// Send a signal that the fuel level has changed
 				this->m_sig_fuel_level_changed(m_d_read_fuel_percentage);
 
 			}
-			std_ex::sleep_for(std::chrono::milliseconds(10));
+			std_ex::sleep_for(std::chrono::milliseconds(100));
 		}
 
 	}

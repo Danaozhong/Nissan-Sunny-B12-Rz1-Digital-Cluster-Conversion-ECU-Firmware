@@ -3,6 +3,8 @@
 
 #include <string>
 #include <sstream>
+#include <memory>
+#include "generic_uart.hpp"
 #define DEBUG_PRINTF(...) (print_trace(__VA_ARGS__))
 
 #define MALFUNC(a) (exception_handler(EXC_MALFUNC, a)) //(print_trace(std::string("[MALFUNC] ") + a))
@@ -15,6 +17,9 @@ void print_serial(const char character);
 void print_serial(const char *buffer);
 
 void print_trace(const char *, ...);
+
+
+void set_serial_output(const std::shared_ptr<drivers::GenericUART> &p_uart);
 
 /** C++ overload */
 void print_trace(const std::string &str);

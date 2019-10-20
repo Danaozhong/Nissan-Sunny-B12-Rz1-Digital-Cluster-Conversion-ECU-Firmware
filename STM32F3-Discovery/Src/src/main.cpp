@@ -48,6 +48,7 @@
 #include "main.h"
 #include "stm32_dac.hpp"
 #include "stm32_adc.hpp"
+#include "stm32_uart.hpp"
 #include "thread.hpp"
 
 
@@ -204,6 +205,10 @@ void MAIN_startup_thread(void*)
 	// wait for the scheduler to be ready.
 	std_ex::sleep_for(std::chrono::milliseconds(100));
 
+	std::shared_ptr<drivers::GenericUART> p_uart = std::make_shared<drivers::STM32HardwareUART>(GPIOD, GPIO_PIN_6, GPIOD, GPIO_PIN_5);
+
+	p_uart->connect(9600, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
+	set_serial_output(p_uart);
 	// integrate all your tasks here.
 
 	//drivers::STM32DAC o_stm32_dac(DAC1, GPIOA, GPIO_PIN_4);
@@ -216,7 +221,8 @@ void MAIN_startup_thread(void*)
 		std_ex::sleep_for(std::chrono::milliseconds(100));
 
 		// listen on the serial input, etc.
-
+		//char buffer[100] = "Test serial!";
+		//p_uart->write(reinterpret_cast<uint8_t*>(buffer), 10);
 	}
 }
 
@@ -410,6 +416,14 @@ static void SystemClock_Config(void)
     Error_Handler();
   }
 }
+
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
+{
+  /* Turn LED3 on: Transfer error in reception/transmission process */
+  BSP_LED_On(LED_RED);
+}
+
 
 /**
   * @brief  ADC configuration

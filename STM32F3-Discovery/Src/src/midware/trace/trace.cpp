@@ -12,6 +12,9 @@
 #include <cstring>
 #include <string>
 #include <mutex>
+#include <memory>
+
+#include "generic_uart.hpp"
 
 
 #include "stm32f3xx.h"
@@ -23,7 +26,12 @@
 #include "midware/trace/trace.h"
 
 //std::mutex mutex_serial_if;
+std::shared_ptr<drivers::GenericUART> m_p_uart = nullptr;
 
+void set_serial_output(const std::shared_ptr<drivers::GenericUART> &p_uart)
+{
+	m_p_uart = p_uart;
+}
 void print_serial(const char character)
 {
 	//mutex_serial_if.lock();
@@ -33,6 +41,10 @@ void print_serial(const char character)
 
 void print_serial(const char *buffer)
 {
+	if (m_p_uart != nullptr)
+	{
+		m_p_uart->write(reinterpret_cast<const uint8_t*>(buffer), strlen(buffer));
+	}
 	//mutex_serial_if.lock();
 
 	printf(buffer);

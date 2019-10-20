@@ -73,6 +73,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Inc/stm32f3xx_it.h</locationURI>
 		</link>
 		<link>
+			<name>Src/uart</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/drivers/uart</locationURI>
+		</link>
+		<link>
 			<name>Drivers/CMSIS/system_stm32f3xx.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Src/system_stm32f3xx.c</locationURI>

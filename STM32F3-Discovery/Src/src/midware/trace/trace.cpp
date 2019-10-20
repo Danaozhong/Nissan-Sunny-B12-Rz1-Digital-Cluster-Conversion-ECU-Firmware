@@ -69,7 +69,7 @@ void print_trace(const char * format_str, ...)
 	va_list args;
 
 	va_start(args, format_str);
-	snprintf(print_buffer, 1024, format_str, args);
+	vsnprintf(print_buffer, 1024, format_str, args);
 	va_end(args);
 
 	print_serial(print_buffer);

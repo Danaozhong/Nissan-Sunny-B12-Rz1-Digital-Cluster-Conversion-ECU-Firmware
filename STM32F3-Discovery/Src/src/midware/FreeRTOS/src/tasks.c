@@ -3821,6 +3821,31 @@ static void prvCheckTasksWaitingTermination( void )
 #endif /* INCLUDE_uxTaskGetStackHighWaterMark */
 /*-----------------------------------------------------------*/
 
+/* Added function by Clemens 2019-10-29 to get the stack size of a task */
+#ifdef configRECORD_STACK_HIGH_ADDRESS
+
+	uint32_t uxTaskGetStackSize( TaskHandle_t xTask )
+	{
+	TCB_t *pxTCB;
+	uint32_t u32StackSize;
+
+		pxTCB = prvGetTCBFromHandle( xTask );
+
+		#if portSTACK_GROWTH < 0
+		{
+			u32StackSize =  (uint32_t)(pxTCB->pxEndOfStack - pxTCB->pxStack);
+		}
+		#else
+		{
+			u32StackSize = uint32_t(pxTCB->pxStack - pxTCB->pxEndOfStack);
+		}
+		#endif
+
+		return u32StackSize;
+	}
+#endif /* configRECORD_STACK_HIGH_ADDRESS */
+/* Added function by Clemens 2019-10-29 to get the stack size of a task - end */
+
 #if ( INCLUDE_vTaskDelete == 1 )
 
 	static void prvDeleteTCB( TCB_t *pxTCB )

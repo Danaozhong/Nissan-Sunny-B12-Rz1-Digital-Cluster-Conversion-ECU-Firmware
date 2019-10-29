@@ -51,6 +51,8 @@
 #include "stm32_uart.hpp"
 #include "thread.hpp"
 
+#include "os_console.hpp"
+
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -116,10 +118,12 @@ void vApplicationMallocFailedHook( void )
 		memory allocated by the kernel to any task that has since been deleted. */
 	}
 
-	void vApplicationTickHook( void )
+	/** see https://www.cnblogs.com/shangdawei/p/4684798.html */
+	void vApplicationTickHook(void)
 	{
-
+	  HAL_IncTick();
 	}
+
 
 	void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 	{
@@ -203,12 +207,18 @@ void MAIN_startup_thread(void*)
 	// This is the initial thread running after bootup.
 
 	// wait for the scheduler to be ready.
-	std_ex::sleep_for(std::chrono::milliseconds(100));
+	std_ex::sleep_for(std::chrono::milliseconds(400));
 
+	// create the debug interface
 	std::shared_ptr<drivers::GenericUART> p_uart = std::make_shared<drivers::STM32HardwareUART>(GPIOD, GPIO_PIN_6, GPIOD, GPIO_PIN_5);
 
+	// ... and connect it to the hardware ports
 	p_uart->connect(9600, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
+
+	// if this was all successful, create the OS helper services
+	OSServices::OSConsole o_os_console(p_uart);
 	set_serial_output(p_uart);
+
 	// integrate all your tasks here.
 
 	//drivers::STM32DAC o_stm32_dac(DAC1, GPIOA, GPIO_PIN_4);
@@ -217,9 +227,22 @@ void MAIN_startup_thread(void*)
 
 	while (true)
 	{
-		// do some other stuff here....
-		std_ex::sleep_for(std::chrono::milliseconds(100));
+		// load balancing
+		std_ex::sleep_for(std::chrono::milliseconds(10));
 
+		// check for debug input
+		o_os_console.run();
+
+#if 0
+		if (p_uart->available() > 0)
+		{
+			int incomingByte = p_uart->read();
+			if (incomingByte >= 0)
+			{
+				DEBUG_PRINTF("I received: %d", incomingByte);
+			}
+		}
+#endif
 		// listen on the serial input, etc.
 		//char buffer[100] = "Test serial!";
 		//p_uart->write(reinterpret_cast<uint8_t*>(buffer), 10);
@@ -253,7 +276,7 @@ int main(void)
 
     xTaskCreate( MAIN_startup_thread,
                  "MAIN_startup_thread",
-                 0x200,
+                 0x600,
                  NULL,
                  2,
                  &xHandle );

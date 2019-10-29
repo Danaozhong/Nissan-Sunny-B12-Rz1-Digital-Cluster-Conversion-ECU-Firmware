@@ -6,7 +6,11 @@
  */
 
 #include <cstring>
+#include <thread>
+#include "thread.hpp"
 #include "stm32_uart.hpp"
+#include <functional>
+#include <map>
 
 
 /* Definition for USARTx clock resources */
@@ -22,11 +26,18 @@
 
 namespace drivers
 {
+	std::map<const UART_HandleTypeDef*, STM32HardwareUART*> map_uart_handles_to_object;
+	std::map<const int32_t, STM32HardwareUART*> map_uart_peripheral_id_to_object;
+
 	STM32HardwareUART::STM32HardwareUART(GPIO_TypeDef* pt_rx_gpio_block,  uint16_t u16_rx_pin, \
 			GPIO_TypeDef* pt_tx_gpio_block,  uint16_t u16_tx_pin)
 	{
+		UartReady = RESET;
+		m_uart_rx_interrupt_status = RESET;
 		m_o_uart_handle = {};
 
+		// add to map
+		map_uart_handles_to_object.emplace(&this->m_o_uart_handle, this);
 		// Configure pins
 		GPIO_InitTypeDef  GPIO_InitStruct;
 
@@ -56,9 +67,19 @@ namespace drivers
 
 			HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+			/*##-3- Configure the NVIC for UART ########################################*/
+			/* NVIC for USART */
+			HAL_NVIC_SetPriority(USART2_IRQn, 0, 1);
+			HAL_NVIC_EnableIRQ(USART2_IRQn);
+
 
 			// STM32F303 UART2 peripherals
 			m_o_uart_handle.Instance        = USART2;
+			map_uart_peripheral_id_to_object.emplace(2, this);
+
+//#define USARTx_IRQn                      USART2_IRQn
+//#define USARTx_IRQHandler                USART2_IRQHandler
+
 		}
 	}
 
@@ -117,10 +138,15 @@ namespace drivers
 		{
 			Error_Handler();
 		}
+
+		m_u32_rx_buffer_usage = 0;
+		auto main_func = std::bind(&STM32HardwareUART::uart_main, this);
+		std::thread m_p_uart_buffer_thread(main_func);
+		m_p_uart_buffer_thread.detach();
 	}
 	void STM32HardwareUART::disconnect()
 	{
-
+		// TODO
 	}
 
 	void STM32HardwareUART::update_baud_rate(uint64_t u64_baud)
@@ -130,7 +156,8 @@ namespace drivers
 
 	int STM32HardwareUART::available(void) const
 	{
-		return 0;
+		return m_u32_rx_buffer_usage;
+		//return m_o_uart_handle.RxXferCount;
 	}
 
 	int STM32HardwareUART::available_for_write(void) const
@@ -140,19 +167,30 @@ namespace drivers
 
 	int STM32HardwareUART::peek(void) const
 	{
-		return 0;
+		//return m_o_uart_handle.RxXferCount;
+		return m_u32_rx_buffer_usage;
 	}
 
 	int STM32HardwareUART::read(void)
 	{
+#if 0
+		int retval = -1;
 		char ai8_buffer[10];
-
-
-		if(HAL_UART_Receive(&m_o_uart_handle, reinterpret_cast<uint8_t*>(ai8_buffer), 1, 1) != HAL_OK)
+		if(HAL_UART_Receive(&m_o_uart_handle, reinterpret_cast<uint8_t*>(ai8_buffer), 1, 100) == HAL_OK)
 		{
-			return -1;
+			return static_cast<int>(ai8_buffer[0]);
 		}
-		return static_cast<int>(ai8_buffer[0]);
+#else
+		int retval = -1;
+		if (m_u32_rx_buffer_usage > 0)
+		{
+			retval = m_au8_rx_buffer[0];
+			m_u32_rx_buffer_usage--;
+			// move the entire content... terrible design, but no time to implement
+			memmove(m_au8_rx_buffer, m_au8_rx_buffer + 1, m_u32_rx_buffer_usage);
+		}
+		return retval;
+#endif
 	}
 
 	void STM32HardwareUART::flush(void)
@@ -161,12 +199,88 @@ namespace drivers
 
 	size_t STM32HardwareUART::write(const uint8_t *a_u8_buffer, size_t size)
 	{
-		if(HAL_UART_Transmit(&m_o_uart_handle, const_cast<uint8_t*>(a_u8_buffer), size, 5000) != HAL_OK)
+		//wait for the device to be ready
+		while (m_o_uart_handle.gState != HAL_UART_STATE_READY)
 		{
-			Error_Handler();
+		}
+
+		{
+			// lock the access to the hardware
+			std::lock_guard<std::mutex> guard(this->m_o_interrupt_mutex);
+
+			if(HAL_UART_Transmit_IT(&m_o_uart_handle, const_cast<uint8_t*>(a_u8_buffer), size) != HAL_OK)
+			{
+				Error_Handler();
+			}
+
+			while (UartReady != SET)
+			{
+			}
+			UartReady = RESET;
 		}
 		return size;
+
 	}
+
+	void STM32HardwareUART::uart_main()
+	{
+#if 1
+		while(true)
+		{
+			char ai8_buffer[10] = { 0 };
+			//while (m_o_uart_handle.gState != HAL_UART_STATE_READY)
+			//{
+			//}
+
+			HAL_StatusTypeDef ret_val;
+
+			{
+				std::lock_guard<std::mutex> guard(this->m_o_interrupt_mutex);
+
+				// only read byte-wise, horribly slow, but works for now.
+				__HAL_UART_CLEAR_OREFLAG(&m_o_uart_handle);
+				__HAL_UART_CLEAR_NEFLAG(&m_o_uart_handle);
+				ret_val = HAL_UART_Receive(&m_o_uart_handle, reinterpret_cast<uint8_t*>(ai8_buffer), 1, 100);
+#if 0
+				if(HAL_OK == ret_val)
+				{
+					int32_t i32_counter = 0;
+					  while (m_uart_rx_interrupt_status != SET && i32_counter < 10)
+					  {
+						  ++i32_counter;
+						  std_ex::sleep_for(std::chrono::milliseconds(10));
+					  }
+
+					  if (m_uart_rx_interrupt_status != SET)
+					  {
+						  // abort interrupt
+						  HAL_UART_AbortReceive_IT(&m_o_uart_handle);
+					  }
+					  /* Reset transmission flag */
+					  m_uart_rx_interrupt_status = RESET;
+				}
+#endif
+			}
+
+			if (HAL_OK == ret_val)
+			{
+
+				if(m_u32_rx_buffer_usage < STM32UART_BUFFER_SIZE)
+				{
+					m_au8_rx_buffer[m_u32_rx_buffer_usage] = ai8_buffer[0];
+					m_u32_rx_buffer_usage++;
+				}
+			}
+			else
+			{
+				// load balancing
+				std_ex::sleep_for(std::chrono::milliseconds(100));
+			}
+		}
+#endif
+		//std_ex::sleep_for(std::chrono::milliseconds(100));
+	}
+
 	void STM32HardwareUART::Error_Handler(void) const
 	{
 	  /* User may add here some code to deal with this error */
@@ -233,4 +347,42 @@ extern "C"
 	}
 }
 #endif
+
+extern "C"
+{
+
+	void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
+	{
+	  /* Set transmission flag: transfer complete */
+		drivers::map_uart_handles_to_object[UartHandle]->UartReady = SET;
+		//UartReady = SET;
+
+	  /* Turn LED3 on: Transfer in transmission process is correct */
+	  BSP_LED_On(LED3);
+
+	}
+
+	/**
+	  * @brief  Rx Transfer completed callback
+	  * @param  UartHandle: UART handle
+	  * @note   This example shows a simple way to report end of DMA Rx transfer, and
+	  *         you can add your own implementation.
+	  * @retval None
+	  */
+	void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
+	{
+	  /* Set transmission flag: transfer complete */
+		drivers::map_uart_handles_to_object[UartHandle]->m_uart_rx_interrupt_status = SET;
+		//UartReady = SET;
+
+	  /* Turn LED5 on: Transfer in reception process is correct */
+	  //BSP_LED_On(LED5);
+
+	}
+
+	void USART2_IRQHandler(void)
+	{
+	  HAL_UART_IRQHandler(&drivers::map_uart_peripheral_id_to_object[2]->m_o_uart_handle);
+	}
+}
 

@@ -69,6 +69,19 @@ void NMI_Handler(void)
 {
 }
 
+
+
+
+
+/** see https://www.cnblogs.com/shangdawei/p/4684798.html */
+void HAL_Delay(volatile uint32_t millis)
+{
+  /* replace HAL library blocking delay function
+   * with FreeRTOS thread aware equivalent */
+  vTaskDelay(millis);
+}
+
+
 /**
   * @brief  This function handles Hard Fault exception.
   * @param  None

@@ -1436,6 +1436,14 @@ TaskHandle_t xTaskGetHandle( const char *pcNameToQuery ) PRIVILEGED_FUNCTION; /*
  */
 UBaseType_t uxTaskGetStackHighWaterMark( TaskHandle_t xTask ) PRIVILEGED_FUNCTION;
 
+
+/* Patch Clemens to get stack size begin */
+#ifdef configRECORD_STACK_HIGH_ADDRESS
+uint32_t uxTaskGetStackSize( TaskHandle_t xTask ) PRIVILEGED_FUNCTION;
+#endif
+
+/* Patch Clemens to get stack size end */
+
 /**
  * task.h
  * <PRE>configSTACK_DEPTH_TYPE uxTaskGetStackHighWaterMark2( TaskHandle_t xTask );</PRE>

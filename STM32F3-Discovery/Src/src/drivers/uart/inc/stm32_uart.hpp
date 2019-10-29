@@ -9,11 +9,17 @@
 #define _STM32_UART_HPP_
 
 /* System headers */
+#include <atomic>
+#include <memory>
+#include <mutex>
 #include "stm32f3xx_hal.h"
 #include "stm32f3_discovery.h"
 
 /* Own headers */
 #include "generic_uart.hpp"
+
+#define STM32UART_BUFFER_SIZE  (16u)
+
 
 namespace drivers
 {
@@ -35,11 +41,30 @@ class STM32HardwareUART : public GenericUART
 	    virtual void flush(void);
 	    virtual size_t write(const uint8_t *a_u8_buffer, size_t size);
 	private:
+	    void uart_main();
+
+	    uint8_t m_au8_rx_buffer[STM32UART_BUFFER_SIZE];
+	    uint8_t m_au8_tx_buffer[STM32UART_BUFFER_SIZE];
+
+	    uint32_t m_u32_rx_buffer_usage;
+
+	    //std::shared_ptr<std::thread> m_p_uart_buffer_thread;
+
+	    std::atomic<bool> m_bo_connected;
+
+	    std::mutex m_o_interrupt_mutex;
 
 	    void Error_Handler(void) const;
-
+	public:
 	    UART_HandleTypeDef m_o_uart_handle;
+
+	    __IO ITStatus UartReady;
+	    ITStatus m_uart_rx_interrupt_status;
 	};
 }
 
+extern "C"
+{
+	void USART2_IRQHandler(void);
+}
 #endif /* _STM32_UART_HPP_ */

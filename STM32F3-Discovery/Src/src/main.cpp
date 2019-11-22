@@ -146,11 +146,20 @@ public:
 		// create the low-level hardware interfaces
 		m_p_adc = std::make_shared<drivers::STM32ADC>(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);
 		m_p_dac = std::make_shared<drivers::STM32DAC>(DAC1, GPIOA, GPIO_PIN_4);
-		/* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full) */
+		/* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full). See
+		 * http://texelography.com/2019/06/21/nissan-rz1-digital-cluster-conversion/ for the full dataset */
 		std::vector<std::pair<double, double>> a_input_lut =
 		{
-				std::make_pair(0, 110),
-				std::make_pair(100, 8)
+				/* Fuel level  Resistor value */
+				std::make_pair(-10.0, 110.0),
+				std::make_pair(-1.0, 87.0),
+				std::make_pair(5.0, 80.6),
+				std::make_pair(25.0, 61.8),
+				std::make_pair(48.0, 35.7),
+				std::make_pair(77.0, 21.0),
+				std::make_pair(100.0, 11.8),
+				std::make_pair(110.0, 2.4),
+				std::make_pair(115.0, 0.0)
 		};
 
 		m_p_o_fuel_gauge_input_characteristic = std::make_shared<app::CharacteristicCurve>(a_input_lut);

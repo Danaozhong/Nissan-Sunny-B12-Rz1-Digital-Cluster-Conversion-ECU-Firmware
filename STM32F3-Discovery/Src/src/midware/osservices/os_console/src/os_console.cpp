@@ -93,12 +93,98 @@ int32_t CommandListTasks::execute(char* p_i8_output_buffer, uint32_t u32_buffer_
 		return 0;
 	}
 
+	int32_t CommandMemory::execute(char* p_i8_output_buffer, uint32_t u32_buffer_size) const
+	{
+		memset(p_i8_output_buffer, 0, u32_buffer_size);
+
+		int i_free_heap = xPortGetFreeHeapSize();
+	    int i_min_heap = xPortGetMinimumEverFreeHeapSize();
+
+	    snprintf(p_i8_output_buffer, u32_buffer_size - 1,
+	    		"Current heap size: %u bytes\r\n"
+	    		"Minimum ever heap size: %u bytes\r\n",
+				i_free_heap, i_min_heap
+	    );
+
+
+#if 0
+
+		typedef struct FREE FREE;
+
+		struct FREE {                          // Heap free block list structure:
+		   uint32_t sulSize;                   //    Free block size
+		   FREE *spsNext;                      //    Pointer to the next free block
+		};
+
+		extern FREE __data_Aldata;             // Heap information structure
+		/* sample code to walk the heap */
+		   FREE *xpsFree;                      // Free heap block
+		   long *xplStack;                     // Stack pointer
+		   long xlRomSize;                     // ROM size
+		   long xlRamSize;                     // RAM size
+		   long xlMemory;
+		   long xlHeapTotal;
+		   long xlHeapFree;
+		   long xlHeapUsed;
+
+		// The heap is walked to find the amount of free memory available.
+
+		   xlHeapFree = 0;
+		   xpsFree = &__data_Aldata;
+		   while (xpsFree->spsNext) {
+		      xpsFree = xpsFree->spsNext;
+		      xlHeapFree += xpsFree->sulSize;
+		   }
+		   xlHeapTotal = (long) __sfe ("HEAP") – (long) __sfb ("HEAP");
+		   xlHeapUsed = xlHeapTotal – xlHeapFree;
+
+		// Header
+
+		   printf ("Heap             | Free stack         | Free memoryrn");
+		   xlRomSize = (long) __sfb ("ROM0_END") – (long) __sfb ("ROM0_START") + 1;
+		   xlRamSize = (long) __sfb ("RAM_END") – (long) __sfb ("RAM_START") + 1;
+
+		// Used heap, FIQ stack, and free flash
+
+		   for (xplStack = (long *) &Stack_FIQ;
+		         xplStack < (long *) &StackTop_FIQ && *xplStack == RAM_TEST;
+		         ++xplStack);
+		   xlMemory = (long) __sfb ("ROM0_END") – (long) __sfb ("ROM0_TOP") + 1;
+		   printf ("   Used:  %5d  |    FIQ: %5d      |    Flash:    %6d (%d%%)rn",
+		         xlHeapUsed, 4 * (xplStack – (long *) &Stack_FIQ), xlMemory,
+		         100 * xlMemory / xlRomSize);
+
+		// Free heap, IRQ stack, and free RAM
+
+		   for (xplStack = (long *) &Stack_IRQ;
+		         xplStack < (long *) &StackTop_IRQ && *xplStack == RAM_TEST;
+		         ++xplStack);
+		   xlMemory = (int) __sfe ("RAM_END") – (int) __sfb ("RAM_TOP") + 1;
+		   printf ("   Free:  %5d  |    IRQ: %5d      |    RAM:      %6d (%d%%)rn",
+		         xlHeapFree, 4 * (xplStack – (long *) &Stack_IRQ), xlMemory,
+		         100 * xlMemory / xlRamSize);
+
+		// Total heap, SVC stack, and free heap + RAM
+
+		   for (xplStack = (long *) &Stack_SVC;
+		         xplStack < (long *) &StackTop_SVC && *xplStack == RAM_TEST;
+		         ++xplStack);
+		   printf ("   TOTAL: %5d  |    SVC: %5d      |    Heap+RAM: %6d (%d%%)rn",
+		         xlHeapTotal, 4 * (xplStack – (long *) &Stack_SVC),
+		         xlMemory + xlHeapFree, 100 * (xlMemory + xlHeapFree) / xlRamSize);
+		}
+#endif
+		return 0;
+	}
+
+
 
 	OSConsole::OSConsole(std::shared_ptr<drivers::GenericUART> po_io_interface)
 	: m_po_io_interface(po_io_interface), m_bo_entering_command(false)
 	{
 		memset(this->m_ai8_command_buffer, 0x0, sizeof(this->m_ai8_command_buffer));
-		this->m_apo_commands.push_back(std::make_shared<CommandListTasks>(m_po_io_interface));
+		this->m_apo_commands.push_back(std::make_shared<CommandListTasks>());
+		this->m_apo_commands.push_back(std::make_shared<CommandMemory>());
 
 		print_bootscreen();
 	}

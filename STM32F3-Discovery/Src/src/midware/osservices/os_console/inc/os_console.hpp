@@ -18,8 +18,7 @@ namespace OSServices
 	class Command
 	{
 	public:
-		Command(const char* ai8_command, std::shared_ptr<drivers::GenericUART> p_io_object)
-		: m_po_io_object(p_io_object)
+		Command(const char* ai8_command)
 		{
 			strncpy(m_ai8_command_str, ai8_command, COMMAND_MAXIMUM_LENGTH - 1);
 		}
@@ -37,16 +36,28 @@ namespace OSServices
 		}
 	protected:
 		char m_ai8_command_str[COMMAND_MAXIMUM_LENGTH];
-		std::shared_ptr<drivers::GenericUART> m_po_io_object;
 
 	};
 
+	/** This command is used to list all tasks, their priority, stack size, name, state.
+	 */
 	class CommandListTasks : public Command
 	{
 	public:
-		CommandListTasks(std::shared_ptr<drivers::GenericUART> po_io_object) : Command("lt", po_io_object) {}
+		CommandListTasks() : Command("lt") {}
 
 		virtual ~CommandListTasks() {}
+
+		virtual int32_t execute(char* p_i8_output_buffer, uint32_t u32_buffer_size) const;
+	};
+
+	/** This command prints out the heap memory size */
+	class CommandMemory : public Command
+	{
+	public:
+		CommandMemory() : Command("mem") {}
+
+		virtual ~CommandMemory() {}
 
 		virtual int32_t execute(char* p_i8_output_buffer, uint32_t u32_buffer_size) const;
 	};

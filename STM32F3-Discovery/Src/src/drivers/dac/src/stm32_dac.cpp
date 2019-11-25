@@ -6,6 +6,8 @@
  */
 
 
+#include <algorithm>
+
 #include "stm32_dac.hpp"
 
 #define DACx_FORCE_RESET()              __HAL_RCC_DAC1_FORCE_RESET()
@@ -67,23 +69,21 @@ namespace drivers
 	/** Function to set the output by value */
 	int32_t STM32DAC::set_output_value(uint32_t value)
 	{
-		if (value > this->get_max_value() || value < this->get_min_value())
-		{
-			return -1;
-		}
+		value = std::min(value, this->get_max_value());
+		value = std::max(value, this->get_min_value());
 
 		/*##-3- Set DAC Channel1 DHR register ######################################*/
 		if (HAL_DAC_SetValue(&this->m_dac_handle, get_dac_channel(), DAC_ALIGN_8B_R, static_cast<uint8_t>(value)) != HAL_OK)
 		{
 			/* Setting value Error */
-			Error_Handler();
+			return -1;
 		}
 
 		/*##-4- Enable DAC Channel1 ################################################*/
 		if (HAL_DAC_Start(&this->m_dac_handle, get_dac_channel()) != HAL_OK)
 		{
 			/* Start Error */
-			Error_Handler();
+			return -2;
 		}
 	}
 
@@ -109,15 +109,8 @@ namespace drivers
 
 	int32_t STM32DAC::set_output_voltage(float value)
 	{
-		if (value > get_max_voltage() || value < get_min_voltage())
-		{
-			return -1;
-		}
-
 		const uint32_t u32_adc_value = static_cast<uint32_t>((value / 3.3) * static_cast<double>(get_max_value()));
 		return set_output_value(u32_adc_value);
-
-
 	}
 
 	uint32_t STM32DAC::get_dac_channel() const

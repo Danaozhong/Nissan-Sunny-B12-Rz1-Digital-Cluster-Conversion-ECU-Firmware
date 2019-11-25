@@ -96,7 +96,7 @@ namespace app
 				}
 
 				/* Check if the deviation is more than 10% */
-				if (std::abs(get_average_fuel_percentage() - i32_read_fuel_percentage) < 2000)
+				if (std::abs(get_average_fuel_percentage() - i32_read_fuel_percentage) < 1000)
 				{
 					/* only take the value into account if it differs less than 10% */
 					m_ai32_last_read_fuel_percentages[m_u32_buffer_counter] = i32_read_fuel_percentage;

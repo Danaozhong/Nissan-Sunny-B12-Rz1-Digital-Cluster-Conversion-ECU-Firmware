@@ -48,7 +48,8 @@ extern "C" {
   * @{
   */
 
-#if defined (CAN)
+//#if defined (CAN)
+#if 1
 /** @addtogroup CAN
   * @{
   */

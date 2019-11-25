@@ -91,6 +91,28 @@ extern "C"
 #define ADCx_IRQn                       ADC1_2_IRQn
 #define ADCx_IRQHandler                 ADC1_2_IRQHandler
 
+/* User can use this section to tailor CANx instance used and associated
+   resources */
+/* Definition for CANx clock resources */
+#define CANx                           CAN
+#define CANx_CLK_ENABLE()              __HAL_RCC_CAN1_CLK_ENABLE()
+#define CANx_GPIO_CLK_ENABLE()         __HAL_RCC_GPIOD_CLK_ENABLE()
+
+#define CANx_FORCE_RESET()             __HAL_RCC_CAN1_FORCE_RESET()
+#define CANx_RELEASE_RESET()           __HAL_RCC_CAN1_RELEASE_RESET()
+
+/* Definition for CANx Pins */
+#define CANx_TX_PIN                    GPIO_PIN_1
+#define CANx_TX_GPIO_PORT              GPIOD
+#define CANx_TX_AF                     GPIO_AF7_CAN
+#define CANx_RX_PIN                    GPIO_PIN_0
+#define CANx_RX_GPIO_PORT              GPIOD
+#define CANx_RX_AF                     GPIO_AF7_CAN
+
+/* Definition for CAN's NVIC */
+#define CANx_RX_IRQn                   USB_LP_CAN_RX0_IRQn
+#define CANx_RX_IRQHandler             USB_LP_CAN_RX0_IRQHandler
+
 
 #ifdef __cplusplus
 }

@@ -70,6 +70,7 @@
 									<listOptionValue builtIn="false" value="USE_STM32F3_DISCO"/>
 									<listOptionValue builtIn="false" value="configUSE_STATS_FORMATTING_FUNCTIONS=1"/>
 									<listOptionValue builtIn="false" value="configRECORD_STACK_HIGH_ADDRESS=1"/>
+									<listOptionValue builtIn="false" value="CAN=1"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.otherflags.1773266062" name="Other flags" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.otherflags" useByScannerDiscovery="false" valueType="stringList"/>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1990477147" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
@@ -112,6 +113,7 @@
 									<listOptionValue builtIn="false" value="_GCC_MULTITHREAD_FREERTOS_ENABLE"/>
 									<listOptionValue builtIn="false" value="configUSE_STATS_FORMATTING_FUNCTIONS=1"/>
 									<listOptionValue builtIn="false" value="configRECORD_STACK_HIGH_ADDRESS=1"/>
+									<listOptionValue builtIn="false" value="CAN=1"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.76733782" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
 							</tool>

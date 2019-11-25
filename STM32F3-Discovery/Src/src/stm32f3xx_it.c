@@ -52,6 +52,8 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern ADC_HandleTypeDef    AdcHandle;
+extern CAN_HandleTypeDef    CanHandle;
+
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -188,6 +190,11 @@ void SysTick_Handler(void)
 /*void PPP_IRQHandler(void)
 {
 }*/
+
+void CANx_RX_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&CanHandle);
+}
 
 
 /**

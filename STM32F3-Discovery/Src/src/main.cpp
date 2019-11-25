@@ -67,6 +67,16 @@
 #define ADCCONVERTEDVALUES_BUFFER_SIZE 256                 /* Size of array aADCxConvertedValues[] */
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+
+/* Stuff related to CAN */
+CAN_HandleTypeDef     CanHandle;
+CAN_TxHeaderTypeDef   TxHeader;
+CAN_RxHeaderTypeDef   RxHeader;
+uint8_t               TxData[8];
+uint8_t               RxData[8];
+uint32_t              TxMailbox;
+
+
 /* ADC handler declaration */
 
 
@@ -77,6 +87,8 @@ __IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void ADC_Config(void);
+static void CAN_Config(void);
+
 
 /* Private functions ---------------------------------------------------------*/
 ADC_HandleTypeDef    AdcHandle;
@@ -148,35 +160,37 @@ public:
 		m_p_dac = std::make_shared<drivers::STM32DAC>(DAC1, GPIOA, GPIO_PIN_4);
 		/* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full). See
 		 * http://texelography.com/2019/06/21/nissan-rz1-digital-cluster-conversion/ for the full dataset */
-		std::vector<std::pair<double, double>> a_input_lut =
+		std::vector<std::pair<int32_t, int32_t>> a_input_lut =
 		{
-				/* Fuel level  Resistor value */
-				std::make_pair(-10.0, 110.0),
-				std::make_pair(-1.0, 87.0),
-				std::make_pair(5.0, 80.6),
-				std::make_pair(25.0, 61.8),
-				std::make_pair(48.0, 35.7),
-				std::make_pair(77.0, 21.0),
-				std::make_pair(100.0, 11.8),
-				std::make_pair(110.0, 2.4),
-				std::make_pair(115.0, 0.0)
+				/* Fuel level (% * 100)  Resistor value in mOhm */
+				std::make_pair(-1000, 120000),
+				std::make_pair(-100, 87000),
+				std::make_pair(500, 80600),
+				std::make_pair(2500, 61800),
+				std::make_pair(4800, 35700),
+				std::make_pair(7700, 21000),
+				std::make_pair(10000, 11800),
+				std::make_pair(11000, 2400),
+				std::make_pair(11500, 0000),
 		};
 
-		m_p_o_fuel_gauge_input_characteristic = std::make_shared<app::CharacteristicCurve>(a_input_lut);
+		m_p_o_fuel_gauge_input_characteristic = std::make_shared<app::CharacteristicCurve<int32_t, int32_t>>(a_input_lut);
 
 		/* Characteristics of the digital cluster fuel gauge */
-		std::vector<std::pair<double, double>> a_output_lut =
+		std::vector<std::pair<int32_t, double>> a_output_lut =
 		{
+				std::make_pair(-1000, 4.9),
 				std::make_pair(0, 4.7),
-				std::make_pair(7.14, 4.34),
-				std::make_pair(21.43, 4.04),
-				std::make_pair(42.86, 3.30),
-				std::make_pair(64.29, 2.24),
-				std::make_pair(92.86, 1.10),
-				std::make_pair(100, 0.7)
+				std::make_pair(714, 4.34),
+				std::make_pair(2143, 4.04),
+				std::make_pair(4286, 3.30),
+				std::make_pair(6429, 2.24),
+				std::make_pair(9286, 1.10),
+				std::make_pair(10000, 0.7),
+				std::make_pair(11000, 0.7)
 		};
 
-		m_p_o_fuel_gauge_output_characteristic = std::make_shared<app::CharacteristicCurve>(a_output_lut);
+		m_p_o_fuel_gauge_output_characteristic = std::make_shared<app::CharacteristicCurve<int32_t, double>>(a_output_lut);
 
 		// start the data output thread
 		m_p_o_fuel_gauge_output = std::make_shared<app::FuelGaugeOutput>(m_p_dac, m_p_o_fuel_gauge_output_characteristic, 1.5, 0.0);
@@ -188,11 +202,11 @@ public:
 		m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
 	}
 
-	void fuel_sensor_input_received(double d_value)
+	void fuel_sensor_input_received(int32_t i32_value)
 	{
 		if (m_p_o_fuel_gauge_output != nullptr)
 		{
-			m_p_o_fuel_gauge_output->set_fuel_level(d_value);
+			m_p_o_fuel_gauge_output->set_fuel_level(i32_value);
 		}
 	}
 private:
@@ -203,8 +217,8 @@ private:
 	std::shared_ptr<drivers::GenericADC> m_p_adc;
 	std::shared_ptr<drivers::GenericDAC> m_p_dac;
 
-	std::shared_ptr<app::CharacteristicCurve> m_p_o_fuel_gauge_input_characteristic;
-	std::shared_ptr<app::CharacteristicCurve> m_p_o_fuel_gauge_output_characteristic;
+	std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_input_characteristic;
+	std::shared_ptr<app::CharacteristicCurve<int32_t, double>> m_p_o_fuel_gauge_output_characteristic;
 
 	std::shared_ptr<app::FuelGaugeInputFromADC> m_p_o_fuel_gauge_input;
 	std::shared_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
@@ -257,6 +271,28 @@ void MAIN_startup_thread(void*)
 		//p_uart->write(reinterpret_cast<uint8_t*>(buffer), 10);
 	}
 }
+
+
+int main_can(void)
+{
+  /* Configure the CAN peripheral */
+  CAN_Config();
+  
+ /* Set the data to be transmitted */
+        TxData[0] = 0x00;
+        TxData[1] = 0xAD;
+        
+        /* Start the Transmission process */
+        if (HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
+        {
+          /* Transmission request Error */
+          Error_Handler();
+        }
+        HAL_Delay(10);
+        return 0;
+}
+
+
 
 int main(void)
 {
@@ -560,6 +596,103 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
   /* In case of ADC error, call main error handler */
   Error_Handler();
 }
+
+/**
+  * @brief  Configures the CAN.
+  * @param  None
+  * @retval None
+  */
+static void CAN_Config(void)
+{
+  CAN_FilterTypeDef  sFilterConfig;
+
+  /*##-1- Configure the CAN peripheral #######################################*/
+  CanHandle.Instance = CANx;
+
+  CanHandle.Init.TimeTriggeredMode = DISABLE;
+  CanHandle.Init.AutoBusOff = DISABLE;
+  CanHandle.Init.AutoWakeUp = DISABLE;
+  CanHandle.Init.AutoRetransmission = ENABLE;
+  CanHandle.Init.ReceiveFifoLocked = DISABLE;
+  CanHandle.Init.TransmitFifoPriority = DISABLE;
+  CanHandle.Init.Mode = CAN_MODE_NORMAL;
+  CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  CanHandle.Init.TimeSeg1 = CAN_BS1_9TQ;
+  CanHandle.Init.TimeSeg2 = CAN_BS2_8TQ;
+  CanHandle.Init.Prescaler = 2;
+
+  if (HAL_CAN_Init(&CanHandle) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /*##-2- Configure the CAN Filter ###########################################*/
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0x0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  sFilterConfig.FilterActivation = ENABLE;
+  sFilterConfig.SlaveStartFilterBank = 14;
+
+  if (HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
+  {
+    /* Filter configuration Error */
+    Error_Handler();
+  }
+
+  /*##-3- Start the CAN peripheral ###########################################*/
+  if (HAL_CAN_Start(&CanHandle) != HAL_OK)
+  {
+    /* Start Error */
+    Error_Handler();
+  }
+
+  /*##-4- Activate CAN RX notification #######################################*/
+  if (HAL_CAN_ActivateNotification(&CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+  {
+    /* Notification Error */
+    Error_Handler();
+  }
+
+  /*##-5- Configure Transmission process #####################################*/
+  TxHeader.StdId = 0x321;
+  TxHeader.ExtId = 0x01;
+  TxHeader.RTR = CAN_RTR_DATA;
+  TxHeader.IDE = CAN_ID_STD;
+  TxHeader.DLC = 2;
+  TxHeader.TransmitGlobalTime = DISABLE;
+}
+
+/**
+  * @brief  Rx Fifo 0 message pending callback
+  * @param  hcan: pointer to a CAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified CAN.
+  * @retval None
+  */
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+  /* Get RX message */
+  if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+  {
+    /* Reception Error */
+    Error_Handler();
+  }
+
+#if 0
+  /* Display LEDx */
+  if ((RxHeader.StdId == 0x321) && (RxHeader.IDE == CAN_ID_STD) && (RxHeader.DLC == 2))
+  {
+    //LED_Display(RxData[0]);
+    //ubKeyNumber = RxData[0];
+  }
+#endif
+}
+
 
 /**
   * @brief  This function is executed in case of error occurrence.

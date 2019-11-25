@@ -17,10 +17,10 @@ namespace app
 	{
 	public:
 		FuelGaugeOutput(std::shared_ptr<drivers::GenericDAC> p_dac, \
-				std::shared_ptr<app::CharacteristicCurve> p_fuel_output_characteristic, \
+				std::shared_ptr<app::CharacteristicCurve<int32_t, double>> p_fuel_output_characteristic, \
 				double d_amplifying_factor, double d_aplifiying_offset);
 
-		int32_t set_fuel_level(double d_fuel_level);
+		int32_t set_fuel_level(int32_t i32_fuel_level);
 
 	private:
 		/// The ADC used to retrieve data
@@ -39,7 +39,7 @@ namespace app
 		const double m_d_aplifiying_offset;
 
 		/* This map maps fuel levels to voltages */
-		std::shared_ptr<app::CharacteristicCurve> m_p_fuel_output_characteristic;
+		std::shared_ptr<app::CharacteristicCurve<int32_t, double>> m_p_fuel_output_characteristic;
 	};
 }
 

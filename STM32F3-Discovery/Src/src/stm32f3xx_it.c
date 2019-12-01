@@ -191,10 +191,10 @@ void SysTick_Handler(void)
 {
 }*/
 
-void CANx_RX_IRQHandler(void)
-{
-  HAL_CAN_IRQHandler(&CanHandle);
-}
+//void CANx_RX_IRQHandler(void)
+//{
+//  HAL_CAN_IRQHandler(&CanHandle);
+//}
 
 
 /**

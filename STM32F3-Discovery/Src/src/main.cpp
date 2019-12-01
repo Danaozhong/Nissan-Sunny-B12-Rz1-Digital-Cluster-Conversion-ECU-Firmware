@@ -63,6 +63,8 @@
   */ 
 
 /* Private typedef -----------------------------------------------------------*/
+#define  PERIOD_VALUE       (uint32_t)(665 - 1)  /* Period Value  */
+#define  PULSE1_VALUE       (uint32_t)(PERIOD_VALUE/2)        /* Capture Compare 1 Value  */
 /* Private define ------------------------------------------------------------*/
 #define ADCCONVERTEDVALUES_BUFFER_SIZE 256                 /* Size of array aADCxConvertedValues[] */
 /* Private macro -------------------------------------------------------------*/
@@ -76,6 +78,12 @@ uint8_t               TxData[8];
 uint8_t               RxData[8];
 uint32_t              TxMailbox;
 
+/* Timer handler declaration */
+TIM_HandleTypeDef    TimHandle;
+/* Timer Output Compare Configuration Structure declaration */
+TIM_OC_InitTypeDef sConfig;
+/* Counter Prescaler value */
+uint32_t uhPrescalerValue = 0;
 
 /* ADC handler declaration */
 
@@ -150,6 +158,125 @@ void vApplicationMallocFailedHook( void )
 	}
 }
 
+/** This simple function initializes a PWM to simulate the clusters speedo signal sensor */
+void main_speedo_sensor_pwm(void)
+{
+
+ /* Compute the prescaler value to have TIM3 counter clock equal to 24000000 Hz */
+ // uhPrescalerValue = (uint32_t)(SystemCoreClock / 24000000) - 1;
+
+ // 350 Hz
+ //uhPrescalerValue = (uint32_t)(SystemCoreClock / 240000) - 1;
+
+// 3.5 Hz
+ //uhPrescalerValue = (uint32_t)(SystemCoreClock / 2400) - 1; // 2km/h 3,6Hz
+ //uhPrescalerValue = (uint32_t)(SystemCoreClock / 24000) - 1; // 10km/h 36,1 Hz
+ //uhPrescalerValue = (uint32_t)(SystemCoreClock / 240000) - 1; // 86km/h -- 360,9Hz
+ //uhPrescalerValue = (uint32_t)(SystemCoreClock / 480000) - 1; // 171km/h  -- 721Hz
+ //uhPrescalerValue = (uint32_t)(SystemCoreClock / 960000) - 1; // 180km/h/h  -- 1444kHz
+ uhPrescalerValue = (uint32_t)(SystemCoreClock / 1000000) - 1; // 171km/h  -- 721Hz
+  /*##-1- Configure the TIM peripheral #######################################*/
+  /* -----------------------------------------------------------------------
+  TIM3 Configuration: generate 4 PWM signals with 4 different duty cycles.
+
+In this example TIM3 input clock (TIM3CLK) is set to 2 * APB1 clock (PCLK1), 
+    since APB1 prescaler is different from 1.   
+      TIM3CLK = 2 * PCLK1  
+      PCLK1 = HCLK / 2 
+      => TIM3CLK = HCLK = SystemCoreClock
+          
+    To get TIM3 counter clock at 24 MHz, the prescaler is computed as follows:
+       Prescaler = (TIM3CLK / TIM3 counter clock) - 1
+       Prescaler = (SystemCoreClock /24 MHz) - 1
+                                              
+    To get TIM3 output clock at 36 KHz, the period (ARR)) is computed as follows:
+       ARR = (TIM3 counter clock / TIM3 output clock) - 1
+           = 665
+                  
+    TIM3 Channel1 duty cycle = (TIM3_CCR1/ TIM3_ARR)* 100 = 50%
+    TIM3 Channel2 duty cycle = (TIM3_CCR2/ TIM3_ARR)* 100 = 37.5%
+    TIM3 Channel3 duty cycle = (TIM3_CCR3/ TIM3_ARR)* 100 = 25%
+    TIM3 Channel4 duty cycle = (TIM3_CCR4/ TIM3_ARR)* 100 = 12.5%
+
+    Note:
+     SystemCoreClock variable holds HCLK frequency and is defined in system_stm32f3xx.c file.
+     Each time the core clock (HCLK) changes, user had to update SystemCoreClock
+     variable value. Otherwise, any configuration based on this variable will be incorrect.
+     This variable is updated in three ways:
+      1) by calling CMSIS function SystemCoreClockUpdate()
+      2) by calling HAL API function HAL_RCC_GetSysClockFreq()
+      3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
+  ----------------------------------------------------------------------- */
+
+  /* Initialize TIMx peripheral as follows:
+       + Prescaler = (SystemCoreClock / 24000000) - 1
+       + Period = (665 - 1)
+       + ClockDivision = 0
+       + Counter direction = Up
+  */
+  TimHandle.Instance = TIMx;
+
+  TimHandle.Init.Prescaler         = uhPrescalerValue;
+  TimHandle.Init.Period            = PERIOD_VALUE;
+  TimHandle.Init.ClockDivision     = 0;
+  TimHandle.Init.CounterMode       = TIM_COUNTERMODE_UP;
+  TimHandle.Init.RepetitionCounter = 0;
+  TimHandle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+  if (HAL_TIM_PWM_Init(&TimHandle) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /*##-2- Configure the PWM channels #########################################*/
+  /* Common configuration for all channels */
+  sConfig.OCMode       = TIM_OCMODE_PWM1;
+  sConfig.OCPolarity   = TIM_OCPOLARITY_HIGH;
+  sConfig.OCFastMode   = TIM_OCFAST_DISABLE;
+  sConfig.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
+  sConfig.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+
+  sConfig.OCIdleState  = TIM_OCIDLESTATE_RESET;
+
+  /* Set the pulse value for channel 1 */
+  sConfig.Pulse = PULSE1_VALUE;
+  if (HAL_TIM_PWM_ConfigChannel(&TimHandle, &sConfig, TIM_CHANNEL_1) != HAL_OK)
+  {
+    /* Configuration Error */
+    Error_Handler();
+  }
+
+
+  /*##-3- Start PWM signals generation #######################################*/
+  /* Start channel 1 */
+  if (HAL_TIM_PWM_Start(&TimHandle, TIM_CHANNEL_1) != HAL_OK)
+  {
+    /* PWM Generation Error */
+    Error_Handler();
+  }
+
+  while(true)
+  {
+		std_ex::sleep_for(std::chrono::milliseconds(1000));
+		//TIM3_CR1.ARPE = 0;
+		//TIM3_CCMR3.OCyPE = 0;
+		  // TIM3->CR1 |= TIM_CR1_UDIS;
+
+		   //TIM3->ARR++;
+
+		   //TIM3->CCR1 = pulseCh1;
+
+		   //TIM3->CR1 &= ~TIM_CR1_UDIS;
+
+
+		//TIM3->ARR =TIM3->ARR / 2;
+		//TIM3->CCR1 = TIM3->CCR1 / 2;
+  }
+}
+
+
+
 class MainApplication
 {
 public:
@@ -179,8 +306,10 @@ public:
 		/* Characteristics of the digital cluster fuel gauge */
 		std::vector<std::pair<int32_t, double>> a_output_lut =
 		{
-				std::make_pair(-1000, 4.9),
-				std::make_pair(0, 4.7),
+				std::make_pair(-1000, 5.0),
+				std::make_pair(0, 5.0),
+				std::make_pair(100, 4.9),
+				//std::make_pair(0, 4.7),
 				std::make_pair(714, 4.34),
 				std::make_pair(2143, 4.04),
 				std::make_pair(4286, 3.30),
@@ -247,6 +376,7 @@ void MAIN_startup_thread(void*)
 	//drivers::STM32DAC o_stm32_dac(DAC1, GPIOA, GPIO_PIN_4);
 	MainApplication o_application;
 
+	std::thread o_thread_pwm(main_speedo_sensor_pwm);
 
 	while (true)
 	{

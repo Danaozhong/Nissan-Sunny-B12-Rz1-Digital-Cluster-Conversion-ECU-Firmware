@@ -63,7 +63,7 @@ namespace app
 		FUEL_GAUGE_LOG("Fuel Sensor Input Data Acquisition thread started!\r\n");
 		// the voltage divider is supplied by 5V, and has a 220Ohm resistor on top,
 		// and a 330Ohm resistor in parallel to the fuel gauge.
-		ParallelVoltageDivider o_voltage_divider(220, 330, 5);
+		VoltageDivider o_voltage_divider(100, 3.0);
 
 		// never terminate this thread.
 		while(true)

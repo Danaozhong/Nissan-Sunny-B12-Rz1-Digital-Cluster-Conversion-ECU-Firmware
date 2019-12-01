@@ -114,6 +114,15 @@ extern "C"
 #define CANx_RX_IRQHandler             USB_LP_CAN_RX0_IRQHandler
 
 
+#define TIMx                           TIM3
+#define TIMx_CLK_ENABLE()              __HAL_RCC_TIM3_CLK_ENABLE()
+
+/* Definition for TIMx Channel Pins */
+#define TIMx_CHANNEL_GPIO_PORT()       __HAL_RCC_GPIOC_CLK_ENABLE()
+#define TIMx_GPIO_PORT_CHANNEL1        GPIOC
+#define TIMx_GPIO_PIN_CHANNEL1         GPIO_PIN_6
+#define TIMx_GPIO_AF_CHANNEL1          GPIO_AF2_TIM3
+
 #ifdef __cplusplus
 }
 #endif

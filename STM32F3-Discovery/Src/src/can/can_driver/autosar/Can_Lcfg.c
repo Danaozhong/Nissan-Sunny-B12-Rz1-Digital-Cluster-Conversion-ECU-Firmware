@@ -51,7 +51,7 @@ const Can_ControllerConfigType CanControllerConfigData[] =
   {
     .CanControllerActivation =	TRUE,
     .CanControllerBaudRate =	125,
-    .CanControllerId =			0, // CAN_CTRL_1,
+    .CanControllerId =			CAN_CTRL_1,
     .CanControllerPropSeg =		0,
     .CanControllerSeg1 =		12,
     .CanControllerSeg2 =		1,

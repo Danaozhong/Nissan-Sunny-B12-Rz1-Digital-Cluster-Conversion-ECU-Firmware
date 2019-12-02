@@ -30,9 +30,9 @@
 #include "CanNm_Cbk.h"
 #endif
 #include <stdlib.h>
+#include "CanIf_ConfigTypes.h"
 
-
-#if 0
+#if 1
 // Imported structs from Can_Lcfg.c
 extern const Can_ControllerConfigType CanControllerConfigData[];
 extern const Can_ConfigSetType CanConfigSetData;
@@ -112,7 +112,13 @@ const CanIf_InitHohConfigType CanIfHohConfigData[] = {
     	.CanIf_Arc_EOL = 1,
 	},
 };
-	  
+
+
+#define PDUR_REVERSE_PDU_ID_CanDB_Message_2  0
+#define PDUR_PDU_ID_CanDB_Message_1 1
+
+#define PduR_CanIfTxConfirmation NULL
+
 const CanIf_TxPduConfigType CanIfTxPduConfigData[] = {	
   {
     .CanIfTxPduId = PDUR_REVERSE_PDU_ID_CanDB_Message_2,

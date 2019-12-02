@@ -117,19 +117,6 @@ typedef enum
   CAN_READY
 } Can_DriverStateType;
 
-#ifdef STM32F3
-typedef enum {
-	CAN_CTRL_1 = 0,
-	CAN_CONTROLLER_CNT = 1
-}CanControllerIdType;
-#else
-typedef enum {
-	CAN_CTRL_1 = 0,
-	CAN_CTRL_2 = 1,
-	CAN_CONTROLLER_CNT = 2
-}CanControllerIdType;
-#endif
-
 
 // Mapping between HRH and Controller//HOH
 typedef struct Can_Arc_ObjectHOHMapStruct

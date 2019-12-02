@@ -32,6 +32,12 @@
 #define CAN_HW_TRANSMIT_CANCELLATION	STD_OFF  // Not supported
 
 typedef enum {
+	CAN_CTRL_1 = 0,
+	CAN_CTRL_2 = 1,
+	CAN_CONTROLLER_CNT = 2
+}CanControllerIdType;
+
+typedef enum {
 	CAN_ID_TYPE_EXTENDED,
 	CAN_ID_TYPE_MIXED,
 	CAN_ID_TYPE_STANDARD

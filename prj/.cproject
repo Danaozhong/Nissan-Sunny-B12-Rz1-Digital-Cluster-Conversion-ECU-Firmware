@@ -47,6 +47,7 @@
 									<listOptionValue builtIn="false" value="../Src/midware/osservices/os_console/inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/BSP/STM32F3xx_Nucleo_32"/>
 									<listOptionValue builtIn="false" value="&quot;../Src\midware\std_ex\ex_threads&quot;"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/Can"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.option.definedsymbols.635881341" name="Define symbols (-D)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.option.definedsymbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="USE_STM32FXX_NUCLEO_32"/>
@@ -87,6 +88,11 @@
 									<listOptionValue builtIn="false" value="../../Src/midware/osservices/os_console/inc"/>
 									<listOptionValue builtIn="false" value="../../Drivers/BSP/STM32F3xx_Nucleo_32"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/std_ex/ex_threads"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/Can"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/CanIf"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/config"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/Det"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/shared"/>
 								</option>
 								<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.fdata.1504805710" name="Place data in their own sections (-fdata-sections)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.fdata" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1153163875" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
@@ -123,6 +129,11 @@
 									<listOptionValue builtIn="false" value="../../Src/midware/osservices/os_console/inc"/>
 									<listOptionValue builtIn="false" value="../../Drivers/BSP/STM32F3xx_Nucleo_32"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/std_ex/ex_threads"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/Can"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/CanIf"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/config"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/Det"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/shared"/>
 								</option>
 								<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.fdata.83550841" name="Place data in their own sections (-fdata-sections)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.fdata" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.1452505141" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
@@ -235,6 +246,7 @@
 									<listOptionValue builtIn="false" value="../Src/drivers/uart/inc"/>
 									<listOptionValue builtIn="false" value="../Src/midware/osservices/os_console/in"/>
 									<listOptionValue builtIn="false" value="../Drivers/BSP/STM32F3xx_Nucleo_32"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/Can"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.option.definedsymbols.1226530774" name="Define symbols (-D)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.option.definedsymbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="USE_STM32FXX_NUCLEO_32"/>
@@ -275,6 +287,8 @@
 									<listOptionValue builtIn="false" value="../Src/drivers/uart/inc"/>
 									<listOptionValue builtIn="false" value="../Src/midware/osservices/os_console/in"/>
 									<listOptionValue builtIn="false" value="../Drivers/BSP/STM32F3xx_Nucleo_32"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/Can"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/CanIf"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1815669325" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -310,6 +324,7 @@
 									<listOptionValue builtIn="false" value="../Src/drivers/uart/inc"/>
 									<listOptionValue builtIn="false" value="../Src/midware/osservices/os_console/in"/>
 									<listOptionValue builtIn="false" value="../Drivers/BSP/STM32F3xx_Nucleo_32"/>
+									<listOptionValue builtIn="false" value="../../Src/can_stack/autosar/Can"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.5250228" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
 							</tool>

@@ -30,8 +30,15 @@ void CanIf_RxIndication( uint8 Hrh, Can_IdType CanId, uint8 CanDlc, const uint8 
 void CanIf_CancelTxConfirmation( const Can_PduType *PduInfoPtr );
 #endif
 
-void CanIf_ControllerBusOff( uint8 Controller );
-void CanIf_SetWakeupEvent( uint8 Controller );
+
+/** SWS_CANIF_00218 */
+void CanIf_ControllerBusOff( uint8 ControllerId);
+
+void CanIf_ControllerModeIndication(uint8 ControllerId, Can_ControllerStateType ControllerMode);
+
+
+void CanIf_SetWakeupEvent( uint8 ControllerId);
+
 
 /* ArcCore extensions */
 void CanIf_Arc_Error( uint8 Controller, Can_Arc_ErrorType Error );

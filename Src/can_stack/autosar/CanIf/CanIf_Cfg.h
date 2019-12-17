@@ -37,6 +37,8 @@
 #define CANIF_TRANSCEIVER_API               STD_OFF  // Not supported
 #define CANIF_TRANSMIT_CANCELLATION         STD_OFF  // Not supported
 
+/// Datatype for hoh ids, uint8 or uint16
+#define CANIF_PUBLIC_HANDLE_TYPE_ENUM				      uint16
 
 #define CANIF_PDU_ID_CanDB_Message_1		0
 
@@ -48,6 +50,45 @@ typedef enum {
 	CANIF_Controller_A_CONFIG_0,
 	CANIF_CHANNEL_CONFIGURATION_CNT
 } CanIf_Arc_ConfigurationIndexType;
+
+typedef enum {
+  CANIF_PDU_ID_PDU_RX0,
+  CANIF_PDU_ID_PDU_functionalRX,
+  CANIF_PDU_ID_PDU_UDSphysicalRX,
+  CANIF_PDU_ID_PDU_InstrumentCtrl1,
+  CANIF_PDU_ID_PDU_InstrumentCtrl2,
+  CANIF_PDU_ID_PDU_SERVO1_PDO1_TX,
+  CANIF_PDU_ID_PDU_SERVO1_PDO2_TX,
+  CANIF_PDU_ID_PDU_InstrumentCtrl3,
+  CANIF_PDU_ID_PDU_SERVO1_SDO_TX,
+  CANIF_PDU_ID_PDU_SERVO1_BOOT_TX,
+  CANIF_PDU_ID_PDU_IMU_GYRO,
+  CANIF_PDU_ID_PDU_IMU_ACCELEROMETER,
+  CANIF_PDU_ID_PDU_IMU_ANGLES,
+	CANIF_NUM_RX_LPDU_ID
+} CanIf_Arc_RxLPduIdType;
+
+typedef enum {
+	CANIF_TX_LPDU_ID_CanDB_Message_1,
+	CANIF_TX_LPDU_ID_CanDB_Message_2,
+	CANIF_TX_LPDU_ID_CanDB_Message_3,
+	CANIF_NUMBER_OF_DYNAMIC_CANTXPDUIDS
+} CanIf_Arc_DynamicTxLPduIdType;
+
+typedef enum {
+  CANIF_PDU_ID_PDU_UDSphysicalTX = CANIF_NUMBER_OF_DYNAMIC_CANTXPDUIDS,
+  CANIF_PDU_ID_PDU_functionalTX,
+  CANIF_PDU_ID_PDU_IcuStatus,
+  CANIF_PDU_ID_PDU_Cfg,
+  CANIF_PDU_ID_PDU_SensorData,
+  CANIF_PDU_ID_PDU_SERVO1_PDO1_RX,
+  CANIF_PDU_ID_PDU_SERVO1_PDO2_RX,
+  CANIF_PDU_ID_PDU_NM_A_TX,
+  CANIF_PDU_ID_PDU_SERVO1_SDO_RX,
+  CANIF_PDU_ID_PDU_SERVO1_BOOT_RX,
+	CANIF_NUM_TX_LPDU_ID
+} CanIf_Arc_StaticTxLPduIdType;
+
 
 typedef enum {
 	CANIF_Controller_A,

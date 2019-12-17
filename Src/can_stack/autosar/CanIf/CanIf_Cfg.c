@@ -30,9 +30,9 @@
 #include "CanNm_Cbk.h"
 #endif
 #include <stdlib.h>
-//#include "CanIf_ConfigTypes.h"
+#include "CanIf_Types.h"
 
-#if 0
+
 // Imported structs from Can_Lcfg.c
 extern const Can_ControllerConfigType CanControllerConfigData[];
 extern const Can_ConfigSetType CanConfigSetData;
@@ -52,11 +52,15 @@ const uint8 CanIf_Arc_ChannelDefaultConfIndex[CANIF_CHANNEL_CNT] = {
 // Container that gets slamed into CanIf_InitController()
 // Inits ALL controllers
 // Multiplicity 1..*
+
+/* Stubs Clemens */
+#define CANIF_WAKEUP_SUPPORT_NO_WAKEUP 0
+/* Stubs end */
 const CanIf_ControllerConfigType CanIfControllerConfig[] = {
 	// This is the ConfigurationIndex in CanIf_InitController()
 	
 	
-	{ 
+	{
 		.WakeupSupport = CANIF_WAKEUP_SUPPORT_NO_WAKEUP,
 		.CanIfControllerIdRef = CANIF_Controller_A,
 		.CanIfDriverNameRef = "FLEXCAN",  // Not used
@@ -65,6 +69,8 @@ const CanIf_ControllerConfigType CanIfControllerConfig[] = {
 	
 };
 
+
+#if 0
 // Function callbacks for higher layers
 const CanIf_DispatchConfigType CanIfDispatchConfig =
 {

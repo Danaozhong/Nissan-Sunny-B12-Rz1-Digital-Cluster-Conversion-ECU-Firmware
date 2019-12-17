@@ -41,6 +41,7 @@
 #endif
 #include "ComStack_Types.h"
 #include "Can_GeneralTypes.h"
+#include "CanIf_Types.h"
 #include "CanIf_SpecialPdus.h"
 #include "CanIf_Cfg.h"
 
@@ -71,19 +72,31 @@
 #define CANIF_SETWAKEUPEVENT_ID       0x40
 #define CANIF_ARCERROR_ID           0x41
 
-void Can_Init(const Can_ConfigType *ConfigPtr);
+/** SWS_CANIF_00001 */
+void CanIf_Init(const CanIf_ConfigType *ConfigPtr);
+
+/** SWS_CANIF_91002 */
+void CanIf_Deinit(void);
 
 //void Can_InitController(uint8  Controller,
 //	    uint8  ConfigurationIndex);
 //Can_ControllerStateType
-//Std_ReturnType Can_SetControllerMode(uint8 Controller,
-//		Can_ControllerStateType ControllerMode);
 
-Std_ReturnType Can_GetControllerMode(uint8 Controller,
+/** SWS_CANIF_00003 */
+Std_ReturnType CanIf_SetControllerMode(uint8 ControllerId,
+		Can_ControllerStateType ControllerMode);
+
+/** SWS_CANIF_00229 */
+Std_ReturnType CanIf_GetControllerMode(uint8 ControllerId,
 		Can_ControllerStateType* ControllerModePtr);
 
-Std_ReturnType Can_Transmit(PduIdType CanTxPduId,
-		const PduInfoType *PduInfoPtr);
+/** SWS_CANIF_91001 */
+Std_ReturnType CanIf_GetControllerErrorState(uint8 ControllerId,
+		Can_ErrorStateType* ErrorStatePtr);
+
+/** SWS_CANIF_00005 */
+Std_ReturnType CanIf_Transmit(PduIdType TxPduId,
+		const PduInfoType* PduInfoPtr);
 
 #if ( CANIF_READRXPDU_DATA_API == STD_ON )
 Std_ReturnType CanIf_ReadRxPduData(PduIdType CanRxPduId,
@@ -122,9 +135,9 @@ Std_ReturnType CanIf_CheckValidation( EcuM_WakeupSourceType WakeupSource );
 #endif
 
 #if ( CANIF_VERSION_INFO_API == STD_ON )
-#define CanIf_GetVersionInfo(_vi) STD_GET_VERSION_INFO(_vi,CANIF)
+/** SWS_CANIF_00158 */
+void CanIf_GetVersionInfo(Std_VersionInfoType* VersionInfo);
+//#define CanIf_GetVersionInfo(_vi) STD_GET_VERSION_INFO(_vi,CANIF)
 #endif
-
-uint8 CanIf_Arc_GetChannelDefaultConfIndex(CanIf_Arc_ChannelIdType Channel);
 
 #endif /*CANIF_H_*/

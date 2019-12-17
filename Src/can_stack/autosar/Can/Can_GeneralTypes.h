@@ -44,22 +44,47 @@ typedef enum {
   CAN_CS_SLEEP = 0x03
 } Can_ControllerStateType;
 
+/** SWS_Can_91003 */
+typedef enum {
+	CAN_ERRORSTATE_ACTIVE,
+	CAN_ERRORSTATE_PASSIVE,
+	CAN_ERRORSTATE_BUSOFF
+} Can_ErrorStateType;
+
+
+
+// uint16: if more than 255 hw handles
+// uint8: else
+#ifdef CAN_USE_EXTENDED_HW_HANDLE
+typedef uint16 Can_HwHandleType;
+#else
+typedef uint8 Can_HwHandleType;
+#endif
+
+
+typedef enum {
+	/** Transceiver mode NORMAL */
+  CANTRCV_TRCVMODE_NORMAL = 0,
+  /** Transceiver mode STANDBY */
+  CANTRCV_TRCVMODE_STANDBY,
+  /** Transceiver mode SLEEP */
+  CANTRCV_TRCVMODE_SLEEP
+} CanTrcv_TrcvModeType;
+
 
 #if 0
 // TODO Standard 4-3 classic This should contain all types and constants that are shared among the AUTOSAR moduels Can, CanIf, and CanTrcv.
 
 ///todo should this file be included here?
-#include "CanIf_Cfg.h"
 
-/// this file shall be developed by the AutoSar BSW integrator, see CAN437
+
+
 
 // uint16: if only Standard IDs are used
 // uint32: if also Extended IDs are used
 typedef uint32 Can_IdType;
 
-// uint16: if more than 255 hw handles
-// uint8: else
-typedef CANIF_PUBLIC_HANDLE_TYPE_ENUM Can_HwHandleType;
+
 
 typedef enum {
 	CAN_T_STOP = 1, // cannot request mode CAN_UNINIT
@@ -88,14 +113,6 @@ typedef struct {
 	uint8		length;
 } Can_PduType;
 
-typedef enum {
-	/** Transceiver mode NORMAL */
-  CANTRCV_TRCVMODE_NORMAL = 0,
-  /** Transceiver mode STANDBY */
-  CANTRCV_TRCVMODE_STANDBY,
-  /** Transceiver mode SLEEP */
-  CANTRCV_TRCVMODE_SLEEP
-} CanTrcv_TrcvModeType ;
 
 typedef enum {
   /** Due to an error wake up reason was not detected.

@@ -31,7 +31,8 @@
 #define CAN_WAKEUP_SUPPORT				STD_OFF  // Not supported
 #define CAN_HW_TRANSMIT_CANCELLATION	STD_OFF  // Not supported
 
-typedef enum {
+typedef enum
+{
 	CAN_CTRL_1 = 0,
 	CAN_CTRL_2 = 1,
 	CAN_CONTROLLER_CNT = 2

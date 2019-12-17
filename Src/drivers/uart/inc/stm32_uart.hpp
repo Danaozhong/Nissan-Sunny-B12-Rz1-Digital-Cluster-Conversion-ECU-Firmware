@@ -10,6 +10,8 @@
 
 /* System headers */
 #include <atomic>
+#include <mutex>
+
 #include "stm32f3xx_hal.h"
 #ifdef USE_STM32_F3_DISCO
 #include "stm32f3_discovery.h"
@@ -47,16 +49,13 @@ class STM32HardwareUART : public GenericUART
 	    void uart_main();
 	private:
 	    uint8_t m_au8_rx_buffer[STM32UART_BUFFER_SIZE];
-	    //uint8_t m_au8_tx_buffer[STM32UART_BUFFER_SIZE];
 
 	    uint32_t m_u32_rx_buffer_usage;
 
 	    std_ex::thread* m_p_uart_buffer_thread;
 
 	    std::atomic<bool> m_bo_connected;
-#ifdef HAS_STD_MUTEX
 	    std::mutex m_o_interrupt_mutex;
-#endif
 
 	    void Error_Handler(void) const;
 	public:

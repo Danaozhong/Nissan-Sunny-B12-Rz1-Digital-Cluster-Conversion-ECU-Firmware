@@ -253,7 +253,7 @@ void MAIN_startup_thread(void*)
 	p_uart->connect(9600, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
 
 	// if this was all successful, create the OS helper services
-	//OSServices::OSConsole o_os_console(p_uart);
+	OSServices::OSConsole o_os_console(p_uart);
 	set_serial_output(p_uart);
 
 	// integrate all your tasks here.
@@ -268,7 +268,7 @@ void MAIN_startup_thread(void*)
 		DEBUG_PRINTF("I am still here!");
 
 		// check for debug input
-		//o_os_console.run();
+		o_os_console.run();
 	}
 	vTaskDelete(NULL);
 }
@@ -286,7 +286,6 @@ int main(void)
 	 */
 	HAL_Init();
 
-	BaseType_t xReturned;
 	TaskHandle_t xHandle = NULL;
 
 	// first thread still needs to be created with xTaskCreate, only after the scheduler has started, std::thread can be used.

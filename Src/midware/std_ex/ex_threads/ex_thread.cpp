@@ -104,22 +104,27 @@ namespace std_ex
     thread::_State::~_State() {}
 #endif
 
-    //void task_main_loop_wrapper(void* o)
-    //{
-   //	static_cast<thread::_State*>(o)->_M_run();
-    //}
 
-    void thread::_M_start_thread(_State_ptr ptr)
+    void thread::_M_start_thread(_State_ptr ptr, const char ai8_tsk_name[],
+    		uint32_t u32_priority,
+			uint32_t u32_stack_size)
     {
     	static uint32_t u32I = 0;
 
     	// save a reference to the owning thread object insdie the functor
     	ptr->_M_owning_thread = this;
-    	memset(m_task_name, 0x0, sizeof(m_task_name));
+    	memset(m_task_name, 0u, sizeof(m_task_name));
 
-    	snprintf(m_task_name, sizeof(m_task_name) - 1, "Task%u", u32I++);
-    	m_u_task_priority = 2u;
-    	m_u_stack_size = 1024;
+    	if (nullptr != ai8_tsk_name)
+    	{
+    		strncpy(m_task_name, ai8_tsk_name, sizeof(m_task_name) - 1);
+    	}
+    	else
+    	{
+    		snprintf(m_task_name, sizeof(m_task_name) - 1, "Task%u", u32I++);
+    	}
+        m_u_task_priority = u32_priority;
+    	m_u_stack_size = u32_stack_size;
     	m_bo_thread_detached = false;
 
         m_bo_thread_terminated = false;

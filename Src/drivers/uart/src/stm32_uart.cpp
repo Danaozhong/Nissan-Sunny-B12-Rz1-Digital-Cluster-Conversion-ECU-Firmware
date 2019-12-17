@@ -14,6 +14,8 @@
 #include <map>
 
 
+#define HAS_STD_MUTEX
+
 /* Definition for USARTx clock resources */
 #define USARTx                           USART2
 #define USARTx_CLK_ENABLE()              __HAL_RCC_USART2_CLK_ENABLE();
@@ -218,7 +220,7 @@ namespace drivers
 		auto main_func = std::bind(&STM32HardwareUART::uart_main, this);
 
 		//std::thread m_p_uart_buffer_thread(main_func);
-		m_p_uart_buffer_thread = new std_ex::thread(main_func);
+		m_p_uart_buffer_thread = new std_ex::thread(main_func, "UART_RxThread", 1u, 2048);
 	}
 	void STM32HardwareUART::disconnect()
 	{

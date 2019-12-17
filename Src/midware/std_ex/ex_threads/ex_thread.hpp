@@ -138,24 +138,16 @@ namespace std_ex
 
 	    template<typename _Callable, typename... _Args>
 	      explicit
-	      thread(_Callable&& __f, _Args&&... __args)
+	      thread(_Callable&& __f, const char ai8_task_name[],
+	    		  uint32_t u32_priority, uint32_t u32_stack_size, _Args&&... __args)
 	    	: m_task_handle(nullptr)
 	      {
-	    	//std::bind()
-	    	// Create the wrapper object for the arbitrary functors
-#if 0
-	    	_State_ptr state_ptr = _S_make_state(
-	  		      std::__bind_simple(std::forward<_Callable>(__f),
-	  					 std::forward<_Args>(__args)...));
-#else
 	    	_State_ptr state_ptr = _S_make_state(
 	  		      __make_invoker(std::forward<_Callable>(__f),
 	  					 std::forward<_Args>(__args)...));
 
-#endif
-
 	    	// and start it.
-	    	_M_start_thread(std::move(state_ptr));
+	    	_M_start_thread(std::move(state_ptr), ai8_task_name, u32_priority, u32_stack_size);
 	      }
 
 		~thread();
@@ -203,7 +195,9 @@ namespace std_ex
 		std::atomic<bool> m_bo_thread_terminated;
 	private:
 		/** Helper function to start the thread */
-		void _M_start_thread(_State_ptr);
+		void _M_start_thread(_State_ptr, const char ai8_tsk_name[],
+	    		uint32_t u32_priority,
+				uint32_t u32_stack_size);
 
 
 		template<typename _Callable>

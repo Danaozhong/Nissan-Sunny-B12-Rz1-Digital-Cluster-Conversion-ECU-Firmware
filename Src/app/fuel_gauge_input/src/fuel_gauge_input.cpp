@@ -52,7 +52,7 @@ namespace app
 	{
 		// start the data acquisition thread
 		auto main_func = std::bind(&FuelGaugeInputFromADC::thread_main, this);
-		std_ex::thread o_data_acquisition_thread(main_func);
+		std_ex::thread o_data_acquisition_thread(main_func, "FUEL_SensorInput", 2u, 1024u);
 
 		// should be done nicer to allow cleanup, but currently threads will keep running forever
 		o_data_acquisition_thread.detach();

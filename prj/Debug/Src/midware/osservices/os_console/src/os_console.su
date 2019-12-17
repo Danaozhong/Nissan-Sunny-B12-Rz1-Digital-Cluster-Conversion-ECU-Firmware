@@ -1,0 +1,19 @@
+gthr-default.h:229:1:int __gthread_key_delete(__gthread_key_t)	16	static
+os_console.hpp:23:3:OSServices::Command::Command(const char*)	16	static
+os_console.hpp:28:11:OSServices::Command::~Command()	16	static
+os_console.hpp:28:11:virtual OSServices::Command::~Command()	16	static
+os_console.hpp:30:15:const char* OSServices::Command::get_command() const	16	static
+os_console.hpp:35:19:virtual int32_t OSServices::Command::execute(char*, uint32_t) const	24	static
+os_console.hpp:49:3:OSServices::CommandListTasks::CommandListTasks()	16	static
+os_console.hpp:51:11:OSServices::CommandListTasks::~CommandListTasks()	16	static
+os_console.hpp:51:11:virtual OSServices::CommandListTasks::~CommandListTasks()	16	static
+os_console.hpp:60:3:OSServices::CommandMemory::CommandMemory()	16	static
+os_console.hpp:62:11:OSServices::CommandMemory::~CommandMemory()	16	static
+os_console.hpp:62:11:virtual OSServices::CommandMemory::~CommandMemory()	16	static
+os_console.cpp:7:9:virtual int32_t OSServices::CommandListTasks::execute(char*, uint32_t) const	200	dynamic
+os_console.cpp:96:10:virtual int32_t OSServices::CommandMemory::execute(char*, uint32_t) const	40	static
+os_console.cpp:182:2:OSServices::OSConsole::OSConsole(drivers::GenericUART*)	24	static
+os_console.cpp:193:7:void OSServices::OSConsole::process_input(const char*)	1136	static
+os_console.cpp:229:7:void OSServices::OSConsole::run()	56	static
+os_console.cpp:278:10:int32_t OSServices::OSConsole::register_command(OSServices::Command*)	16	static
+os_console.cpp:291:7:void OSServices::OSConsole::print_bootscreen() const	64	static

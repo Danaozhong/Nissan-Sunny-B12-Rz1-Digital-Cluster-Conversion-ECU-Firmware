@@ -1,0 +1,23 @@
+gthr-default.h:229:1:int __gthread_key_delete(__gthread_key_t)	16	static
+main.cpp:110:6:void vApplicationMallocFailedHook()	16	static,ignoring_inline_asm
+main.cpp:126:7:void vApplicationIdleHook()	4	static
+main.cpp:140:7:void vApplicationTickHook()	8	static
+main.cpp:146:7:void vApplicationStackOverflowHook(TaskHandle_t, char*)	24	static,ignoring_inline_asm
+chrono:325:23:constexpr std::chrono::duration<_Rep, _Period>::duration(const _Rep2&) [with _Rep2 = int; <template-parameter-2-2> = void; _Rep = long long int; _Period = std::ratio<1, 1000>]	16	static
+main.cpp:160:6:void main_speedo_sensor_pwm()	24	static
+main.cpp:270:2:MainApplication::MainApplication()	184	static
+main.cpp:348:6:void MAIN_startup_thread(void*)	96	static
+main.cpp:400:5:int main()	24	static
+main.cpp:437:13:void SystemClock_Config()	8	static
+main.cpp:465:13:void SystemClock_Config_STM32_F3_DISCOVERY()	72	static
+main.cpp:509:6:void SystemClock_Config_STM32F303_NUCLEO_32()	72	static
+main.cpp:540:6:void HAL_UART_ErrorCallback(UART_HandleTypeDef*)	16	static
+main.cpp:557:13:void ADC_Config()	32	static
+main.cpp:618:6:void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef*)	16	static
+main.cpp:628:6:void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef*)	16	static
+main.cpp:642:8:void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef*)	16	static
+main.cpp:652:6:void HAL_ADC_ErrorCallback(ADC_HandleTypeDef*)	16	static
+main.cpp:665:13:void Error_Handler()	8	static
+lookup_table.hpp:15:3:app::CharacteristicCurve<Tx, Ty>::CharacteristicCurve(std::pair<_T1, _T2>*, uint32_t) [with Tx = long int; Ty = long int]	48	static
+stl_pair.h:218:26:constexpr std::pair<_T1, _T2>::pair() [with _U1 = long int; _U2 = long int; typename std::enable_if<std::__and_<std::__is_implicitly_default_constructible<_U1>, std::__is_implicitly_default_constructible<_U2> >::value, bool>::type <anonymous> = 1; _T1 = long int; _T2 = long int]	16	static
+stl_pair.h:367:7:std::pair<_T1, _T2>& std::pair<_T1, _T2>::operator=(typename std::conditional<std::__and_<std::is_copy_assignable<_Tp>, std::is_copy_assignable<_T2> >::value, const std::pair<_T1, _T2>&, const std::__nonesuch_no_braces&>::type) [with _T1 = long int; _T2 = long int]	16	static

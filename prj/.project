@@ -28,4 +28,26 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>Drivers</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Drivers</locationURI>
+		</link>
+		<link>
+			<name>Inc</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Inc</locationURI>
+		</link>
+		<link>
+			<name>Src</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Src</locationURI>
+		</link>
+		<link>
+			<name>Startup</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Startup</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

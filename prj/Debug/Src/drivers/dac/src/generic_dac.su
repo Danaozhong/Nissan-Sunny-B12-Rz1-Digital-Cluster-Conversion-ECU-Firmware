@@ -1,0 +1,3 @@
+generic_dac.cpp:5:1:drivers::GenericDAC::GenericDAC()	16	static
+generic_dac.cpp:6:1:drivers::GenericDAC::~GenericDAC()	16	static
+generic_dac.cpp:6:1:virtual drivers::GenericDAC::~GenericDAC()	16	static

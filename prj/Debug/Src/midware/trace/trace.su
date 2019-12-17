@@ -1,0 +1,5 @@
+gthr-default.h:229:1:int __gthread_key_delete(__gthread_key_t)	16	static
+trace.cpp:30:6:void set_serial_output(drivers::GenericUART*)	16	static
+trace.cpp:35:6:void print_serial(const char*)	24	static
+trace.cpp:57:6:)	144	static
+trace.cpp:71:6:void print_heap()	152	static

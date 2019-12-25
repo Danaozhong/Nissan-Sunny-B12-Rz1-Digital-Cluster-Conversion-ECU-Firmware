@@ -157,15 +157,28 @@ typedef struct
 	uint8 WakeupSupport;
 	uint8 CanIfControllerIdRef;
 	uint8 CanIfDriverNameRef[30];
-	Can_ControllerConfigType* CanIfInitControllerRef;
+	const Can_ControllerConfigType* CanIfInitControllerRef;
 } CanIf_ControllerConfigType;
+
+
+typedef struct
+{
+	void (*CanIfBusOffNotification)(uint8);
+
+	void (*CanIfWakeUpNotification)(uint8);
+	void (*CanIfWakeupValidNotification)(uint8);
+	void (*CanIfErrorNotificaton)(uint8);
+} CanIf_DispatchConfigType;
+
+//typedef s
 
 typedef struct {
 	/* Everything in this structure is implementation specific */
-	CanIf_TxLPduConfigType txLpduCfg[CANIF_NUM_TX_LPDU_ID];
-	CanIf_RxLPduConfigType rxLpduCfg[CANIF_NUM_RX_LPDU_ID];
+	CanIf_TxLPduConfigType TxLpduCfg[CANIF_NUM_TX_LPDU_ID];
+	CanIf_RxLPduConfigType RxLpduCfg[CANIF_NUM_RX_LPDU_ID];
 
-	CanIf_ControllerConfigType controllerConfig[2];
+	const CanIf_ControllerConfigType* ControllerConfig;
+	const CanIf_DispatchConfigType* DispatchConfig;
    //const CanIf_HrHConfigType* canIfHrhCfg[CANIF_NUM_DRIVER_UNITS];
 } CanIf_ConfigType;
 

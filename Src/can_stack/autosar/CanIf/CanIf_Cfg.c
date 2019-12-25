@@ -58,8 +58,6 @@ const uint8 CanIf_Arc_ChannelDefaultConfIndex[CANIF_CHANNEL_CNT] = {
 /* Stubs end */
 const CanIf_ControllerConfigType CanIfControllerConfig[] = {
 	// This is the ConfigurationIndex in CanIf_InitController()
-	
-	
 	{
 		.WakeupSupport = CANIF_WAKEUP_SUPPORT_NO_WAKEUP,
 		.CanIfControllerIdRef = CANIF_Controller_A,
@@ -70,7 +68,6 @@ const CanIf_ControllerConfigType CanIfControllerConfig[] = {
 };
 
 
-#if 0
 // Function callbacks for higher layers
 const CanIf_DispatchConfigType CanIfDispatchConfig =
 {
@@ -80,10 +77,9 @@ const CanIf_DispatchConfigType CanIfDispatchConfig =
   .CanIfErrorNotificaton = NULL,
 };
 
+#if 0
 
 // Data for init configuration CanIfInitConfiguration
-
-		
 
 const CanIf_HthConfigType CanIfHthConfigData_Hoh[] =
 {
@@ -176,17 +172,18 @@ const CanIf_InitConfigType CanIfInitConfig =
   .CanIfRxPduConfigPtr = CanIfRxPduConfigData,
   .CanIfTxPduConfigPtr = CanIfTxPduConfigData,
 };
+#endif
+
 
 	// This container includes all necessary configuration sub-containers
 // according the CAN Interface configuration structure.
-CanIf_ConfigType CanIf_Config =
+const CanIf_ConfigType CanIf_Config =
 {
   .ControllerConfig = CanIfControllerConfig,
   .DispatchConfig = &CanIfDispatchConfig,
-  .InitConfig = &CanIfInitConfig,
-  .TransceiverConfig = NULL, // Not used
-  .Arc_ChannelToControllerMap = CanIf_Arc_ChannelToControllerMap,  
-  .Arc_ChannelDefaultConfIndex = CanIf_Arc_ChannelDefaultConfIndex,
+  //.InitConfig = &CanIfInitConfig,
+  //.TransceiverConfig = NULL, // Not used
+  //.Arc_ChannelToControllerMap = CanIf_Arc_ChannelToControllerMap,
+  //.Arc_ChannelDefaultConfIndex = CanIf_Arc_ChannelDefaultConfIndex,
 };
 
-#endif

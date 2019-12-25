@@ -102,7 +102,7 @@ static inline void LockRestore(int msr)
 static void ClearTxBuffers(uint8 controller) {
 	// reset all pending tx requests
 	for(PduIdType i = 0; i < CANIF_NUM_TX_LPDU_ID; i++) {
-		if(CanIf_ConfigPtr->txLpduCfg[i].controller == controller) {
+		if(CanIf_ConfigPtr->TxLpduCfg[i].controller == controller) {
 #if CANIF_PUBLIC_READTXPDU_NOTIFY_STATUS_API
       // clear notification status
       lPduData.txLpdu[i].txConfirmed = CANIF_NO_NOTIFICATION;
@@ -120,7 +120,7 @@ static void ClearTxBuffers(uint8 controller) {
 static void ClearRxBuffers(uint8 controller) {
 	// reset buffers
 	for(PduIdType i = 0; i < CANIF_NUM_RX_LPDU_ID; i++) {
-		if(CanIf_ConfigPtr->rxLpduCfg[i].controller == controller) {
+		if(CanIf_ConfigPtr->RxLpduCfg[i].controller == controller) {
 #if CANIF_PUBLIC_READRXPDU_NOTIFY_STATUS_API
       // clear notification status
       lPduData.rxLpdu[i].rxInd = CANIF_NO_NOTIFICATION;
@@ -236,18 +236,18 @@ Std_ReturnType CanIf_Transmit(PduIdType canTxPduId,	const PduInfoType *pduInfoPt
 	VALIDATE(CanIf_ConfigPtr != 0, 5, CANIF_E_UNINIT);
 	VALIDATE(pduInfoPtr != 0, 5, CANIF_E_PARAM_POINTER);
 	VALIDATE(canTxPduId < CANIF_NUM_TX_LPDU_ID, 5, CANIF_E_INVALID_TXPDUID);
-	if(controllerData[CanIf_ConfigPtr->txLpduCfg[canTxPduId].controller].controllerMode != CAN_CS_STARTED)
+	if(controllerData[CanIf_ConfigPtr->TxLpduCfg[canTxPduId].controller].controllerMode != CAN_CS_STARTED)
 	{
 		// channel not started, report to DEM and return
     DEM_REPORTERRORSTATUS(CANIF_E_STOPPED, DEM_EVENT_STATUS_FAILED);
     return E_NOT_OK;
 	}
-	if(!(controllerData[CanIf_ConfigPtr->txLpduCfg[canTxPduId].controller].pduMode & (CANIF_GET_TX_ONLINE ^ CANIF_GET_OFFLINE_ACTIVE))) {
+	if(!(controllerData[CanIf_ConfigPtr->TxLpduCfg[canTxPduId].controller].pduMode & (CANIF_GET_TX_ONLINE ^ CANIF_GET_OFFLINE_ACTIVE))) {
     // TX is not online, report to DEM and return
     DEM_REPORTERRORSTATUS(CANIF_E_STOPPED, DEM_EVENT_STATUS_FAILED);
     return E_NOT_OK;
   }
-	Can_HwHandleType hth = CanIf_ConfigPtr->txLpduCfg[canTxPduId].hth;
+	Can_HwHandleType hth = CanIf_ConfigPtr->TxLpduCfg[canTxPduId].hth;
 
 	Can_IdType canId;
 	if (canTxPduId < CANIF_NUMBER_OF_DYNAMIC_CANTXPDUIDS)
@@ -258,7 +258,7 @@ Std_ReturnType CanIf_Transmit(PduIdType canTxPduId,	const PduInfoType *pduInfoPt
 	}
 	else
 	{
-		canId = CanIf_ConfigPtr->txLpduCfg[canTxPduId].id;
+		canId = CanIf_ConfigPtr->TxLpduCfg[canTxPduId].id;
 	}
 	Can_PduType canPdu = {
 		.sdu = pduInfoPtr->SduDataPtr,
@@ -442,7 +442,7 @@ void CanIf_TxConfirmation(PduIdType canTxPduId) { // L-PDU id
 	VALIDATE_NO_RV(CanIf_ConfigPtr != 0, 19, CANIF_E_UNINIT);
 	VALIDATE_NO_RV(canTxPduId < CANIF_NUM_TX_LPDU_ID, 19, CANIF_E_PARAM_LPDU);
   // check if transmit confirmation should be processed
-  if((controllerData[CanIf_ConfigPtr->txLpduCfg[canTxPduId].controller].pduMode & CANIF_GET_OFFLINE_ACTIVE) == 0) {
+  if((controllerData[CanIf_ConfigPtr->TxLpduCfg[canTxPduId].controller].pduMode & CANIF_GET_OFFLINE_ACTIVE) == 0) {
     // transmit confirm should not be processed, return
     return;
   }
@@ -477,15 +477,15 @@ void CanIf_TxConfirmation(PduIdType canTxPduId) { // L-PDU id
 	lPduData.txLpdu[canTxPduId].txConfirmed = CANIF_TX_RX_NOTIFICATION;
 #endif
 	// call eventual callback
-	if(CanIf_ConfigPtr->txLpduCfg[canTxPduId].user_TxConfirmation) {
-		(*CanIf_ConfigPtr->txLpduCfg[canTxPduId].user_TxConfirmation)(CanIf_ConfigPtr->txLpduCfg[canTxPduId].ulPduId);
+	if(CanIf_ConfigPtr->TxLpduCfg[canTxPduId].user_TxConfirmation) {
+		(*CanIf_ConfigPtr->TxLpduCfg[canTxPduId].user_TxConfirmation)(CanIf_ConfigPtr->TxLpduCfg[canTxPduId].ulPduId);
 	}
 }
 
 static void RxLPduReceived(PduIdType lpdu, Can_IdType canId, uint8 canDlc, const uint8* canSduPtr)
 {
   // validate pdu mode
-  if((controllerData[CanIf_ConfigPtr->rxLpduCfg[lpdu].controller].pduMode & CANIF_GET_RX_ONLINE) == 0)
+  if((controllerData[CanIf_ConfigPtr->RxLpduCfg[lpdu].controller].pduMode & CANIF_GET_RX_ONLINE) == 0)
   {
     // rx not online, throw message
     return;
@@ -516,14 +516,14 @@ static void RxLPduReceived(PduIdType lpdu, Can_IdType canId, uint8 canDlc, const
   lPduData.rxLpdu[lpdu].rxInd = CANIF_TX_RX_NOTIFICATION;
 #endif
 	// call eventual callback
-	if(CanIf_ConfigPtr->rxLpduCfg[lpdu].user_RxIndication) {
+	if(CanIf_ConfigPtr->RxLpduCfg[lpdu].user_RxIndication) {
     PduInfoType pduInfo = {
       .SduLength = canDlc,
       // cast away const qualifier
       ///todo: should this type really be ptr to data and not to const?
       .SduDataPtr = (uint8*)canSduPtr,
     };
-		(*CanIf_ConfigPtr->rxLpduCfg[lpdu].user_RxIndication)(CanIf_ConfigPtr->rxLpduCfg[lpdu].ulPduId, &pduInfo);
+		(*CanIf_ConfigPtr->RxLpduCfg[lpdu].user_RxIndication)(CanIf_ConfigPtr->RxLpduCfg[lpdu].ulPduId, &pduInfo);
   }
 }
 

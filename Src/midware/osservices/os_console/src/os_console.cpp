@@ -16,7 +16,7 @@ int32_t CommandListTasks::execute(char* p_i8_output_buffer, uint32_t u32_buffer_
 	vTaskList(p_i8_output_buffer);
 #else
 
-		UBaseType_t uxArraySize, x;
+		UBaseType_t uxArraySize;
 		char* pcWriteBuffer = &p_i8_output_buffer[0];
 
 		/* Make sure the write buffer does not contain a string. */
@@ -61,6 +61,10 @@ int32_t CommandListTasks::execute(char* p_i8_output_buffer, uint32_t u32_buffer_
 					break;
 				case eDeleted:
 					strcpy(ai8_status_str, "deleted");
+					break;
+				case eInvalid:
+				default:
+					strcpy(ai8_status_str, "INVALID");
 					break;
 			}
 
@@ -180,7 +184,7 @@ int32_t CommandListTasks::execute(char* p_i8_output_buffer, uint32_t u32_buffer_
 
 
 	OSConsole::OSConsole(drivers::GenericUART* po_io_interface)
-	: m_po_io_interface(po_io_interface), m_bo_entering_command(false), m_u32_num_of_registered_commands(0u)
+	: m_po_io_interface(po_io_interface), m_u32_num_of_registered_commands(0u), m_bo_entering_command(false)
 	{
 		memset(this->m_ai8_command_buffer, 0x0, sizeof(this->m_ai8_command_buffer));
 
@@ -201,14 +205,15 @@ int32_t CommandListTasks::execute(char* p_i8_output_buffer, uint32_t u32_buffer_
 			if (strcmp(ai8_input_command, p_command->get_command()) == 0)
 			{
 				// execute the command and print the buffer
-				char ai8_output_buffer[1024] = { 0 };
-				int32_t i32_return_code = p_command->execute(ai8_output_buffer, 1024);
+				const uint32_t cu32_output_buffer_size = 1024;
+				char ai8_output_buffer[cu32_output_buffer_size] = { 0 };
+				int32_t i32_return_code = p_command->execute(ai8_output_buffer, cu32_output_buffer_size);
 				m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_output_buffer), strlen(ai8_output_buffer));
 
 				// and print the return code.
 				char ai8_print_str[LINE_LENGTH] = { 0 };
-				snprintf(ai8_print_str, LINE_LENGTH - 1, "\r\nProgram \'%s\' has terminated with return code %u.\r\n", \
-						p_command->get_command(), i32_return_code);
+				snprintf(ai8_print_str, LINE_LENGTH - 1, "\r\nProgram \'%s\' has terminated with return code %i.\r\n", \
+						p_command->get_command(), static_cast<int>(i32_return_code));
 				m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_print_str), strlen(ai8_print_str));
 
 				bo_program_executed = true;

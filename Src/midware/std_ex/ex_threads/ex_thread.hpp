@@ -81,46 +81,50 @@ namespace std_ex
 	{
 	public:
 		template<typename _Tuple>
-		      struct _Invoker
-		      {
-			_Tuple _M_t;
+			struct _Invoker
+			{
+				_Tuple _M_t;
 
-			template<size_t _Index>
-			  static std::__tuple_element_t<_Index, _Tuple>&&
-			  _S_declval();
+				template<size_t _Index>
+				static std::__tuple_element_t<_Index, _Tuple>&& _S_declval();
 
-			template<size_t... _Ind>
-			  auto
-			  _M_invoke(std::_Index_tuple<_Ind...>)
-			  noexcept(noexcept(std::__invoke(_S_declval<_Ind>()...)))
-			  -> decltype(std::__invoke(_S_declval<_Ind>()...))
-			  { return std::__invoke(std::get<_Ind>(std::move(_M_t))...); }
+				template<size_t... _Ind>
+				auto _M_invoke(std::_Index_tuple<_Ind...>)
+					noexcept(noexcept(std::__invoke(_S_declval<_Ind>()...)))
+					-> decltype(std::__invoke(_S_declval<_Ind>()...))
+				{
+				    return std::__invoke(std::get<_Ind>(std::move(_M_t))...);
+				}
 
-			using _Indices
-			  = typename std::_Build_index_tuple<std::tuple_size<_Tuple>::value>::__type;
+				using _Indices
+				  = typename std::_Build_index_tuple<std::tuple_size<_Tuple>::value>::__type;
 
-			auto
-			operator()()
-			noexcept(noexcept(std::declval<_Invoker&>()._M_invoke(_Indices())))
-			-> decltype(std::declval<_Invoker&>()._M_invoke(_Indices()))
-			{ return _M_invoke(_Indices()); }
-		      };
-#if 1
+				auto operator()()
+					noexcept(noexcept(std::declval<_Invoker&>()._M_invoke(_Indices())))
+					-> decltype(std::declval<_Invoker&>()._M_invoke(_Indices()))
+				{
+					return _M_invoke(_Indices());
+				}
+			};
+
 		    template<typename... _Tp>
 		      using __decayed_tuple = std::tuple<typename std::decay<_Tp>::type...>;
 
-		  public:
-		    // Returns a call wrapper that stores
-		    // tuple{DECAY_COPY(__callable), DECAY_COPY(__args)...}.
-		    template<typename _Callable, typename... _Args>
-		      static _Invoker<__decayed_tuple<_Callable, _Args...>>
-		      __make_invoker(_Callable&& __callable, _Args&&... __args)
-		      {
-			return { __decayed_tuple<_Callable, _Args...>{
-			    std::forward<_Callable>(__callable), std::forward<_Args>(__args)...
-			} };
-		      }
-#endif
+		public:
+			// Returns a call wrapper that stores
+			// tuple{DECAY_COPY(__callable), DECAY_COPY(__args)...}.
+			template<typename _Callable, typename... _Args>
+			static _Invoker<__decayed_tuple<_Callable, _Args...>>
+				__make_invoker(_Callable&& __callable, _Args&&... __args)
+			{
+				return
+				{
+					__decayed_tuple<_Callable, _Args...>
+					{
+						std::forward<_Callable>(__callable), std::forward<_Args>(__args)...
+					}
+				};
+			}
 
 	    // Abstract base class for types that wrap arbitrary functors to be
 	    // invoked in the new thread of execution.
@@ -133,7 +137,14 @@ namespace std_ex
 			thread* _M_owning_thread;
 	    };
 
-	    using _State_ptr = _State*; //std::unique_ptr<_State>;
+#ifdef REDUCE_CODE_FLASH_SIZE
+	    // shared ptrs take up a lot of code flash space, in case you have no flash at all, switch
+	    // to raw pointers instead.
+
+	    using _State_ptr = _State*;
+#else
+	    using _State_ptr = std::unique_ptr<_State>;
+#endif
 
 
 	    template<typename _Callable, typename... _Args>

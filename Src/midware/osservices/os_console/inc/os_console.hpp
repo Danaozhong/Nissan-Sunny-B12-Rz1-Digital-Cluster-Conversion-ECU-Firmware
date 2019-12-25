@@ -13,7 +13,7 @@
 #include "generic_uart.hpp"
 
 #define COMMAND_MAXIMUM_LENGTH (10u)
-#define LINE_LENGTH  (30u)
+#define LINE_LENGTH  (100u)
 #define OS_CONSOLE_MAX_NUM_OF_COMMANDS   (5u)
 namespace OSServices
 {
@@ -79,13 +79,13 @@ namespace OSServices
 		void process_input(const char* ai8_input_command);
 
 
-
+		/// The input/output interface which this console is running on.
 		drivers::GenericUART* m_po_io_interface;
 
+		/// the executable commands that can be run in this console context
 		Command* m_apo_commands[OS_CONSOLE_MAX_NUM_OF_COMMANDS];
 		uint32_t m_u32_num_of_registered_commands;
 
-		//
 		char m_ai8_command_buffer[LINE_LENGTH];
 
 		bool m_bo_entering_command;

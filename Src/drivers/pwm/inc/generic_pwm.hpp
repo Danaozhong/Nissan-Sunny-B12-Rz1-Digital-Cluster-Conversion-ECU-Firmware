@@ -7,7 +7,8 @@ namespace drivers
 	class GenericPWM
 	{
 	public:
-		virtual ~GenericPWM();
+		/** Destructor */
+		virtual ~GenericPWM() {}
 
 		/** Function to set the frequency of the PWM */
 		virtual void set_frequency(uint32_t u32_frequency) = 0;

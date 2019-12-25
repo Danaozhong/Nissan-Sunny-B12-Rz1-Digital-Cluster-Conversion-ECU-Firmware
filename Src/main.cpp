@@ -51,6 +51,7 @@
 #include "stm32_dac.hpp"
 #include "stm32_adc.hpp"
 #include "stm32_uart.hpp"
+#include "stm32_pwm.hpp"
 
 #include "os_console.hpp"
 #include "ex_thread.hpp"
@@ -77,7 +78,7 @@ static void SystemClock_Config_STM32_F3_DISCOVERY(void);
 static void SystemClock_Config_STM32F303_NUCLEO_32(void);
 
 static void Error_Handler(void);
-static void ADC_Config(void);
+//static void ADC_Config(void);
 
 #ifdef HAL_ADC_MODULE_ENABLED
 /* Private functions ---------------------------------------------------------*/
@@ -150,8 +151,11 @@ public:
 #define ADC_CHANNEL_2 2
 #endif
 		// create the low-level hardware interfaces
-		m_p_adc = new drivers::STM32ADC(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);
-		m_p_dac = new drivers::STM32DAC(DAC1, GPIOA, GPIO_PIN_4);
+		m_p_adc = std::make_shared<drivers::STM32ADC>(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);
+		m_p_dac = std::make_shared<drivers::STM32DAC>(DAC1, GPIOA, GPIO_PIN_4);
+
+		// TODO this is the configuration for the STM32 discovery, change to support the small board
+		m_p_pwm = new drivers::STM32PWM(TIM3, TIM_CHANNEL_1, GPIOC, GPIO_PIN_6);
 
 		/* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full). See
 		 * http://texelography.com/2019/06/21/nissan-rz1-digital-cluster-conversion/ for the full dataset */
@@ -169,7 +173,7 @@ public:
 				std::make_pair(11500, 0000),
 		};
 
-		m_p_o_fuel_gauge_input_characteristic = new app::CharacteristicCurve<int32_t, int32_t>(a_input_lut, sizeof(a_input_lut) / sizeof(a_input_lut[0]));
+		m_p_o_fuel_gauge_input_characteristic = std::make_shared<app::CharacteristicCurve<int32_t, int32_t>>(a_input_lut, sizeof(a_input_lut) / sizeof(a_input_lut[0]));
 
 		/* Characteristics of the digital cluster fuel gauge */
 		std::pair<int32_t, int32_t> a_output_lut[] =
@@ -187,23 +191,24 @@ public:
 				std::make_pair(11000, 700)
 		};
 
-		m_p_o_fuel_gauge_output_characteristic = new app::CharacteristicCurve<int32_t, int32_t>(a_output_lut, sizeof(a_output_lut) / sizeof(a_output_lut[0]));
+		m_p_o_fuel_gauge_output_characteristic = std::make_shared<app::CharacteristicCurve<int32_t, int32_t>>(a_output_lut, sizeof(a_output_lut) / sizeof(a_output_lut[0]));
 
 		// start the data output thread
-		//m_p_o_fuel_gauge_output = std::make_shared<app::FuelGaugeOutput>(m_p_dac, m_p_o_fuel_gauge_output_characteristic, 1500, 0);
+		m_p_o_fuel_gauge_output = std::make_shared<app::FuelGaugeOutput>(m_p_dac, m_p_o_fuel_gauge_output_characteristic, 1500, 0);
 		// start the data acquisition thread
-		//m_p_o_fuel_gauge_input = std::make_shared<app::FuelGaugeInputFromADC>(m_p_adc, m_p_o_fuel_gauge_input_characteristic);
+		m_p_o_fuel_gauge_input = new app::FuelGaugeInputFromADC(m_p_adc, m_p_o_fuel_gauge_input_characteristic);
 
 		// attach to the signal of the fuel sensor input
-		//auto event_handler = std::bind(&MainApplication::fuel_sensor_input_received, this, std::placeholders::_1);
-		//m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
+		auto event_handler = std::bind(&MainApplication::fuel_sensor_input_received, this, std::placeholders::_1);
+		m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
 	}
 
+	/** Callback used when the fuel sensor input has detected an input level change */
 	void fuel_sensor_input_received(int32_t i32_value)
 	{
-		//if (m_p_o_fuel_gauge_output != nullptr)
+		if (m_p_o_fuel_gauge_output != nullptr)
 		{
-			//m_p_o_fuel_gauge_output->set_fuel_level(i32_value);
+			m_p_o_fuel_gauge_output->set_fuel_level(i32_value);
 		}
 	}
 private:
@@ -211,14 +216,17 @@ private:
 	// prevent copying
 	MainApplication(MainApplication &other) = delete;
 
-	drivers::GenericADC* m_p_adc;
-	drivers::GenericDAC* m_p_dac;
+	std::shared_ptr<drivers::GenericADC> m_p_adc;
+	std::shared_ptr<drivers::GenericDAC> m_p_dac;
 
-	app::CharacteristicCurve<int32_t, int32_t>* m_p_o_fuel_gauge_input_characteristic;
-	app::CharacteristicCurve<int32_t, int32_t>* m_p_o_fuel_gauge_output_characteristic;
+	/// the PWM output used for the speed sensor
+	drivers::GenericPWM* m_p_pwm;
+
+	std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_input_characteristic;
+	std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_output_characteristic;
 
 	app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
-	app::FuelGaugeOutput* m_p_o_fuel_gauge_output;
+	std::shared_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
 };
 
 
@@ -259,13 +267,10 @@ void MAIN_startup_thread(void*)
 	// integrate all your tasks here.
 	MainApplication o_application;
 
-	//std_ex::thread o_thread_pwm(main_speedo_sensor_pwm);
-
 	while (true)
 	{
 		// load balancing
-		std_ex::sleep_for(std::chrono::milliseconds(1000));
-		DEBUG_PRINTF("I am still here!");
+		std_ex::sleep_for(std::chrono::milliseconds(100));
 
 		// check for debug input
 		o_os_console.run();
@@ -322,6 +327,7 @@ static void SystemClock_Config(void)
 #endif
 }
 
+#ifdef USE_STM32F3_DISCO
 /**
   * @brief  System Clock Configuration
   *         The system Clock is configured as follow : 
@@ -367,7 +373,7 @@ static void SystemClock_Config_STM32_F3_DISCOVERY(void)
     Error_Handler();
   }
 }
-
+#endif
 /**
   * @brief  System Clock Configuration
   *         The system Clock is configured as follow :
@@ -424,7 +430,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
 
 }
 
-
+#if 0
 /**
   * @brief  ADC configuration
   * @param  None
@@ -481,7 +487,7 @@ static void ADC_Config(void)
   }
 #endif
 }
-
+#endif
 
 #ifdef HAL_ADC_MODULE_ENABLED
 /**

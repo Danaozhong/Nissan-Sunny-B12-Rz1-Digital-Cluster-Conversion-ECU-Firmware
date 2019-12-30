@@ -12,14 +12,22 @@
 
 #include "generic_uart.hpp"
 
-#define COMMAND_MAXIMUM_LENGTH (10u)
+#define COMMAND_MAXIMUM_LENGTH (100u)
 #define LINE_LENGTH  (100u)
 #define OS_CONSOLE_MAX_NUM_OF_COMMANDS   (5u)
 namespace OSServices
 {
+    const int32_t ERROR_CODE_SUCCESS = 0;
+    const int32_t ERROR_CODE_NULLPTR = -1;
+    const int32_t ERROR_CODE_NUM_OF_PARAMETERS = -2;
+    const int32_t ERROR_CODE_PARAMETER_WRONG = -3;
+    const int32_t ERROR_CODE_INTERNAL_ERROR = -20;
+
 	class Command
 	{
 	public:
+
+
 		Command(const char* ai8_command)
 		{
 			strncpy(m_ai8_command_str, ai8_command, COMMAND_MAXIMUM_LENGTH - 1);
@@ -32,7 +40,7 @@ namespace OSServices
 			return m_ai8_command_str;
 		}
 
-		virtual int32_t execute(char* p_i8_output_buffer, uint32_t u32_buffer_size) const
+		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size)
 		{
 			return 0;
 		}
@@ -50,7 +58,7 @@ namespace OSServices
 
 		virtual ~CommandListTasks() {}
 
-		virtual int32_t execute(char* p_i8_output_buffer, uint32_t u32_buffer_size) const;
+		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size);
 	};
 
 	/** This command prints out the heap memory size */
@@ -61,7 +69,7 @@ namespace OSServices
 
 		virtual ~CommandMemory() {}
 
-		virtual int32_t execute(char* p_i8_output_buffer, uint32_t u32_buffer_size) const;
+		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size);
 	};
 
 	class OSConsole
@@ -90,7 +98,6 @@ namespace OSServices
 
 		bool m_bo_entering_command;
 	};
-
 }
 
 #endif

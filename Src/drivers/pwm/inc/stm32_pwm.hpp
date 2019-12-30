@@ -17,13 +17,13 @@ namespace drivers
 				GPIO_TypeDef* pt_gpio_block, uint16_t u16_gpio_pin);
 		virtual ~STM32PWM();
 
-		virtual void set_frequency(uint32_t u32_frequency);
+		virtual void set_frequency(uint32_t u32_frequency_mhz);
 
 		virtual void set_duty_cycle(uint32_t u32_duty_cycle);
 
 	private:
 		void Error_Handler(void);
-		int32_t calculate_prescaler_value(uint32_t u32_frequency) const;
+		int32_t calculate_prescaler_value(uint32_t u32_frequency_mhz) const;
 
 #ifdef HAL_TIM_MODULE_ENABLED
 		/* Timer handler declaration */

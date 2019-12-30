@@ -143,7 +143,11 @@ namespace std_ex
     		  fp,                       /* Task function. */
 			  m_task_name,   			/* name of task. */
 			  m_u_stack_size,           /* Stack size of task */
-    	      ptr,                /* parameter of the task */
+#ifdef REDUCE_CODE_FLASH_SIZE
+			  ptr,               	/* parameter of the task */
+#else
+    	      ptr.get(),               	/* parameter of the task */
+#endif
 			  m_u_task_priority,        /* priority of the task */
     	      &m_task_handle)          /* Task handle to keep track of created task */
     			)

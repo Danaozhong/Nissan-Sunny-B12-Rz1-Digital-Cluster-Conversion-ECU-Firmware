@@ -41,20 +41,7 @@
 #include "task.h"
 
 
-/* Own headers */
-#include "fuel_gauge_input.hpp"
-#include "fuel_gauge_output.hpp"
-#include "lookup_table.hpp"
-#include "main.h"
-
-
-#include "stm32_dac.hpp"
-#include "stm32_adc.hpp"
-#include "stm32_uart.hpp"
-#include "stm32_pwm.hpp"
-
-#include "os_console.hpp"
-#include "ex_thread.hpp"
+#include "main_application.hpp"
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -142,92 +129,6 @@ void vApplicationMallocFailedHook( void )
 	}
 }
 
-class MainApplication
-{
-public:
-	MainApplication()
-	{
-#ifndef HAL_ADC_MODULE_ENABLED
-#define ADC_CHANNEL_2 2
-#endif
-		// create the low-level hardware interfaces
-		m_p_adc = std::make_shared<drivers::STM32ADC>(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);
-		m_p_dac = std::make_shared<drivers::STM32DAC>(DAC1, GPIOA, GPIO_PIN_4);
-
-		// TODO this is the configuration for the STM32 discovery, change to support the small board
-		m_p_pwm = new drivers::STM32PWM(TIM3, TIM_CHANNEL_1, GPIOC, GPIO_PIN_6);
-
-		/* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full). See
-		 * http://texelography.com/2019/06/21/nissan-rz1-digital-cluster-conversion/ for the full dataset */
-		std::pair<int32_t, int32_t> a_input_lut[] =
-		{
-				/* Fuel level (% * 100)  Resistor value in mOhm */
-				std::make_pair(-1000, 120000),
-				std::make_pair(-100, 87000),
-				std::make_pair(500, 80600),
-				std::make_pair(2500, 61800),
-				std::make_pair(4800, 35700),
-				std::make_pair(7700, 21000),
-				std::make_pair(10000, 11800),
-				std::make_pair(11000, 2400),
-				std::make_pair(11500, 0000),
-		};
-
-		m_p_o_fuel_gauge_input_characteristic = std::make_shared<app::CharacteristicCurve<int32_t, int32_t>>(a_input_lut, sizeof(a_input_lut) / sizeof(a_input_lut[0]));
-
-		/* Characteristics of the digital cluster fuel gauge */
-		std::pair<int32_t, int32_t> a_output_lut[] =
-		{
-				std::make_pair(-1000, 5000),
-				std::make_pair(0, 5000),
-				std::make_pair(100, 4900),
-				//std::make_pair(0, 4700),
-				std::make_pair(714, 4340),
-				std::make_pair(2143, 4040),
-				std::make_pair(4286, 3300),
-				std::make_pair(6429, 2240),
-				std::make_pair(9286, 1100),
-				std::make_pair(10000, 700),
-				std::make_pair(11000, 700)
-		};
-
-		m_p_o_fuel_gauge_output_characteristic = std::make_shared<app::CharacteristicCurve<int32_t, int32_t>>(a_output_lut, sizeof(a_output_lut) / sizeof(a_output_lut[0]));
-
-		// start the data output thread
-		m_p_o_fuel_gauge_output = std::make_shared<app::FuelGaugeOutput>(m_p_dac, m_p_o_fuel_gauge_output_characteristic, 1500, 0);
-		// start the data acquisition thread
-		m_p_o_fuel_gauge_input = new app::FuelGaugeInputFromADC(m_p_adc, m_p_o_fuel_gauge_input_characteristic);
-
-		// attach to the signal of the fuel sensor input
-		auto event_handler = std::bind(&MainApplication::fuel_sensor_input_received, this, std::placeholders::_1);
-		m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
-	}
-
-	/** Callback used when the fuel sensor input has detected an input level change */
-	void fuel_sensor_input_received(int32_t i32_value)
-	{
-		if (m_p_o_fuel_gauge_output != nullptr)
-		{
-			m_p_o_fuel_gauge_output->set_fuel_level(i32_value);
-		}
-	}
-private:
-
-	// prevent copying
-	MainApplication(MainApplication &other) = delete;
-
-	std::shared_ptr<drivers::GenericADC> m_p_adc;
-	std::shared_ptr<drivers::GenericDAC> m_p_dac;
-
-	/// the PWM output used for the speed sensor
-	drivers::GenericPWM* m_p_pwm;
-
-	std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_input_characteristic;
-	std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_output_characteristic;
-
-	app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
-	std::shared_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
-};
 
 
 void MAIN_startup_thread(void*)
@@ -264,8 +165,8 @@ void MAIN_startup_thread(void*)
 	OSServices::OSConsole o_os_console(p_uart);
 	set_serial_output(p_uart);
 
-	// integrate all your tasks here.
-	MainApplication o_application;
+	// and create aour main application.
+	app::MainApplication& o_application = app::MainApplication::get();
 
 	while (true)
 	{

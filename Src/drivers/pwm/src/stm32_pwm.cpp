@@ -170,7 +170,7 @@ namespace drivers
 		// TODO remove everything hardware related
 	}
 
-	void STM32PWM::set_frequency(uint32_t u32_frequency)
+	void STM32PWM::set_frequency(uint32_t u32_frequency_mhz)
 	{
 		// TODO
 

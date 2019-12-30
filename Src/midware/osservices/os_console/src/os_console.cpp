@@ -4,7 +4,7 @@ namespace OSServices
 {
 
 
-int32_t CommandListTasks::execute(char* p_i8_output_buffer, uint32_t u32_buffer_size) const
+int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size)
 {
 	if (nullptr == p_i8_output_buffer || u32_buffer_size < 2)
 	{
@@ -97,7 +97,7 @@ int32_t CommandListTasks::execute(char* p_i8_output_buffer, uint32_t u32_buffer_
 		return 0;
 	}
 
-	int32_t CommandMemory::execute(char* p_i8_output_buffer, uint32_t u32_buffer_size) const
+	int32_t CommandMemory::execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size)
 	{
 		memset(p_i8_output_buffer, 0, u32_buffer_size);
 
@@ -198,28 +198,53 @@ int32_t CommandListTasks::execute(char* p_i8_output_buffer, uint32_t u32_buffer_
 	{
 		bool bo_program_executed = false;
 
-		for (uint32_t u32_i = 0; u32_i < m_u32_num_of_registered_commands; ++u32_i)
+		// split the string by spaces, and only check for the first command part
+		char ai8_command_copy[COMMAND_MAXIMUM_LENGTH] = { 0 };
+		const char delimiter[] = " ";
+
+		// first copy it so that we can run strtok() on it.
+		strncpy(ai8_command_copy, ai8_input_command, COMMAND_MAXIMUM_LENGTH);
+
+        const char* api8_delimiters[100]  = { nullptr };
+        uint32_t u32_num_of_delimiters = 0u;
+		// then search for all spaces and split the lines
+		char* p_i8_token = strtok(ai8_command_copy, delimiter);
+		while (nullptr != p_i8_token)
 		{
-			auto p_command = this->m_apo_commands[u32_i];
-
-			if (strcmp(ai8_input_command, p_command->get_command()) == 0)
-			{
-				// execute the command and print the buffer
-				const uint32_t cu32_output_buffer_size = 1024;
-				char ai8_output_buffer[cu32_output_buffer_size] = { 0 };
-				int32_t i32_return_code = p_command->execute(ai8_output_buffer, cu32_output_buffer_size);
-				m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_output_buffer), strlen(ai8_output_buffer));
-
-				// and print the return code.
-				char ai8_print_str[LINE_LENGTH] = { 0 };
-				snprintf(ai8_print_str, LINE_LENGTH - 1, "\r\nProgram \'%s\' has terminated with return code %i.\r\n", \
-						p_command->get_command(), static_cast<int>(i32_return_code));
-				m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_print_str), strlen(ai8_print_str));
-
-				bo_program_executed = true;
-			}
+		    ++u32_num_of_delimiters;
+		    api8_delimiters[u32_num_of_delimiters] = p_i8_token;
+		    p_i8_token = strtok(nullptr, delimiter);
 		}
 
+		const char* pi8_command = api8_delimiters[0];
+		if (nullptr != pi8_command)
+		{
+            for (uint32_t u32_i = 0; u32_i < m_u32_num_of_registered_commands; ++u32_i)
+            {
+                auto p_command = this->m_apo_commands[u32_i];
+
+                if (strcmp(pi8_command, p_command->get_command()) == 0)
+                {
+                    // execute the command and print the buffer
+                    const uint32_t cu32_output_buffer_size = 1024;
+                    char ai8_output_buffer[cu32_output_buffer_size] = { 0 };
+                    /* u32_num_of_delimiters -1 because the first delimiter is the command,
+                     * which does not count as a delimiter */
+                    int32_t i32_return_code = p_command->execute(api8_delimiters,
+                            u32_num_of_delimiters - 1,
+                            ai8_output_buffer, cu32_output_buffer_size);
+                    m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_output_buffer), strlen(ai8_output_buffer));
+
+                    // and print the return code.
+                    char ai8_print_str[LINE_LENGTH] = { 0 };
+                    snprintf(ai8_print_str, LINE_LENGTH - 1, "\r\nProgram \'%s\' has terminated with return code %i.\r\n", \
+                            p_command->get_command(), static_cast<int>(i32_return_code));
+                    m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_print_str), strlen(ai8_print_str));
+
+                    bo_program_executed = true;
+                }
+            }
+		}
 		if (false == bo_program_executed)
 		{
 			if (strlen(ai8_input_command) > 0)

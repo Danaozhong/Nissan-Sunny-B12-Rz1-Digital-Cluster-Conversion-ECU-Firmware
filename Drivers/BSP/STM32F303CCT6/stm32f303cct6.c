@@ -37,7 +37,7 @@
   */ 
   
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f3xx_nucleo_32.h"
+#include "stm32f303cct6.h"
     
 /** @addtogroup BSP
   * @{
@@ -78,9 +78,10 @@
 /**
  * @brief LED variables
   */ 
+#if 0
 GPIO_TypeDef* LED_PORT[LEDn] = {LED3_GPIO_PORT};
 const uint16_t LED_PIN[LEDn] = {LED3_PIN};
-                                
+#endif
 
 /**
  * @brief BUS variables
@@ -129,6 +130,8 @@ uint32_t BSP_GetVersion(void)
   return __STM32F3XX_NUCLEO_32_BSP_VERSION;
 }
 
+
+#if 0
 /**
   * @brief  Configures LED GPIO.
   * @param  Led Specifies the Led to be configured. 
@@ -188,7 +191,7 @@ void BSP_LED_Toggle(Led_TypeDef Led)
 {
   HAL_GPIO_TogglePin(LED_PORT[Led], LED_PIN[Led]);
 }
-
+#endif
 /**
   * @}
   */ 

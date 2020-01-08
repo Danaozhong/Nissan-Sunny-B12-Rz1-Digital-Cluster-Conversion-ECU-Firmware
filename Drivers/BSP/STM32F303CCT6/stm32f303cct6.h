@@ -82,11 +82,13 @@
  * @brief LED Types Definition
  */ 
    
+#if 0
 typedef enum 
 {
   LED3 = 0,
   LED_GREEN = LED3
 } Led_TypeDef;
+#endif
 
 /**
   * @}
@@ -101,9 +103,10 @@ typedef enum
   */ 
 
 #if !defined (USE_STM32F3XX_NUCLEO_32)
- #define USE_STM32F3XX_NUCLEO_32
+// #define USE_STM32F3XX_NUCLEO_32
 #endif
 
+#if 0
 /** @defgroup STM32F3XX_NUCLEO_32_LED STM32F3XX-NUCLEO_32 LED
   * @{
   */
@@ -117,6 +120,7 @@ typedef enum
 #define LEDx_GPIO_CLK_ENABLE(__INDEX__)    do {LED3_GPIO_CLK_ENABLE(); } while(0)
 #define LEDx_GPIO_CLK_DISABLE(__INDEX__)   LED3_GPIO_CLK_DISABLE())
 
+#endif
 /**
   * @}
   */ 
@@ -170,11 +174,12 @@ typedef enum
   */
   
 uint32_t         BSP_GetVersion(void);
+#if 0
 void             BSP_LED_Init(Led_TypeDef Led);
 void             BSP_LED_On(Led_TypeDef Led);
 void             BSP_LED_Off(Led_TypeDef Led);
 void             BSP_LED_Toggle(Led_TypeDef Led);
-
+#endif
 /**
   * @}
   */
@@ -193,7 +198,7 @@ void             BSP_LED_Toggle(Led_TypeDef Led);
   * @{
   */
 
-#define DIGIT4_SEG7_RESET 10000
+//#define DIGIT4_SEG7_RESET 10000
 /**
   * @}
   */
@@ -202,8 +207,8 @@ void             BSP_LED_Toggle(Led_TypeDef Led);
   * @{
   */   
   
-HAL_StatusTypeDef BSP_DIGIT4_SEG7_Init(void);
-HAL_StatusTypeDef BSP_DIGIT4_SEG7_Display(uint32_t Value);
+//HAL_StatusTypeDef BSP_DIGIT4_SEG7_Init(void);
+//HAL_StatusTypeDef BSP_DIGIT4_SEG7_Display(uint32_t Value);
 
 /**
   * @}

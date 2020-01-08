@@ -72,6 +72,10 @@
 #define CANIF_SETWAKEUPEVENT_ID       0x40
 #define CANIF_ARCERROR_ID           0x41
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 /** SWS_CANIF_00001 */
 void CanIf_Init(const CanIf_ConfigType *ConfigPtr);
 
@@ -97,6 +101,9 @@ Std_ReturnType CanIf_GetControllerErrorState(uint8 ControllerId,
 /** SWS_CANIF_00005 */
 Std_ReturnType CanIf_Transmit(PduIdType TxPduId,
 		const PduInfoType* PduInfoPtr);
+
+/** Internal helper function for the Rx Indication */
+void CanIf_Arc_RxIndication(Can_HwHandleType hrh, Can_IdType canId, uint8 canDlc, const uint8* canSduPtr, uint8 driverUnit);
 
 #if ( CANIF_READRXPDU_DATA_API == STD_ON )
 Std_ReturnType CanIf_ReadRxPduData(PduIdType CanRxPduId,
@@ -138,6 +145,11 @@ Std_ReturnType CanIf_CheckValidation( EcuM_WakeupSourceType WakeupSource );
 /** SWS_CANIF_00158 */
 void CanIf_GetVersionInfo(Std_VersionInfoType* VersionInfo);
 //#define CanIf_GetVersionInfo(_vi) STD_GET_VERSION_INFO(_vi,CANIF)
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
 #endif
 
 #endif /*CANIF_H_*/

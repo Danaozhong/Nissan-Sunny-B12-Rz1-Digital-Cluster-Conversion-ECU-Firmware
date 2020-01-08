@@ -20,9 +20,9 @@
 //#include "Cpu.h"
 //#include "Mcu.h"
 #include "CanIf_Cbk.h"
-#if defined(USE_DET)
+//#if defined(USE_DET)
 #include "Det.h"
-#endif
+//#endif
 #if defined(USE_DEM)
 #include "Dem.h"
 #endif
@@ -157,6 +157,9 @@ typedef struct {
 	Can_ControllerStateType state;
 	uint32		lock_cnt;
 
+	// The handle of the controller
+	CAN_HandleTypeDef CanHandle;
+
 	// Statistics
 	Can_Arc_StatisticsType stats;
 
@@ -185,6 +188,25 @@ static CAN_HW_t * GetController(int unit)
 	return ((CAN_HW_t *)(CAN1_BASE + unit*0x400));
 #endif
 }
+
+
+static sint16 GetControllderId(const CAN_HW_t* Controller)
+{
+    sint16 i16_ret_val = -1;
+#ifdef STM32F3
+    /* STM32F3 only has one CAN controller */
+    if (Controller == (CAN_HW_t*)CAN_BASE)
+    {
+        i16_ret_val = 0;
+    }
+#else
+    i16_ret_val = (Controller - (CAN_HW_t *)(CAN1_BASE) / 0x400);
+    // Controllers that have more than 1 CAN interface
+#endif
+    return i16_ret_val;
+
+}
+
 
 //-------------------------------------------------------------------
 /**
@@ -226,23 +248,22 @@ static const Can_HardwareObjectType * Can_FindHoh( Can_Arc_HTHType hth , uint32*
 
 //-------------------------------------------------------------------
 
-static void Can_RxIsr( int unit );
-static void Can_TxIsr( int unit );
+static void Can_RxIsr( int ControllerId );
+static void Can_TxIsr( int ControllerId );
 static void Can_ErrIsr( int unit );
 
-void Can_1_RxIsr( void  ) {	Can_RxIsr(CAN_CTRL_1); }
+//void Can_1_RxIsr( void  ) {	Can_RxIsr(CAN_CTRL_1); }
 
 //void Can_2_RxIsr( void  ) {	Can_RxIsr(CAN_CTRL_2); }
 
-void Can_1_TxIsr( void  ) {	Can_TxIsr(CAN_CTRL_1); }
+//void Can_1_TxIsr( void  ) {	Can_TxIsr(CAN_CTRL_1); }
 //void Can_2_TxIsr( void  ) {	Can_TxIsr(CAN_CTRL_2); }
 
-void Can_1_ErrIsr( void  ) {	Can_ErrIsr(CAN_CTRL_1); }
+//void Can_1_ErrIsr( void  ) {	Can_ErrIsr(CAN_CTRL_1); }
 //void Can_2_ErrIsr( void  ) {	Can_ErrIsr(CAN_CTRL_2); }
 
 
 //-------------------------------------------------------------------
-#if 0
 // Uses 25.4.5.1 Transmission Abort Mechanism
 static void Can_AbortTx( CAN_HW_t *canHw, Can_UnitType *canUnit ) {
 	// Disable Transmit irq
@@ -253,22 +274,24 @@ static void Can_AbortTx( CAN_HW_t *canHw, Can_UnitType *canUnit ) {
 
 	// Wait for mb's being emptied
 }
-#endif
 
 /**
  * Hardware wake ISR for CAN
  *
  * @param unit CAN controller number( from 0 )
  */
-static void Can_WakeIsr( int unit ) {
-	if (GET_CALLBACKS()->ControllerWakeup != NULL)
-	{
-	  GET_CALLBACKS()->ControllerWakeup(unit);
-	}
-	// 269,270,271
-	Can_SetControllerMode(unit, CAN_CS_STOPPED);
+static void Can_WakeIsr( uint8 ControllerId )
+{
+    if (NULL != GET_CALLBACKS()->SetWakeupEvent)
+    {
+        GET_CALLBACKS()->SetWakeupEvent(ControllerId);
+    }
+    // 269,SWS_Can_00270,271
 
-	// TODO EcuM_CheckWakeup();
+    /* Set the controller to state CAN_CS_STOPPED when a wakeup is detected by hardware. */
+    Can_SetControllerMode(ControllerId, CAN_CS_STOPPED);
+
+    // TODO Implement SWS_Can_00271: callback to EcuM_CheckWakeup();
 }
 
 /**
@@ -276,35 +299,90 @@ static void Can_WakeIsr( int unit ) {
  *
  * @param unit CAN controller number( from 0 )
  */
-static void Can_ErrIsr( int unit ) {
-  CAN_HW_t *canHw = GetController(unit);
-  Can_UnitType *canUnit = GET_PRIVATE_DATA(unit);
-  Can_Arc_ErrorType err;
-  err.R = 0;
 
-  // Check wake up
+
 #if 0
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_TxMailbox0AbortCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_TxMailbox1AbortCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_TxMailbox2AbortCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_RxFifo1FullCallback(CAN_HandleTypeDef *hcan);
+void HAL_CAN_SleepCallback(CAN_HandleTypeDef *hcan);
+#endif
+
+
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+    uint8 ControllerId = GetControllderId(&hcan->Instance);
+    Can_RxIsr(ControllerId);
+}
+
+void HAL_CAN_WakeUpFromRxMsgCallback(CAN_HandleTypeDef *hcan)
+{
+    uint8 ControllerId = GetControllderId(&hcan->Instance);
+    Can_WakeIsr(ControllerId);
+
+#if 0 // old stuff, probably not needed anymore
+  /* Wakeup via CAN detected */
   if(SET == IS_CAN_IT(CAN_IT_WAKEUP)) // Need to check peripheral if more than 1
   {
-	  Can_WakeIsr(unit);
-	  //CAN_ClearITPendingBit(canHw, CAN_IT_WAKEUP);
-  }
 
-  if(SET == IS_CAN_IT(CAN_IT_BUSOFF)) // Need to check peripheral if more than 1
+#if 0
+      // TODO how to clear the interrut here?
+      //CAN_ClearITPendingBit(canHw, CAN_IT_WAKEUP);
+      __HAL_CAN_CLEAR_FLAG(canHw, CAN_FLAG_WKU);
+#endif
+  }
+#endif
+
+
+}
+
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
+{
+    uint8 ControllerId = GetControllderId(&hcan->Instance);
+    Can_ErrIsr(ControllerId);
+}
+
+
+static void Can_ErrIsr( int unit )
+{
+  CAN_HW_t *canHw = GetController(unit);
+  Can_UnitType *canUnit = GET_PRIVATE_DATA(unit);
+
+  // Check wake up is no longer needed, as we now have a separate ISR for this
+#if 1
+  /* Bus off detected */
+  if(canUnit->CanHandle.ErrorCode & CAN_IT_BUSOFF) // Need to check peripheral if more than 1
   {
 	canUnit->stats.boffCnt++;
-	if (GET_CALLBACKS()->ControllerBusOff != NULL)
-	{
-	  GET_CALLBACKS()->ControllerBusOff(unit);
-	}
-	Can_SetControllerMode(unit, CAN_T_STOP); // CANIF272
+	// SWS_Can_00020
+	Can_SetControllerMode(unit, CAN_CS_STOPPED); // CANIF272
 
+	// Notify CanIf about the bus off event (SRS_Can_01055)
+    if (GET_CALLBACKS()->ControllerBusOff != NULL)
+    {
+        GET_CALLBACKS()->ControllerBusOff(unit);
+    }
+
+    // SRS_Can_01060: Abort all pending messages
 	Can_AbortTx( canHw, canUnit ); // CANIF273
 
 	// Clear int
+#if 0 // TODO no idea how this works in HAL
 	CAN_ClearITPendingBit(canHw, CAN_IT_BOF);
+#endif
   }
-
+  else
+  {
+      // Unknown CAN error, TODO report
+  }
+#if 0
   if (err.R != 0)
   {
     if (GET_CALLBACKS()->Arc_Error != NULL)
@@ -313,6 +391,7 @@ static void Can_ErrIsr( int unit ) {
     }
   }
 #endif
+#endif
 }
 
 //-------------------------------------------------------------------
@@ -320,16 +399,13 @@ static void Can_ErrIsr( int unit ) {
 /**
  * ISR for CAN. Normal Rx/operation
  *
- * @param unit CAN controller number( from 0 )
+ * @param ControllerId CAN controller number( from 0 )
  */
-//static void Can_RxIsr(int unit)
-void USB_LP_CAN_RX0_IRQHandler(void)
+static void Can_RxIsr(int ControllerId)
 {
-	int unit = 0;
-
-  CAN_HW_t *canHw= GetController(unit);
-  const Can_ControllerConfigType *canHwConfig= GET_CONTROLLER_CONFIG(Can_Global.channelMap[unit]);
-  Can_UnitType *canUnit = GET_PRIVATE_DATA(unit);
+  CAN_HW_t *canHw= GetController(ControllerId);
+  const Can_ControllerConfigType *canHwConfig= GET_CONTROLLER_CONFIG(Can_Global.channelMap[ControllerId]);
+  Can_UnitType *canUnit = GET_PRIVATE_DATA(ControllerId);
   const Can_HardwareObjectType *hohObj;
 
   //HAL_StatusTypeDef HAL_CAN_GetRxMessage(CAN_HandleTypeDef *hcan, uint32_t RxFifo, CAN_RxHeaderTypeDef *pHeader, uint8_t aData[]);
@@ -346,7 +422,7 @@ void USB_LP_CAN_RX0_IRQHandler(void)
   au8Data[0]=0x00;
   au8Data[1]=0x00;
 
-  HAL_CAN_GetRxMessage(canHw,CAN_RX_FIFO0, &RxMessageHeader, au8Data);
+  HAL_CAN_GetRxMessage(&canUnit->CanHandle, CAN_RX_FIFO0, &RxMessageHeader, au8Data);
 
   // Loop over all the Hoh's
   hohObj= canHwConfig->Can_Arc_Hoh;
@@ -421,20 +497,11 @@ void USB_HP_CAN_TX_IRQHandler (void) {
   } while ( !hohObj->Can_Arc_EOL);
 }
 
-//-------------------------------------------------------------------
 
-#if 0
-// Clemens should not be needed
-#define INSTALL_HANDLERS(_can_name,_sce,_rx,_tx) \
-  do { \
-    ISR_INSTALL_ISR2( "Can_Err", _can_name ## _ErrIsr, _sce, 2, 0 ); \
-	ISR_INSTALL_ISR2( "Can_Rx",  _can_name ## _RxIsr,  _rx,  2, 0 ); \
-	ISR_INSTALL_ISR2( "Can_Tx",  _can_name ## _TxIsr,  _tx,  2, 0 ); \
-  } while(0);
-#endif
 
-// This initiates ALL can controllers
-void Can_Init( const Can_ConfigType *config ) {
+/// This initializes ALL can controllers
+void Can_Init( const Can_ConfigType *config )
+{
   Can_UnitType *canUnit;
   const Can_ControllerConfigType *canHwConfig;
   uint32 ctlrId;
@@ -446,7 +513,8 @@ void Can_Init( const Can_ConfigType *config ) {
   Can_Global.config = config;
   Can_Global.initRun = CAN_READY;
 
-  for (int configId=0; configId < CAN_ARC_CTRL_CONFIG_CNT; configId++) {
+  for (int configId=0; configId < CAN_ARC_CTRL_CONFIG_CNT; configId++)
+  {
     canHwConfig = GET_CONTROLLER_CONFIG(configId);
     ctlrId = canHwConfig->CanControllerId;
 
@@ -461,27 +529,7 @@ void Can_Init( const Can_ConfigType *config ) {
 
     // Clear stats
     memset(&canUnit->stats, 0, sizeof(Can_Arc_StatisticsType));
-
-#if 0
-    // Note!
-    // Could install handlers depending on HW objects to trap more errors
-    // in configuration
-    switch( canHwConfig->CanControllerId ) {
-#ifndef STM32F10X_CL
-    case CAN_CTRL_1:
-        INSTALL_HANDLERS(Can_1, CAN1_SCE_IRQn, USB_LP_CAN1_RX0_IRQn, USB_HP_CAN1_TX_IRQn);	break;
-#else
-    case CAN_CTRL_1:
-        INSTALL_HANDLERS(Can_1, CAN1_SCE_IRQn, CAN1_RX0_IRQn, CAN1_TX_IRQn);	break;
-    case CAN_CTRL_2:
-        INSTALL_HANDLERS(Can_2, CAN2_SCE_IRQn, CAN2_RX0_IRQn, CAN2_TX_IRQn);	break;
-#endif
-        default:
-        assert(0);
-    }
-#endif
-
-    Can_InitController(ctlrId, canHwConfig);
+    Can_SetBaudrate(ctlrId, 0); // Todo provide valid interface ID
 
     // Loop through all Hoh:s and map them into the HTHMap
     const Can_HardwareObjectType* hoh;
@@ -502,34 +550,50 @@ void Can_Init( const Can_ConfigType *config ) {
 }
 
 // Unitialize the module
-void Can_DeInit()
+void Can_DeInit(void)
 {
   Can_UnitType *canUnit;
   const Can_ControllerConfigType *canHwConfig;
   uint32 ctlrId;
 
-  for (int configId=0; configId < CAN_ARC_CTRL_CONFIG_CNT; configId++) {
-    canHwConfig = GET_CONTROLLER_CONFIG(configId);
-    ctlrId = canHwConfig->CanControllerId;
+    // SWS_Can_91010: make sure that all CAN controllers are in state started
+    for (int configId=0; configId < CAN_ARC_CTRL_CONFIG_CNT; configId++)
+    {
+        canHwConfig = GET_CONTROLLER_CONFIG(configId);
+        ctlrId = canHwConfig->CanControllerId;
+        canUnit = GET_PRIVATE_DATA(ctlrId);
+        VALIDATE_NO_RV((canUnit->state == CAN_CS_STOPPED), 0x2, CAN_E_TRANSITION);
+    }
+    // Check for CAN ready
+    VALIDATE_NO_RV(Can_Global.initRun != CAN_READY, 0x2, CAN_E_TRANSITION );
 
-    canUnit = GET_PRIVATE_DATA(ctlrId);
-    canUnit->state = CAN_CS_UNINIT;
+    for (int configId=0; configId < CAN_ARC_CTRL_CONFIG_CNT; configId++)
+    {
+        canHwConfig = GET_CONTROLLER_CONFIG(configId);
+        ctlrId = canHwConfig->CanControllerId;
 
-    Can_DisableControllerInterrupts(ctlrId);
+        canUnit = GET_PRIVATE_DATA(ctlrId);
 
-    canUnit->lock_cnt = 0;
+        // Disable the HAL CAN peripheral
+        HAL_CAN_DeInit(&canUnit->CanHandle);
+        // SRS_Can_91010: Set the state to uninit for all CAN controllers
+        canUnit->state = CAN_CS_UNINIT;
 
-    // Clear stats
-    memset(&canUnit->stats, 0, sizeof(Can_Arc_StatisticsType));
-  }
+        Can_DisableControllerInterrupts(ctlrId);
 
-  Can_Global.config = NULL;
-  Can_Global.initRun = CAN_UNINIT;
+        canUnit->lock_cnt = 0;
 
-  return;
+        // Clear stats
+        memset(&canUnit->stats, 0, sizeof(Can_Arc_StatisticsType));
+    }
+
+      Can_Global.config = NULL;
+      Can_Global.initRun = CAN_UNINIT;
+
+      return;
 }
 
-//void Can_InitController( uint8 controller, const Can_ControllerConfigType *config)
+
 Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
 {
   CAN_HW_t *canHw;
@@ -542,22 +606,21 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
   uint8 cId = controller;
   const Can_ControllerConfigType *canHwConfig;
   const Can_HardwareObjectType *hohObj;
-
   CAN_FilterTypeDef  sFilterConfig;
 
 
-  VALIDATE_NO_RV( (Can_Global.initRun == CAN_READY), 0x2, CAN_E_UNINIT );
-  VALIDATE_NO_RV( (config != NULL ), 0x2,CAN_E_PARAM_POINTER);
-  VALIDATE_NO_RV( (controller < GET_CONTROLLER_CNT()), 0x2, CAN_E_PARAM_CONTROLLER );
+  VALIDATE( (Can_Global.initRun == CAN_READY), 0x2, CAN_E_UNINIT );
+  // TODO VALIDATE( (config != NULL ), 0x2,CAN_E_PARAM_POINTER);
+  VALIDATE( (controller < GET_CONTROLLER_CNT()), 0x2, CAN_E_PARAM_CONTROLLER );
 
   canUnit = GET_PRIVATE_DATA(controller);
 
-  VALIDATE_NO_RV( (canUnit->state==CANIF_CS_STOPPED), 0x2, CAN_E_TRANSITION );
+  // Ensure that the controller is in state CANIF_CS_STOPPED (SWS_Can_00259).
+  VALIDATE((canUnit->state == CAN_CS_STOPPED), 0x2, CAN_E_TRANSITION );
 
   canHw = GetController(cId);
   canHwConfig = GET_CONTROLLER_CONFIG(Can_Global.channelMap[cId]);
 
-  // Start this baby up
   HAL_CAN_DeInit(canHw);
 
   /* CAN filter init. We set up two filters - one for the master (CAN1) and
@@ -596,7 +659,7 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
      }
    }while( !hohObj->Can_Arc_EOL );
 
-  // Clock calucation
+  // Clock calculation
   // -------------------------------------------------------------------
   //
   // * 1 TQ = Sclk period( also called SCK )
@@ -613,46 +676,39 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
   tq2 = canHwConfig->CanControllerSeg2 + 1;
   tq = tqSync + tq1 + tq2;
 
-  CAN_HandleTypeDef        CanHandle;
+  //CAN_HandleTypeDef CanHandle;
   //CAN_StructInit(&CAN_InitStructure);
 
-  CanHandle.Init.TimeTriggeredMode = DISABLE;
-  CanHandle.Init.AutoBusOff = DISABLE;
-  CanHandle.Init.AutoWakeUp = DISABLE;
-  CanHandle.Init.AutoRetransmission = ENABLE;
-  CanHandle.Init.ReceiveFifoLocked = DISABLE;
-  CanHandle.Init.TransmitFifoPriority = DISABLE;
+  canUnit->CanHandle.Init.TimeTriggeredMode = DISABLE;
+  canUnit->CanHandle.Init.AutoBusOff = DISABLE;
+  canUnit->CanHandle.Init.AutoWakeUp = DISABLE;
+  canUnit->CanHandle.Init.AutoRetransmission = ENABLE;
+  canUnit->CanHandle.Init.ReceiveFifoLocked = DISABLE;
+  canUnit->CanHandle.Init.TransmitFifoPriority = DISABLE;
 
-  CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ; //hard coded to value 1 since no configuration is available
-  CanHandle.Init.TimeSeg1 = CAN_BS1_9TQ;
-  CanHandle.Init.TimeSeg2 = CAN_BS2_8TQ;
-  CanHandle.Init.Prescaler = clock/(canHwConfig->CanControllerBaudRate*1000*tq); // 2
-
-  /*   /* CAN cell init
-  CAN_InitStructure.CAN_TTCM=DISABLE;
-  CAN_InitStructure.CAN_ABOM=ENABLE;
-  CAN_InitStructure.CAN_AWUM=ENABLE;
-  CAN_InitStructure.CAN_NART=DISABLE;
-  CAN_InitStructure.CAN_RFLM=DISABLE;
-  CAN_InitStructure.CAN_TXFP=DISABLE;
-   */
+  canUnit->CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ; //hard coded to value 1 since no configuration is available
+  canUnit->CanHandle.Init.TimeSeg1 = CAN_BS1_9TQ;
+  canUnit->CanHandle.Init.TimeSeg2 = CAN_BS2_8TQ;
+  canUnit->CanHandle.Init.Prescaler = clock/(canHwConfig->CanControllerBaudRate*1000*tq); // 2
 
   if(canHwConfig->Can_Arc_Loopback)
   {
-	  CanHandle.Init.Mode = CAN_MODE_LOOPBACK;
+      canUnit->CanHandle.Init.Mode = CAN_MODE_LOOPBACK;
   }
   else
   {
-	  CanHandle.Init.Mode = CAN_MODE_NORMAL;
+      canUnit->CanHandle.Init.Mode = CAN_MODE_NORMAL;
   }
 
-  if (HAL_CAN_Init(&CanHandle) != HAL_OK)
+  // call the STM32 HAL library to initialize the peripheral
+  if (HAL_CAN_Init(&canUnit->CanHandle) != HAL_OK)
   {
     /* Initialization Error */
     //Error_Handler();
     return E_NOT_OK;
   }
 
+  // after initializing, configure the hardware filters.
   sFilterConfig.FilterBank = 0;
   sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
   sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
@@ -664,9 +720,9 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
   sFilterConfig.FilterActivation = ENABLE;
   sFilterConfig.SlaveStartFilterBank = 14;
 
-  CanHandle.Instance = canHw;
+  canUnit->CanHandle.Instance = canHw;
 
-  if (HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
+  if (HAL_CAN_ConfigFilter(&canUnit->CanHandle, &sFilterConfig) != HAL_OK)
   {
 	return E_NOT_OK;
   }
@@ -681,46 +737,68 @@ Std_ReturnType Can_SetControllerMode( uint8 controller, Can_ControllerStateType 
 {
   //imask_t state;
   CAN_HW_t *canHw;
-  Can_ReturnType rv = CAN_OK;
+  Std_ReturnType rv = E_OK;
   VALIDATE( (controller < GET_CONTROLLER_CNT()), 0x3, CAN_E_PARAM_CONTROLLER );
 
   Can_UnitType *canUnit = GET_PRIVATE_DATA(controller);
 
-  VALIDATE( (canUnit->state!=CANIF_CS_UNINIT), 0x3, CAN_E_UNINIT );
+  //SWS_Can_00198
+  VALIDATE((canUnit->state!=CAN_CS_UNINIT), 0x3, CAN_E_UNINIT );
   canHw = GetController(controller);
 
   switch(transition )
   {
   case CAN_CS_STARTED:
-    canUnit->state = CAN_CS_STARTED;
-    //Irq_Save(state);
-    if (canUnit->lock_cnt == 0){   // REQ CAN196
-      Can_EnableControllerInterrupts(controller);
-    }
-    //Irq_Restore(state);
+      // reinitialize tha CAN controller, if necessary
+      // SWS_Can_00409: Ensure that the controller is in state CANIF_CS_STOPPED
+      VALIDATE(canUnit->state==CAN_CS_STOPPED, 0x3, CAN_E_TRANSITION );
+
+      // SWS_Can_00261: set the hardware registers so that the controller is participating on the network
+      if (HAL_CAN_Start(&canUnit->CanHandle) != HAL_OK)
+      {
+          /* Start Error */
+          rv = E_NOT_OK;
+      }
+      else
+      {
+          canUnit->state = CAN_CS_STARTED;
+          //Irq_Save(state);
+          if (canUnit->lock_cnt == 0)
+          {   // REQ CAN196
+              Can_EnableControllerInterrupts(controller);
+          }
+        //Irq_Restore(state);
+      }
     break;
-#if 0
-  case CAN_CS_WAKEUP:
-	VALIDATE(canUnit->state == CANIF_CS_SLEEP, 0x3, CAN_E_TRANSITION);
-	HAL_CAN_WakeUp(canHw);
-	canUnit->state = CANIF_CS_STOPPED;
-	break;
-#endif
   case CAN_CS_SLEEP:  //CAN258, CAN290
-    // Should be reported to DEM but DET is the next best
-    VALIDATE(canUnit->state == CANIF_CS_STOPPED, 0x3, CAN_E_TRANSITION);
+    VALIDATE(canUnit->state == CAN_CS_STOPPED, 0x3, CAN_E_TRANSITION);
     HAL_CAN_RequestSleep(canHw);
     canUnit->state = CAN_CS_SLEEP;
 	break;
   case CAN_CS_STOPPED:
+        VALIDATE(canUnit->state == CAN_CS_STOPPED || canUnit->state == CAN_CS_SLEEP, 0x3, CAN_E_TRANSITION);
+        if (canUnit->state == CAN_CS_STARTED)
+        {
+            // stop from running operation
+            if (HAL_CAN_Stop(&canUnit->CanHandle) != HAL_OK)
+            {
+                /* Start Error */
+                rv = E_NOT_OK;
+            }
 
+        }
+        else if (canUnit->state == CAN_CS_SLEEP)
+        {
+            // stop from sleep mode
+            HAL_CAN_WakeUp(&canUnit->CanHandle);
+        }
     // Stop
     canUnit->state = CAN_CS_STOPPED;
-    //Can_AbortTx( canHw, canUnit ); // CANIF282
+    Can_AbortTx( canHw, canUnit ); // SWS_Can_00282 - cancel all pending messages.
     break;
   default:
     // Should be reported to DEM but DET is the next best
-    VALIDATE(canUnit->state == CANIF_CS_STOPPED, 0x3, CAN_E_TRANSITION);
+    VALIDATE(canUnit->state == CAN_CS_STOPPED, 0x3, CAN_E_TRANSITION);
     break;
   }
 
@@ -737,7 +815,7 @@ void Can_DisableControllerInterrupts( uint8 controller )
 
   canUnit = GET_PRIVATE_DATA(controller);
 
-  VALIDATE_NO_RV( (canUnit->state!=CANIF_CS_UNINIT), 0x4, CAN_E_UNINIT );
+  VALIDATE_NO_RV( (canUnit->state!=CAN_CS_UNINIT), 0x4, CAN_E_UNINIT );
 
   //Irq_Save(state);
   if(canUnit->lock_cnt > 0 )
@@ -753,14 +831,12 @@ void Can_DisableControllerInterrupts( uint8 controller )
   /* Don't try to be intelligent, turn everything off */
   canHw = GetController(controller);
 
-#if 0
   /* Turn off the tx interrupt mailboxes */
-  CAN_ITConfig(canHw, CAN_IT_TME, DISABLE);
+  HAL_CAN_DeactivateNotification(&canUnit->CanHandle, CAN_IT_TX_MAILBOX_EMPTY);
 
 
   /* Turn off the bus off/tx warning/rx warning and error and rx  */
-  CAN_ITConfig(canHw, CAN_IT_FMP0 | CAN_IT_BOF | CAN_IT_ERR | CAN_IT_WKU, DISABLE);
-#endif
+  HAL_CAN_DeactivateNotification(&canUnit->CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_BUSOFF | CAN_IT_ERROR | CAN_IT_WAKEUP);
 }
 
 void Can_EnableControllerInterrupts( uint8 controller ) {
@@ -772,7 +848,7 @@ void Can_EnableControllerInterrupts( uint8 controller ) {
 
   canUnit = GET_PRIVATE_DATA(controller);
 
-  VALIDATE_NO_RV( (canUnit->state!=CANIF_CS_UNINIT), 0x5, CAN_E_UNINIT );
+  VALIDATE_NO_RV( (canUnit->state != CAN_CS_UNINIT), 0x5, CAN_E_UNINIT );
 
   //Irq_Save(state);
   if( canUnit->lock_cnt > 1 )
@@ -791,24 +867,28 @@ void Can_EnableControllerInterrupts( uint8 controller ) {
 
   canHwConfig = GET_CONTROLLER_CONFIG(Can_Global.channelMap[controller]);
 
-  if( canHwConfig->CanRxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT ) {
+  if( canHwConfig->CanRxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
+  {
     /* Turn on the rx interrupt */
-#if 0
-	CAN_ITConfig(canHw, CAN_IT_FMP0, ENABLE);
+#if 1
+      HAL_CAN_ActivateNotification (&canUnit->CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING);
 #endif
   }
-  if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT ) {
+  if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
+  {
 	/* Turn on the tx interrupt mailboxes */
-#if 0
-  	CAN_ITConfig(canHw, CAN_IT_TME, ENABLE);
+#if 1
+  	//CAN_ITConfig(canHw, CAN_IT_TME, ENABLE);
+      HAL_CAN_ActivateNotification (&canUnit->CanHandle, CAN_IT_TX_MAILBOX_EMPTY);
 #endif
   }
 
   // BusOff here represents all errors and warnings
   if( canHwConfig->CanBusOffProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT ) {
 	/* Turn on the bus off/tx warning/rx warning and error and rx  */
-#if 0
-	CAN_ITConfig(canHw, CAN_IT_BOF | CAN_IT_ERR | CAN_IT_WKU, ENABLE);
+#if 1
+      HAL_CAN_ActivateNotification(&canUnit->CanHandle, CAN_IT_BUSOFF | CAN_IT_ERROR | CAN_IT_WAKEUP);
+      //CAN_ITConfig(canHw, CAN_IT_BOF | CAN_IT_ERR | CAN_IT_WKU, ENABLE);
 
 #endif
   }
@@ -857,13 +937,15 @@ Can_ReturnType Can_Write( Can_Arc_HTHType hth, Can_PduType *pduInfo ) {
   }
 
   // check for any free box
-  if(HAL_CAN_AddTxMessage(canHw,&TxMessageHeader, TxData, &TxMailbox) != HAL_OK) //CAN_NO_MB) {
+  if(HAL_CAN_AddTxMessage(&canUnit->CanHandle, &TxMessageHeader, TxData, &TxMailbox) != HAL_OK) //CAN_NO_MB) {
   {
     canHwConfig = GET_CONTROLLER_CONFIG(Can_Global.channelMap[controller]);
 
-    if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT ) {
+    if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
+    {
   	  /* Turn on the tx interrupt mailboxes */
     	//CAN_ITConfig(canHw,CAN_IT_TME, ENABLE);
+        __HAL_CAN_ENABLE_IT(&canUnit->CanHandle, CAN_IT_TX_MAILBOX_EMPTY);
     }
 
 	// Increment statistics

@@ -83,7 +83,7 @@ namespace drivers
 //#define USARTx_IRQHandler                USART2_IRQHandler
 
 		}
-#elif defined USE_STM32F3XX_NUCLEO_32
+#elif defined USE_STM32F3XX_NUCLEO_32 || defined STM32F303xC
 		if (pt_rx_gpio_block == GPIOC && u16_rx_pin == GPIO_PIN_5 &&
 			pt_tx_gpio_block == GPIOC && u16_tx_pin == GPIO_PIN_4)
 		{

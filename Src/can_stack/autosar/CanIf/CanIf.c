@@ -133,7 +133,8 @@ static void ClearRxBuffers(uint8 controller) {
 	}
 }
 
-void CanIf_Init(const CanIf_ConfigType* ConfigPtr) {
+void CanIf_Init(const CanIf_ConfigType* ConfigPtr)
+{
   // nullptr means use default config
   if(ConfigPtr == 0) {
 	  ConfigPtr = &CanIf_Config;
@@ -527,7 +528,6 @@ static void RxLPduReceived(PduIdType lpdu, Can_IdType canId, uint8 canDlc, const
   }
 }
 
-#if 0
 // called by CanIf_RxIndication with info about correct hrhConfig set for CanDriverUnit
 // service id 20
 void CanIf_Arc_RxIndication(Can_HwHandleType hrh, Can_IdType canId, uint8 canDlc, const uint8* canSduPtr, uint8 driverUnit) {
@@ -536,27 +536,36 @@ void CanIf_Arc_RxIndication(Can_HwHandleType hrh, Can_IdType canId, uint8 canDlc
 	VALIDATE_NO_RV(canId & 0x80000000 && canId < 0xA0000000 || canId < 0x800, 20, CANIF_E_PARAM_CANID);
 	VALIDATE_NO_RV(canDlc <= 8, 20, CANIF_E_PARAM_DLC);
 	VALIDATE_NO_RV(canSduPtr != 0, 20, CANIF_E_PARAM_POINTER);
-  int numPdus =CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].arrayLen;
-	if(numPdus == 0) {
+
+	int numPdus = CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].arrayLen;
+	if(numPdus == 0)
+	{
 		// no filtering, lpdu id found
-    RxLPduReceived(CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].pduInfo.lpduId, canId, canDlc, canSduPtr);
-  } else {
-    PduIdType *firstPduId = CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].pduInfo.array;
-		while(numPdus > 1) {
-			if(CanIf_ConfigPtr->rxLpduCfg[firstPduId[numPdus / 2]].id >= canId) {
+	    RxLPduReceived(CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].pduInfo.lpduId, canId, canDlc, canSduPtr);
+	}
+	else
+	{
+	    PduIdType *firstPduId = CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].pduInfo.array;
+		while(numPdus > 1)
+		{
+			if(CanIf_ConfigPtr->RxLpduCfg[firstPduId[numPdus / 2]].id >= canId)
+			{
 				firstPduId += numPdus / 2;
 				numPdus = numPdus / 2 + numPdus % 2;
-			} else {
+			}
+			else
+			{
 				numPdus = numPdus / 2;
 			}
 		}
-		if(CanIf_ConfigPtr->rxLpduCfg[*firstPduId].id == canId) {
+		if(CanIf_ConfigPtr->RxLpduCfg[*firstPduId].id == canId)
+		{
 			// lpdu id found handle message
-      RxLPduReceived(*firstPduId, canId, canDlc, canSduPtr);
+		    RxLPduReceived(*firstPduId, canId, canDlc, canSduPtr);
 		}
 	}
 }
-#endif
+
 #if CANIF_CTRLDRV_TX_CANCELLATION
 // service id 21
 void CanIf_CancelTxConfirmation(const Can_PduType* pduInfoPtr) {
@@ -593,6 +602,11 @@ void CanIf_CancelTxConfirmation(const Can_PduType* pduInfoPtr) {
 #endif
 }
 #endif
+
+void CanIf_SetWakeupEvent( uint8 ControllerId)
+{
+    // TODO nothing at the moment
+}
 
 void CanIf_ControllerBusOff(uint8 ControllerId)
 {

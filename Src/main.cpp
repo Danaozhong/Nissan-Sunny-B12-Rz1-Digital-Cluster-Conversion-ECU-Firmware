@@ -39,9 +39,11 @@
 /* OS headers */
 #include "FreeRTOS.h"
 #include "task.h"
-
+#include "Can.h"
+#include "CanIf.h"
 
 #include "main_application.hpp"
+#include "uc_ports.hpp"
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -63,6 +65,7 @@ __IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
 static void SystemClock_Config(void);
 static void SystemClock_Config_STM32_F3_DISCOVERY(void);
 static void SystemClock_Config_STM32F303_NUCLEO_32(void);
+static void SystemClock_Config_STM32F303xC(void);
 
 static void Error_Handler(void);
 //static void ADC_Config(void);
@@ -156,6 +159,8 @@ void MAIN_startup_thread(void*)
 	std::shared_ptr<drivers::GenericUART> p_uart = std::make_shared<drivers::STM32HardwareUART>(GPIOD, GPIO_PIN_6, GPIOD, GPIO_PIN_5);
 #elif defined USE_STM32F3XX_NUCLEO_32
 	drivers::GenericUART* p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
+#elif defined STM32F303xC
+	drivers::GenericUART* p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
 #endif
 
 	// ... and connect it to the hardware ports
@@ -165,7 +170,11 @@ void MAIN_startup_thread(void*)
 	OSServices::OSConsole o_os_console(p_uart);
 	set_serial_output(p_uart);
 
-	// and create aour main application.
+	/* Init the CAN interface (AUTOSAR conform) */
+	Can_Init(&CanConfigData);
+	CanIf_Init(&CanIf_Config);
+
+	// and create our main application.
 	app::MainApplication& o_application = app::MainApplication::get();
 
 	while (true)
@@ -182,7 +191,8 @@ void MAIN_startup_thread(void*)
 
 int main(void)
 {
-
+    // create the port configuration object
+    drivers::UcPorts* po_uc_port_configuration = new drivers::STM32F303CCT6UcPorts();
 
 	/* STM32F3xx HAL library initialization:
 	   - Configure the Flash prefetch
@@ -223,6 +233,8 @@ static void SystemClock_Config(void)
 	SystemClock_Config_STM32_F3_DISCOVERY();
 #elif defined USE_STM32F3XX_NUCLEO_32
 	SystemClock_Config_STM32F303_NUCLEO_32();
+#elif defined STM32F303xC
+	SystemClock_Config_STM32F303xC();
 #else
 #error "Please specify the system clock configuration for your target board."
 #endif
@@ -320,6 +332,51 @@ void SystemClock_Config_STM32F303_NUCLEO_32(void)
 }
 
 
+/**
+  * @brief  System Clock Configuration
+  *         The system Clock is configured as follow :
+  *            System Clock source            = PLL (HSI)
+  *            SYSCLK(Hz)                     = 64000000
+  *            HCLK(Hz)                       = 64000000
+  *            AHB Prescaler                  = 1
+  *            APB1 Prescaler                 = 2
+  *            APB2 Prescaler                 = 1
+  *            PLLMUL                         = RCC_PLL_MUL16 (16)
+  *            Flash Latency(WS)              = 2
+  * @param  None
+  * @retval None
+  */
+void SystemClock_Config_STM32F303xC(void)
+{
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+
+  /* HSI Oscillator already ON after system reset, activate PLL with HSI as source */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct)!= HAL_OK)
+  {
+    /* Initialization Error */
+    while(1);
+  }
+
+  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
+     clocks dividers */
+  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2)!= HAL_OK)
+  {
+    /* Initialization Error */
+    while(1);
+  }
+}
+
+
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
 {
   /* Turn LED3 on: Transfer error in reception/transmission process */
@@ -331,64 +388,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
 
 }
 
-#if 0
-/**
-  * @brief  ADC configuration
-  * @param  None
-  * @retval None
-  */
-static void ADC_Config(void)
-{
-#ifdef HAL_ADC_MODULE_ENABLED
-  ADC_ChannelConfTypeDef   sConfig;
-
-
-
-
-  /* Configuration of ADCx init structure: ADC parameters and regular group */
-  AdcHandle.Instance = ADC2;
-
-  AdcHandle.Init.ClockPrescaler        = ADC_CLOCK_SYNC_PCLK_DIV4;
-  AdcHandle.Init.Resolution            = ADC_RESOLUTION_12B;
-  AdcHandle.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
-  AdcHandle.Init.ScanConvMode          = DISABLE;                       /* Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1) */
-  AdcHandle.Init.EOCSelection          = ADC_EOC_SEQ_CONV;
-  AdcHandle.Init.LowPowerAutoWait      = DISABLE;
-  AdcHandle.Init.ContinuousConvMode    = ENABLE;                       /* Continuous mode disabled to have only 1 conversion at each conversion trig */
-  AdcHandle.Init.NbrOfConversion       = 1;                             /* Parameter discarded because sequencer is disabled */
-  AdcHandle.Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
-  AdcHandle.Init.NbrOfDiscConversion   = 1;                             /* Parameter discarded because sequencer is disabled */
-  AdcHandle.Init.ExternalTrigConv      =  ADC_SOFTWARE_START;   // ???
-  AdcHandle.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  AdcHandle.Init.DMAContinuousRequests = DISABLE;
-  AdcHandle.Init.Overrun               = ADC_OVR_DATA_OVERWRITTEN;
-
-  if (HAL_ADC_Init(&AdcHandle) != HAL_OK)
-  {
-    /* ADC initialization error */
-    Error_Handler();
-  }
-
-  /* Configuration of channel on ADCx regular group on sequencer rank 1 */
-  /* Note: Considering IT occurring after each ADC conversion if ADC          */
-  /*       conversion is out of the analog watchdog widow selected (ADC IT    */
-  /*       enabled), select sampling time and ADC clock with sufficient       */
-  /*       duration to not create an overhead situation in IRQHandler.        */
-  sConfig.Channel      = ADCx_CHANNELa;
-  sConfig.Rank         = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_181CYCLES_5;
-  sConfig.SingleDiff   = ADC_SINGLE_ENDED;
-  sConfig.OffsetNumber = ADC_OFFSET_NONE;
-  sConfig.Offset       = 0;
-
-  if (HAL_ADC_ConfigChannel(&AdcHandle, &sConfig) != HAL_OK)
-  {
-    /* Channel Configuration Error */
-    Error_Handler();
-  }
-#endif
-}
-#endif
 
 #ifdef HAL_ADC_MODULE_ENABLED
 /**

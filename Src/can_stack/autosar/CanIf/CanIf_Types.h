@@ -170,16 +170,23 @@ typedef struct
 	void (*CanIfErrorNotificaton)(uint8);
 } CanIf_DispatchConfigType;
 
-//typedef s
+typedef struct
+{
+    union {
+        PduIdType lpduId;
+        PduIdType *array;
+    }pduInfo;
+    PduIdType arrayLen; // 0 means no ptr no filtering = fullCan reception
+}   CanIf_HrHConfigType;
 
 typedef struct {
 	/* Everything in this structure is implementation specific */
 	CanIf_TxLPduConfigType TxLpduCfg[CANIF_NUM_TX_LPDU_ID];
 	CanIf_RxLPduConfigType RxLpduCfg[CANIF_NUM_RX_LPDU_ID];
 
-	const CanIf_ControllerConfigType* ControllerConfig;
-	const CanIf_DispatchConfigType* DispatchConfig;
-   //const CanIf_HrHConfigType* canIfHrhCfg[CANIF_NUM_DRIVER_UNITS];
+    const CanIf_ControllerConfigType* ControllerConfig;
+    const CanIf_DispatchConfigType* DispatchConfig;
+    const CanIf_HrHConfigType* canIfHrhCfg[1];  // TODO Why we need an array here?
 } CanIf_ConfigType;
 
 

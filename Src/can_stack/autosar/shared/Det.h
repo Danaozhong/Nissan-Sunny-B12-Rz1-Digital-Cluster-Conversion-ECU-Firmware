@@ -85,12 +85,19 @@ uint8 Det_AddCbk ( detCbk_t detCbk);
 void Det_RemoveCbk ( uint8 detCbkIndex);
 #endif
 
-void Det_Init( void ); /** @req DET008 */
-#if DET_DEINIT_API == STD_ON
-void Det_DeInit( void );
+#ifdef __cplusplus
+extern "C"
+{
 #endif
+
+void Det_Init( void ); /** @req DET008 */
+void Det_DeInit( void );
 void Det_ReportError( uint16 ModuleId, uint8 InstanceId, uint8 ApiId, uint8 ErrorId); /** @req DET009 */
 void Det_Start( void ); /** @req DET010 */
 #define Det_GetVersionInfo(_vi) STD_GET_VERSION_INFO(_vi,DET) /** @req DET011 */ /** @req DET012 */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*DET_H*/

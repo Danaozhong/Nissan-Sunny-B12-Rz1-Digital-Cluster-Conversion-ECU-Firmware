@@ -296,7 +296,10 @@ typedef union {
 // controller.
 #define GET_CANCONTROLLER(a) (a / HTH_DIVIDER)
 
-
+#ifdef __cplusplus
+ extern "C"
+ {
+#endif
 void Can_Init( const Can_ConfigType *Config );
 void Can_DeInit(void);
 
@@ -329,4 +332,7 @@ Can_TestType *Can_Arc_GetTestInfo( void  );
 #endif
 
 
+#ifdef __cplusplus
+ } /* Extern "C" */
+#endif
 #endif /*CAN_H_*/

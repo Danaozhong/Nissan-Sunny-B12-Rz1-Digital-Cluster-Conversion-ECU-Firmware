@@ -25,7 +25,7 @@
 // Number of controller configs
 #define CAN_ARC_CTRL_CONFIG_CNT		1
 
-#define CAN_DEV_ERROR_DETECT			STD_OFF
+#define CAN_DEV_ERROR_DETECT			STD_ON
 #define CAN_VERSION_INFO_API			STD_OFF
 #define CAN_MULTIPLEXED_TRANSMISSION	STD_OFF  // Not supported
 #define CAN_WAKEUP_SUPPORT				STD_OFF  // Not supported
@@ -73,7 +73,7 @@ typedef struct {
 	void (*RxIndication)( uint8 ,Can_IdType ,uint8 , const uint8 * );
 	void (*ControllerBusOff)(uint8);
 	void (*TxConfirmation)(PduIdType);
-	void (*ControllerWakeup)(uint8);
+	void (*SetWakeupEvent)(uint8);
 	//void (*Arc_Error)(uint8,Can_Arc_ErrorType);
 } Can_CallbackType;
 

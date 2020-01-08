@@ -71,8 +71,8 @@ const Can_CallbackType CanCallbackConfigData = {
     CanIf_RxIndication,
     CanIf_ControllerBusOff,
     CanIf_TxConfirmation,
-    NULL, //CanIf_ControllerWakeup,
-    CanIf_Arc_Error,
+    CanIf_SetWakeupEvent,
+    //CanIf_Arc_Error,
 };
 
 const Can_ConfigSetType CanConfigSetData =

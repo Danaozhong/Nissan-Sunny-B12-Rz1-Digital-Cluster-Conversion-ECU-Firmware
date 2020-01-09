@@ -147,6 +147,7 @@
 									<listOptionValue builtIn="false" value="../../Src/drivers/uc_ports/inc"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/excp_handler/inc/"/>
 									<listOptionValue builtIn="false" value="../../Src/drivers/eeprom/inc"/>
+									<listOptionValue builtIn="false" value="../../Src/midware/util_algorithms/inc/"/>
 								</option>
 								<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.fdata.83550841" name="Place data in their own sections (-fdata-sections)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.fdata" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.1452505141" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
@@ -355,6 +356,7 @@
 									<listOptionValue builtIn="false" value="../../Src/drivers/uc_ports/inc"/>
 									<listOptionValue builtIn="false" value="../../Src/driver/eeprom/inc"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/excp_handler/inc/"/>
+									<listOptionValue builtIn="false" value="../../Src/midware/util_algorithms/inc/"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.5250228" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
 							</tool>

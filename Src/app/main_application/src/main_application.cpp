@@ -1,12 +1,63 @@
 #include "main_application.hpp"
+#include "console_commands.hpp"
+#include "Can.h"
+#include "CanIf.h"
+
+#include "excp_handler.hpp"
+#include "excp_handler_console_commands.hpp"
+
 
 namespace app
 {
 
 	MainApplication::MainApplication()
+	{}
+
+	void MainApplication::startup_from_reset()
 	{
-	    initialize_fuel_level_converter();
-	    initilialize_speed_converter();
+	    // create the UART interface to be able to log low-level debug messages
+	#ifdef USE_STM32_F3_DISCO
+	    m_p_uart = std::make_shared<drivers::STM32HardwareUART>(GPIOD, GPIO_PIN_6, GPIOD, GPIO_PIN_5);
+	#elif defined USE_STM32F3XX_NUCLEO_32
+	    m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
+	#elif defined STM32F303xC
+	    m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
+	#endif
+
+	    // ...open UART connection.
+	    m_p_uart->connect(9600, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
+
+	    // Create the debug console
+	    m_po_os_console = new OSServices::OSConsole(m_p_uart);
+
+	    // Initialize the trace module
+	    m_po_trace = new midware::Trace();
+
+	    // Enable trace logging via UART
+	    auto po_trace_io_interface = std::make_shared<midware::UARTTraceIOInterface>(m_p_uart);
+	    m_po_trace->add_trace_io_interface(po_trace_io_interface);
+
+	    // and set the trace moduel as the default system tracer
+	    m_po_trace->set_as_default_trace();
+
+        // Initialize the exception storage module, to be able to log / debug exceptions
+        m_po_exception_handler = new midware::ExceptionHandler();
+        m_po_exception_handler->init();
+        m_po_exception_handler->set_as_default_exception_handler();
+
+	    // register the command to debug the exception handler on the os console
+	    m_po_os_console->register_command(new midware::CommandListExceptions());
+
+	    /* Init the CAN interface (AUTOSAR conform) */
+	    Can_Init(&CanConfigData);
+	    CanIf_Init(&CanIf_Config);
+
+	    // initialization below is for the application
+        init_fuel_level_converter();
+        init_speed_converter();
+
+        // register the debug commands in the os console, so that debugging of the speed signals is possible.
+        this->m_po_os_console->register_command(new app::CommandSpeed());
 	}
 
 	MainApplication& MainApplication::get()
@@ -21,6 +72,11 @@ namespace app
 	    return m_po_speed_sensor_converter;
     }
 
+	OSServices::OSConsole* MainApplication::get_os_console()
+	{
+	    return this->m_po_os_console;
+	}
+
 	void MainApplication::fuel_sensor_input_received(int32_t i32_value)
 	{
 		if (m_p_o_fuel_gauge_output != nullptr)
@@ -29,7 +85,7 @@ namespace app
 		}
 	}
 
-	int32_t MainApplication::initilialize_speed_converter()
+	int32_t MainApplication::init_speed_converter()
     {
         // TODO this is the configuration for the STM32 discovery, change to support the small board
         m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM3, TIM_CHANNEL_1, GPIOC, GPIO_PIN_6);
@@ -37,7 +93,12 @@ namespace app
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
-	int32_t MainApplication::initialize_fuel_level_converter()
+    int32_t MainApplication::deinit_speed_converter()
+    {
+        return OSServices::ERROR_CODE_SUCCESS;
+    }
+
+	int32_t MainApplication::init_fuel_level_converter()
     {
         // create the low-level hardware interfaces
         m_p_adc = std::make_shared<drivers::STM32ADC>(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);
@@ -87,6 +148,21 @@ namespace app
         // attach to the signal of the fuel sensor input
         auto event_handler = std::bind(&MainApplication::fuel_sensor_input_received, this, std::placeholders::_1);
         m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
+
+        return OSServices::ERROR_CODE_SUCCESS;
+    }
+
+    int32_t MainApplication::deinit_fuel_level_converter()
+    {
+        // explicitly delete the application objects
+        delete m_p_o_fuel_gauge_input;
+
+        m_p_o_fuel_gauge_input = nullptr;
+        m_p_o_fuel_gauge_output = nullptr;
+        m_p_o_fuel_gauge_output_characteristic = nullptr;
+        m_p_o_fuel_gauge_input_characteristic = nullptr;
+        m_p_adc = nullptr;
+        m_p_dac = nullptr;
 
         return OSServices::ERROR_CODE_SUCCESS;
     }

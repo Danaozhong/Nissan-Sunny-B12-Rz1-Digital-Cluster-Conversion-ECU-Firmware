@@ -39,9 +39,6 @@
 /* OS headers */
 #include "FreeRTOS.h"
 #include "task.h"
-#include "Can.h"
-#include "CanIf.h"
-
 #include "main_application.hpp"
 #include "uc_ports.hpp"
 
@@ -154,28 +151,9 @@ void MAIN_startup_thread(void*)
 	// wait for the scheduler to be ready.
 	std_ex::sleep_for(std::chrono::milliseconds(400));
 
-	// create the debug interface
-#ifdef USE_STM32_F3_DISCO
-	std::shared_ptr<drivers::GenericUART> p_uart = std::make_shared<drivers::STM32HardwareUART>(GPIOD, GPIO_PIN_6, GPIOD, GPIO_PIN_5);
-#elif defined USE_STM32F3XX_NUCLEO_32
-	drivers::GenericUART* p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
-#elif defined STM32F303xC
-	drivers::GenericUART* p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
-#endif
-
-	// ... and connect it to the hardware ports
-	p_uart->connect(9600, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
-
-	// if this was all successful, create the OS helper services
-	OSServices::OSConsole o_os_console(p_uart);
-	set_serial_output(p_uart);
-
-	/* Init the CAN interface (AUTOSAR conform) */
-	Can_Init(&CanConfigData);
-	CanIf_Init(&CanIf_Config);
-
 	// and create our main application.
 	app::MainApplication& o_application = app::MainApplication::get();
+	o_application.startup_from_reset();
 
 	while (true)
 	{
@@ -183,7 +161,7 @@ void MAIN_startup_thread(void*)
 		std_ex::sleep_for(std::chrono::milliseconds(100));
 
 		// check for debug input
-		o_os_console.run();
+		o_application.get_os_console()->run();
 	}
 	vTaskDelete(NULL);
 }

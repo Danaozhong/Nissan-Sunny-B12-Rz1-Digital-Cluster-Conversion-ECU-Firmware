@@ -1,5 +1,6 @@
 #include "console_commands.hpp"
 #include "main_application.hpp"
+#include <cstring>
 
 namespace app
 {
@@ -75,6 +76,7 @@ namespace app
 
     uint32_t CommandSpeed::u32_get_output_buffer(char* &p_output_buffer)
     {
+        auto x = strlen(p_output_buffer);
         uint32_t u32_strlen = strnlen(m_pi8_output_buffer, m_u32_buffer_size);
         p_output_buffer = m_pi8_output_buffer + u32_strlen; // The buffer position is passed by reference
         return m_u32_buffer_size - u32_strlen; // the remaining buffer length as the return value

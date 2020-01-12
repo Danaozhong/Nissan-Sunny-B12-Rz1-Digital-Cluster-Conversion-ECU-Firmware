@@ -7,7 +7,7 @@
 
 #include <cstring>
 #include <thread>
-#include "trace.h"
+#include "trace_if.h"
 #include "ex_thread.hpp"
 #include "stm32_uart.hpp"
 #include <functional>

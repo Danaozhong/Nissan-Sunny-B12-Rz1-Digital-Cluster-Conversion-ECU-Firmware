@@ -80,7 +80,6 @@
 									<listOptionValue builtIn="false" value="../../Src/midware/FreeRTOS/adapt"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/cppstdlib"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/events"/>
-									<listOptionValue builtIn="false" value="../../Src/midware/trace"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/FreeRTOS/src/freertos"/>
 									<listOptionValue builtIn="false" value="../../Src/app/lookup_table/inc"/>
 									<listOptionValue builtIn="false" value="../../Src/app/fuel_gauge_input/inc"/>
@@ -99,6 +98,7 @@
 									<listOptionValue builtIn="false" value="../../Src/app/speed_sensor_converter/inc"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/excp_handler/inc/"/>
 									<listOptionValue builtIn="false" value="../../Src/drivers/eeprom/inc"/>
+									<listOptionValue builtIn="false" value="../../Src/midware/trace/inc"/>
 								</option>
 								<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.fdata.1504805710" name="Place data in their own sections (-fdata-sections)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.fdata" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1153163875" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
@@ -126,7 +126,6 @@
 									<listOptionValue builtIn="false" value="../../Src/midware/FreeRTOS/adapt"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/cppstdlib"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/events"/>
-									<listOptionValue builtIn="false" value="../../Src/midware/trace"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/FreeRTOS/src/freertos"/>
 									<listOptionValue builtIn="false" value="../../Src/app/lookup_table/inc"/>
 									<listOptionValue builtIn="false" value="../../Src/app/fuel_gauge_input/inc"/>
@@ -148,6 +147,7 @@
 									<listOptionValue builtIn="false" value="../../Src/midware/excp_handler/inc/"/>
 									<listOptionValue builtIn="false" value="../../Src/drivers/eeprom/inc"/>
 									<listOptionValue builtIn="false" value="../../Src/midware/util_algorithms/inc/"/>
+									<listOptionValue builtIn="false" value="../../Src/midware/trace/inc"/>
 								</option>
 								<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.fdata.83550841" name="Place data in their own sections (-fdata-sections)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.fdata" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.1452505141" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>

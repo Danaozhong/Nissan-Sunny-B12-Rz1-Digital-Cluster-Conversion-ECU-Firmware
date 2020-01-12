@@ -8,7 +8,6 @@
 #include <cstring>
 
 #include "ex_thread.hpp"
-#include "trace.h"
 
 
 namespace std_ex

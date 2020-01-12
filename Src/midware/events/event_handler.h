@@ -6,7 +6,7 @@
 #include <memory>
 #include <mutex>
 
-#include "trace.h"
+#include "trace_if.h"
 
 namespace boost
 {
@@ -39,6 +39,21 @@ namespace boost
 #endif
                 DEBUG_PRINTF("connect called! size %u", signal_handlers->size());
                 signal_handlers->push_back(handler);
+            }
+
+            void disconnect_all_slots()
+            {
+                signal_handlers->clear();
+            }
+
+            bool empty() const
+            {
+                return (num_slots() == 0);
+            }
+
+            std::size_t num_slots() const
+            {
+                return signal_handlers->size();
             }
 
             void operator()(const T &arg) const

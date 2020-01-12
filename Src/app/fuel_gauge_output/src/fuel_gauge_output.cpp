@@ -6,7 +6,7 @@
 #define FUEL_GAUGE_OUTPUT_LOG(...)
 #else
 /* Compile with debug output */
-#include "trace.h"
+#include "trace_if.h"
 #define FUEL_GAUGE_OUTPUT_LOG(...)   DEBUG_PRINTF(__VA_ARGS__)
 #endif
 

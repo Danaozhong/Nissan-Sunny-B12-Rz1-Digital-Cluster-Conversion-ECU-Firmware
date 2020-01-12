@@ -5,6 +5,7 @@
 #include "generic_adc.hpp"
 #include "lookup_table.hpp"
 #include "event_handler.h"
+#include "ex_thread.hpp"
 
 
 /* Enable this if you want to have additional log output for the fuel sensor acquisition module */
@@ -48,11 +49,14 @@ namespace app
 		FuelGaugeInputFromADC(std::shared_ptr<drivers::GenericADC> p_adc,
 				std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> p_fuel_input_characteristic);
 
+		~FuelGaugeInputFromADC();
 		/// Signal triggered when a new value from the fuel sensor was retrieved
 		boost::signals2::signal<int32_t> m_sig_fuel_level_changed;
 	private:
 		void thread_main(void);
 
+		// data acquisition thread
+		std_ex::thread* m_po_data_acquisition_thread;
 
 		int32_t get_average_fuel_percentage() const;
 
@@ -63,6 +67,7 @@ namespace app
 		uint32_t m_u32_buffer_counter;
 
 		bool m_bo_initialized;
+		bool m_bo_terminate_thread;
 		uint32_t m_u32_invalid_read_counter;
 
 		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_fuel_input_characteristic;

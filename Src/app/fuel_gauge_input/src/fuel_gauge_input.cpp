@@ -1,7 +1,6 @@
 
 
 #include "fuel_gauge_input.hpp"
-#include "ex_thread.hpp"
 #include <functional> // for std::bind
 
 // Ugly macros to allow debug logging
@@ -9,7 +8,7 @@
 #define FUEL_GAUGE_LOG(...)
 #else
 /* Compile with debug output */
-#include "trace.h"
+#include "trace_if.h"
 #define FUEL_GAUGE_LOG(...)   DEBUG_PRINTF(__VA_ARGS__)
 #endif
 
@@ -48,17 +47,24 @@ namespace app
 	FuelGaugeInputFromADC::FuelGaugeInputFromADC(std::shared_ptr<drivers::GenericADC> p_adc,
 			std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> p_fuel_input_characteristic)
 	: m_p_adc(p_adc), m_p_fuel_input_characteristic(p_fuel_input_characteristic),
-	  m_u32_buffer_counter(0u), m_bo_initialized(false), m_u32_invalid_read_counter(0u)
+	  m_u32_buffer_counter(0u), m_bo_initialized(false), m_bo_terminate_thread(false), m_u32_invalid_read_counter(0u)
 	{
 		// start the data acquisition thread
 		auto main_func = std::bind(&FuelGaugeInputFromADC::thread_main, this);
-		std_ex::thread o_data_acquisition_thread(main_func, "FUEL_SensorInput", 2u, 1024u);
-
-		// should be done nicer to allow cleanup, but currently threads will keep running forever
-		o_data_acquisition_thread.detach();
-
+		m_po_data_acquisition_thread = new std_ex::thread(main_func, "FUEL_SensorInput", 2u, 1024u);
 	}
 
+	FuelGaugeInputFromADC::~FuelGaugeInputFromADC()
+	{
+	    if(m_po_data_acquisition_thread != nullptr)
+	    {
+	        this->m_bo_terminate_thread = true;
+	        m_po_data_acquisition_thread->join();
+	        delete m_po_data_acquisition_thread;
+	    }
+
+	    // disconnecting the signal handler should not be necessary, will we done automatically during deletion
+	}
 
 	void FuelGaugeInputFromADC::thread_main(void)
 	{
@@ -67,8 +73,8 @@ namespace app
 		// and a 330Ohm resistor in parallel to the fuel gauge.
 		VoltageDivider o_voltage_divider(100, 3000); // 100 Ohm, 3V supply)
 
-		// never terminate this thread.
-		while(true)
+		// only quit this main loop when the object is destroyed
+		while(true == this->m_bo_terminate_thread)
 		{
 			// read from the ADC
 			uint32_t u32_adc_value = m_p_adc->read_adc_value();

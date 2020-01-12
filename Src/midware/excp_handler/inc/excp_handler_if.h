@@ -13,6 +13,7 @@ extern "C"
     {
         EXCP_MODULE_ADC,
         EXCP_MODULE_DAC,
+        EXCP_MODULE_EXCP_HANDLER,
         EXCP_MODULE_AUTOSAR_BASE = 500,
     } ExceptionModuleID;
 
@@ -20,6 +21,10 @@ extern "C"
     {
         EXCP_TYPE_NULLPOINTER = 100,
         EXCP_TYPE_PARMETER,
+        EXCP_TYPE_EXC_FAILED,
+        EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
+        EXCP_TYPE_EXCP_HANDLER_READING_DATA_FLASH_FAILED,
+
         EXCP_TYPE_AUTOSAR_BASE = 500
     } ExceptionTypeID;
 

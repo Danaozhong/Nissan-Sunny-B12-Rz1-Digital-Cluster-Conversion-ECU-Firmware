@@ -5,6 +5,9 @@
 #include "os_console.hpp"
 #include "util_algorithms.hpp"
 
+#include "eeprom.h"
+#include "trace_if.h"
+
 namespace
 {
     midware::ExceptionHandler* po_default_exception_handler = nullptr;
@@ -54,7 +57,7 @@ namespace midware
         memcpy(&pu8_memory[8], &m_u32_misc, 4);
         memcpy(&pu8_memory[12], &m_u32_line, 4);
         memcpy(&pu8_memory[16], &m_u32_occurence_count, 4);
-        memcpy(&pu8_memory[20], &m_u32_occurence_count, 8);
+        memcpy(&pu8_memory[20], &m_u64_timestamp, 8);
         memcpy(&pu8_memory[28], m_ai8_file, 16);
         // when changing, make sure to adapt the assertion below as well
         static_assert(28 + 16 < required_memory);
@@ -63,6 +66,43 @@ namespace midware
         written_size = required_memory;
         return OSServices::ERROR_CODE_SUCCESS;
     }
+
+    void Exception::print(char* pi8_buffer, size_t u_buffer_size) const
+    {
+        snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%u\t%u\t%l\t%s\r\n",
+            static_cast<unsigned int>(m_en_module_id),
+            static_cast<unsigned int>(m_en_exception_id),
+            static_cast<unsigned int>(m_u32_misc),
+            static_cast<unsigned int>(m_u32_occurence_count),
+            static_cast<unsigned int>(m_u64_timestamp),
+            m_ai8_file);
+    }
+
+    void ExceptionHandler::init()
+    {
+        int32_t i32_ret_val = this->read_from_data_flash();
+        if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
+        {
+            // raise exception that storing the exception data in data flash failed
+            ExceptionHandler_handle_exception(
+                    EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
+                    false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
+        }
+    }
+
+    void ExceptionHandler::deinit()
+    {
+        int32_t i32_ret_val = this->store_into_data_flash();
+        if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
+        {
+            // raise exception that storing the exception data in data flash failed
+            ExceptionHandler_handle_exception(
+                    EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_READING_DATA_FLASH_FAILED,
+                    false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
+        }
+
+    }
+
 
     void ExceptionHandler::handle_exception(
             ExceptionModuleID en_module_id,
@@ -83,9 +123,16 @@ namespace midware
         itr->m_u32_occurence_count++;
         //itr->m_u64_timestamp = std::chrono::high_resolution_clock::now().; // TODO update this when a time measurement library is available
 
+#if 1
+        // TODO move this part into the section that will trigger the reset after timeout, or before going to sleep.
         // update the exception information in flash
         // TODO this should be done anynchronously, doing flash writes from this process is not performant
-
+        if (OSServices::ERROR_CODE_SUCCESS != store_into_data_flash())
+        {
+            // don't handle an exception here, could lead to a stack overflow. Find something better
+            DEBUG_PRINTF("Exception Handler: storing the exceptions in flash failed!");
+        }
+#endif
         // Afterwards, when all information is safely stored in EEPROM, process the exception
         if (true == o_excp.m_bo_critical)
         {
@@ -101,13 +148,78 @@ namespace midware
         po_default_exception_handler = this;
     }
 
+    ExceptionHandler* ExceptionHandler::get_default_exception_handler()
+    {
+        return po_default_exception_handler;
+    }
+
     void ExceptionHandler::clear_exceptions()
     {
         this->m_ao_stored_exceptions.clear();
     }
 
+    void ExceptionHandler::print(char* pi8_buffer, size_t u_buffer_size) const
+    {
+        snprintf(pi8_buffer, u_buffer_size, "Currently logged exceptions:\n\r");
+        for (auto itr = m_ao_stored_exceptions.begin(); itr != m_ao_stored_exceptions.end(); ++itr)
+        {
+            size_t current_str_len = strlen(pi8_buffer);
+            char* current_string_end  = pi8_buffer + current_str_len;
+            itr->print(current_string_end, u_buffer_size - current_str_len);
+        }
+    }
+
+    int32_t ExceptionHandler::store_into_data_flash() const
+    {
+        // create a temporary buffer to write the data to it
+        uint8_t au8_buffer[this->m_u_data_flash_buffer_size];
+        size_t u_buffer_written_size = 0u;
+
+        int32_t i32_ret_val = this->store_into_buffer(au8_buffer, m_u_data_flash_buffer_size, u_buffer_written_size);
+
+        if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
+        {
+            // Some error occured when trying to store the data.
+            return i32_ret_val;
+        }
+
+        // calculate the amount of data to be written in 32-bit block sizes
+        uint16_t u16_buffer_size_in_words = u_buffer_written_size / 4;
+        if (u_buffer_written_size % 4 != 0)
+        {
+            // if the data ends non-aligned, ensure the last word is also written
+            u16_buffer_size_in_words++;
+        }
+        // write to code flash
+        if (true != EE_Writes(m_u16_data_flash_address, u16_buffer_size_in_words, reinterpret_cast<uint32_t*>(au8_buffer)))
+        {
+            // storing into flash failed
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+
+        // TODO: re-read the flash, to double check that everything was written OK
+
+        // Otherwise, everything seems to be OK!
+        return OSServices::ERROR_CODE_SUCCESS;
+    }
+
+    int32_t ExceptionHandler::read_from_data_flash()
+    {
+        uint8_t au8_buffer[this->m_u_data_flash_buffer_size];
+        if (true != EE_Reads(m_u16_data_flash_address,
+                static_cast<uint16_t>(this->m_u_data_flash_buffer_size / 4),
+                reinterpret_cast<uint32_t*>(au8_buffer)))
+        {
+            // reading from flash failed
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+        // and parse the stuff we have read from flash.
+        return this->read_from_buffer(au8_buffer, m_u_data_flash_buffer_size);
+    }
+
+
     /** Saves the found exception into a memory block */
-    int32_t ExceptionHandler::store_into_memory(uint8_t* p_memory, size_t u_memory_size, size_t &written_size) const
+    int32_t ExceptionHandler::store_into_buffer(uint8_t* p_memory, size_t u_memory_size, size_t &written_size) const
     {
         /* The memory layout is as follows:
          * header includes:
@@ -178,7 +290,7 @@ namespace midware
     }
 
     /** Loads a list of exceptions from a memory location */
-    int32_t ExceptionHandler::read_from_memory(const uint8_t* pc_memory, size_t u_memory_size)
+    int32_t ExceptionHandler::read_from_buffer(const uint8_t* pc_memory, size_t u_memory_size)
     {
         // make sure there is enough space to read the header
         if (u_memory_size < 32u)
@@ -306,7 +418,6 @@ namespace midware
 
             uint32_t u32_module_id = 0u;
             uint32_t u32_exception_id = 0u;
-
 
             memcpy(&u32_module_id, &pc_buffer[0], 4);
             memcpy(&u32_exception_id, &pc_buffer[4], 4);

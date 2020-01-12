@@ -23,6 +23,8 @@ namespace midware
 
         int32_t store_into_buffer_version_100(uint8_t* pu8_memory, size_t u_memory_size, size_t &written_size) const;
 
+        void print(char* pi8_buffer, size_t u_buffer_size) const;
+
     //private:
         ExceptionModuleID m_en_module_id;
         ExceptionTypeID m_en_exception_id;
@@ -37,9 +39,15 @@ namespace midware
     class ExceptionHandler
     {
     public:
-        ExceptionHandler() {}
+        ExceptionHandler()
+    : m_u_data_flash_buffer_size(1024u),
+      m_u16_data_flash_address(110u*1024u) // located at 110K flash
+    {}
 
         ~ExceptionHandler() {}
+
+        void init();
+        void deinit();
 
         void handle_exception(
                 ExceptionModuleID en_module_id,
@@ -53,14 +61,23 @@ namespace midware
 
 
         void set_as_default_exception_handler();
+        static ExceptionHandler* get_default_exception_handler();
 
         void clear_exceptions();
 
+        void print(char* pi8_buffer, size_t u_buffer_size) const;
+
+        /// saves everything into data flash ((EEPROM emulation)
+        int32_t store_into_data_flash() const;
+
+        /// reads everything from data flash (EEPROM emulation)
+        int32_t read_from_data_flash();
+
         /** Saves the found exception into a memory block */
-        int32_t store_into_memory(uint8_t* p_memory, size_t u_memory_size, size_t &written_size) const;
+        int32_t store_into_buffer(uint8_t* p_memory, size_t u_memory_size, size_t &written_size) const;
 
         /** Loads a list of exceptions from a memory location */
-        int32_t read_from_memory(const uint8_t* pc_memory, size_t u_memory_size);
+        int32_t read_from_buffer(const uint8_t* pc_memory, size_t u_memory_size);
     private:
 
         std::vector<Exception>::iterator store_exception_in_list(const Exception &o_excp);
@@ -74,6 +91,11 @@ namespace midware
         /// reads
         int32_t read_from_memory_version_100(const uint8_t* pc_memory, size_t u_memory_size);
 
+        /// How much memory in data flash is used for storing exceptions
+        const size_t m_u_data_flash_buffer_size;
+
+        /// the address of where the exception data flash is located
+        const uint16_t m_u16_data_flash_address;
     };
 
     namespace ExceptionFactory

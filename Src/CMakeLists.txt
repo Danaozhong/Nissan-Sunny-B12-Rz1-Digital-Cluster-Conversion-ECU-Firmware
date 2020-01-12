@@ -4,7 +4,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 ENABLE_LANGUAGE(ASM)
 
 FIND_PACKAGE(CMSIS REQUIRED)
-FIND_PACKAGE(STM32HAL COMPONENTS gpio tim adc dac can uart flash REQUIRED)
+FIND_PACKAGE(STM32HAL COMPONENTS gpio tim adc dac can dma uart flash REQUIRED)
 
 add_definitions(
     -D_BSD_SOURCE
@@ -55,6 +55,7 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/util_algorithms/inc
     
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt/CMSIS_RTOS
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/freertos
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/portable/GCC/ARM_CM4F
@@ -63,7 +64,7 @@ INCLUDE_DIRECTORIES(
 SET(PROJECT_SOURCES
     main.cpp
     stm32f3xx_it.c
-    system_stm32f3xx.c
+    #system_stm32f3xx.c
     app/console_commands/src/console_commands.cpp
     app/fuel_gauge_input/src/fuel_gauge_input.cpp
     app/fuel_gauge_output/src/fuel_gauge_output.cpp
@@ -92,7 +93,6 @@ SET(PROJECT_SOURCES
     midware/cppstdlib/mutex.cc
     midware/cppstdlib/thread.cpp
     
-    
     midware/events/event_handler.cpp
     midware/excp_handler/src/excp_handler.cpp
     midware/excp_handler/src/excp_handler_console_commands.cpp
@@ -102,6 +102,17 @@ SET(PROJECT_SOURCES
     midware/trace/src/trace.cpp
     midware/util_algorithms/src/util_algorithms.cpp
     
+    midware/FreeRTOS/adapt/CMSIS_RTOS/cmsis_os.c
+    midware/FreeRTOS/src/croutine.c
+    midware/FreeRTOS/src/event_groups.c
+    midware/FreeRTOS/src/list.c
+    midware/FreeRTOS/src/queue.c
+    midware/FreeRTOS/src/stream_buffer.c
+    midware/FreeRTOS/src/tasks.c
+    midware/FreeRTOS/src/timers.c
+
+    midware/FreeRTOS/src/portable/GCC/ARM_CM4F/port.c
+    midware/FreeRTOS/src/portable/MemMang/heap_4.c
 )
 
 ADD_EXECUTABLE(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})

@@ -1,20 +1,19 @@
-PROJECT(SunnyRz1FuelGaugeConverter)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+PROJECT(SunnyRz1FuelGaugeConverter  VERSION 1.0 DESCRIPTION "Test")
 
-# Version information
-set(SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION_MAJOR 1 CACHE STRING "major version" FORCE)
-set(SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION_MINOR 0 CACHE STRING "minor version" FORCE)
-set(SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION ${SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION_MAJOR}.${SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION_MINOR} CACHE STRING "version" FORCE)
 
 # some options
-option(USE_CAN "Enable / disable the CAN subsystem" OFF)
-
+option(USE_CAN "Enable / disable the CAN subsystem" ON)
+option(USE_TRACE "Enable / disable the tracing" ON)
 
 ENABLE_LANGUAGE(ASM)
 
 FIND_PACKAGE(CMSIS REQUIRED)
 FIND_PACKAGE(STM32HAL COMPONENTS gpio tim adc dac can dma uart flash REQUIRED)
+
+
+
 
 add_definitions(
     -D_BSD_SOURCE
@@ -23,43 +22,6 @@ add_definitions(
     -DDEBUG
     -DSTM32F303xC
     -DUSE_HAL_DRIVER
-)
-
-INCLUDE_DIRECTORIES(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMSIS_INCLUDE_DIRS}
-    ${STM32HAL_INCLUDE_DIR}
-)
-
-INCLUDE_DIRECTORIES(
-    ${CMAKE_CURRENT_SOURCE_DIR}/../Inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/console_commands/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/fuel_gauge_input/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/fuel_gauge_output/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/main_application/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/speed_sensor_converter/inc
-        
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/adc/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/dac/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/eeprom/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/pwm/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uart/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uc_ports/inc
-    
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/cppstdlib
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/events
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/excp_handler/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/osservices/os_console/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/std_ex/ex_threads
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/trace/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/util_algorithms/inc
-    
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt/CMSIS_RTOS
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/freertos
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/portable/GCC/ARM_CM4F
 )
 
 SET(PROJECT_SOURCES
@@ -95,7 +57,7 @@ SET(PROJECT_SOURCES
     
     midware/osservices/os_console/src/os_console.cpp
     midware/std_ex/ex_threads/ex_thread.cpp
-    midware/trace/src/trace.cpp
+
     midware/util_algorithms/src/util_algorithms.cpp
     
     midware/FreeRTOS/adapt/CMSIS_RTOS/cmsis_os.c
@@ -112,8 +74,59 @@ SET(PROJECT_SOURCES
 )
 
 add_subdirectory(can_stack/autosar)
+add_subdirectory(midware/trace)
 
 ADD_EXECUTABLE(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})
 
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMSIS_INCLUDE_DIRS}
+    ${STM32HAL_INCLUDE_DIR}
+)
+
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/console_commands/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/fuel_gauge_input/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/fuel_gauge_output/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/main_application/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/speed_sensor_converter/inc
+        
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/adc/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/dac/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/eeprom/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/pwm/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uart/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uc_ports/inc
+    
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/cppstdlib
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/events
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/excp_handler/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/osservices/os_console/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/std_ex/ex_threads
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/util_algorithms/inc
+    
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt/CMSIS_RTOS
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/freertos
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/portable/GCC/ARM_CM4F
+)
+
+if (USE_CAN)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
+        -DUSE_CAN
+    )
+    
+    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC LIB_CAN)
+endif()
+
+if (USE_TRACE)
+    target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/midware/trace/inc
+    )
+endif()
+    
 STM32_SET_TARGET_PROPERTIES(${CMAKE_PROJECT_NAME})
 STM32_ADD_HEX_BIN_TARGETS(${CMAKE_PROJECT_NAME})

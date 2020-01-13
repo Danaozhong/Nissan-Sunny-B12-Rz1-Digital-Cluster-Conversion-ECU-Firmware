@@ -19,8 +19,9 @@
 
 #include "os_console.hpp"
 #include "ex_thread.hpp"
+#ifdef USE_TRACE
 #include "trace.hpp"
-
+#endif
 
 namespace app
 {
@@ -64,7 +65,9 @@ namespace app
         drivers::GenericUART* m_p_uart;
         OSServices::OSConsole* m_po_os_console;
         midware::ExceptionHandler* m_po_exception_handler;
+#ifdef USE_TRACE
         midware::Trace* m_po_trace;
+#endif
 
 		std::shared_ptr<drivers::GenericADC> m_p_adc;
 		std::shared_ptr<drivers::GenericDAC> m_p_dac;

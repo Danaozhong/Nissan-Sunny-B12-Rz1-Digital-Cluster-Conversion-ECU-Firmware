@@ -32,6 +32,7 @@ namespace app
 	    // Create the debug console
 	    m_po_os_console = new OSServices::OSConsole(m_p_uart);
 
+#ifdef USE_TRACE
 	    // Initialize the trace module
 	    m_po_trace = new midware::Trace();
 
@@ -41,6 +42,7 @@ namespace app
 
 	    // and set the trace moduel as the default system tracer
 	    m_po_trace->set_as_default_trace();
+#endif
 
         // Initialize the exception storage module, to be able to log / debug exceptions
         m_po_exception_handler = new midware::ExceptionHandler();

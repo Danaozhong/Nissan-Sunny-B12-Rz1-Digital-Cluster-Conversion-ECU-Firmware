@@ -6,7 +6,12 @@
 #include <memory>
 #include <mutex>
 
+#define EVENT_HANDLER_LOG(...)
+#ifdef USE_TRACE
 #include "trace_if.h"
+#undef EVENT_HANDLER_LOG
+#define EVENT_HANDLER_LOG(...)   DEBUG_PRINTF(__VA_ARGS__)
+#endif
 
 namespace boost
 {
@@ -37,7 +42,7 @@ namespace boost
 #ifdef HAS_STD_MUTEX
             	std::lock_guard<std::mutex> lock(this->signal_handler_mutex);
 #endif
-                DEBUG_PRINTF("connect called! size %u", signal_handlers->size());
+            	EVENT_HANDLER_LOG("connect called! size %u", signal_handlers->size());
                 signal_handlers->push_back(handler);
             }
 

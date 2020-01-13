@@ -3,12 +3,14 @@
 #include "fuel_gauge_input.hpp"
 #include <functional> // for std::bind
 
-// Ugly macros to allow debug logging
-#ifndef FUEL_GAUGE_INPUT_ENABLE_LOGGING
+
 #define FUEL_GAUGE_LOG(...)
-#else
+
+// Ugly macros to allow debug logging
+#if defined(FUEL_GAUGE_INPUT_ENABLE_LOGGING) && defined(USE_TRACE)
 /* Compile with debug output */
 #include "trace_if.h"
+#undef FUEL_GAUGE_LOG
 #define FUEL_GAUGE_LOG(...)   DEBUG_PRINTF(__VA_ARGS__)
 #endif
 

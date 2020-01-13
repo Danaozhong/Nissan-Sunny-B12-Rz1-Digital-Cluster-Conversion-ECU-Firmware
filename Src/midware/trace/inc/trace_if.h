@@ -6,9 +6,9 @@ extern "C"
 {
 #endif
 
-
+#ifdef USE_TRACE
 #define TRACE_DEBUG_PRINTF_ENABLED  (1)
-
+#endif
 
 //#include "generic_uart.hpp"
 #ifdef TRACE_DEBUG_PRINTF_ENABLED

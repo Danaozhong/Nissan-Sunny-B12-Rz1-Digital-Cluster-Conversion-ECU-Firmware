@@ -1,7 +1,9 @@
 #include "main_application.hpp"
 #include "console_commands.hpp"
+#ifdef USE_CAN
 #include "Can.h"
 #include "CanIf.h"
+#endif
 
 #include "excp_handler.hpp"
 #include "excp_handler_console_commands.hpp"
@@ -48,9 +50,11 @@ namespace app
 	    // register the command to debug the exception handler on the os console
 	    m_po_os_console->register_command(new midware::CommandListExceptions());
 
+#ifdef USE_CAN
 	    /* Init the CAN interface (AUTOSAR conform) */
 	    Can_Init(&CanConfigData);
 	    CanIf_Init(&CanIf_Config);
+#endif
 
 	    // initialization below is for the application
         init_fuel_level_converter();

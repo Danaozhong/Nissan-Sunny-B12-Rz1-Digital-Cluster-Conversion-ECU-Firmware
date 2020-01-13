@@ -1,6 +1,16 @@
 PROJECT(SunnyRz1FuelGaugeConverter)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+# Version information
+set(SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION_MAJOR 1 CACHE STRING "major version" FORCE)
+set(SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION_MINOR 0 CACHE STRING "minor version" FORCE)
+set(SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION ${SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION_MAJOR}.${SUNNY_RZ1_FUEL_GAUGE_CONVERTER_VERSION_MINOR} CACHE STRING "version" FORCE)
+
+# some options
+option(USE_CAN "Enable / disable the CAN subsystem" OFF)
+
+
 ENABLE_LANGUAGE(ASM)
 
 FIND_PACKAGE(CMSIS REQUIRED)
@@ -29,16 +39,7 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/main_application/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/speed_sensor_converter/inc
-    
-    ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/autosar/Can
-    ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/autosar/CanIf
-    ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/autosar/config
-    ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/autosar/Det
-    ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/autosar/EcuM
-    ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/autosar/PduR
-    ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/autosar/SchM
-    ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/autosar/shared
-    
+        
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/adc/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/dac/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/eeprom/inc
@@ -71,12 +72,7 @@ SET(PROJECT_SOURCES
     app/lookup_table/src/lookup_table.cpp
     app/main_application/src/main_application.cpp
     app/speed_sensor_converter/src/speed_sensor_converter.cpp
-    can_stack/autosar/Can/Can.c
-    can_stack/autosar/CanIf/CanIf.c
-    can_stack/autosar/CanIf/CanIf_Cfg.c
-    can_stack/autosar/CanIf/CanIf_Lcfg.c
-    can_stack/autosar/config/Can_Lcfg.c
-    can_stack/autosar/Det/Det.c
+    
     drivers/adc/src/stm32_adc.cpp
     drivers/dac/src/generic_dac.cpp
     drivers/dac/src/stm32_dac.cpp
@@ -114,6 +110,8 @@ SET(PROJECT_SOURCES
     midware/FreeRTOS/src/portable/GCC/ARM_CM4F/port.c
     midware/FreeRTOS/src/portable/MemMang/heap_4.c
 )
+
+add_subdirectory(can_stack/autosar)
 
 ADD_EXECUTABLE(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})
 

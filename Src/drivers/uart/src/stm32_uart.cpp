@@ -185,12 +185,20 @@ namespace drivers
 
 		switch (en_stop_bits)
 		{
-		case UART_STOP_BITS_1_5:
-			m_o_uart_handle.Init.StopBits     = UART_STOPBITS_1_5;
-			break;
-		case UART_STOP_BITS_1:
-			m_o_uart_handle.Init.StopBits     = UART_STOPBITS_1;
-			break;
+		case UART_STOP_BITS_2:
+#ifndef STM32_FAMILY_F3
+        m_o_uart_handle.Init.StopBits     = UART_STOPBITS_2;
+        break;
+#endif
+        case UART_STOP_BITS_1_5:
+#ifndef STM32_FAMILY_F4
+            m_o_uart_handle.Init.StopBits     = UART_STOPBITS_1_5;
+            break;
+#endif
+        case UART_STOP_BITS_1:
+        default:
+            m_o_uart_handle.Init.StopBits     = UART_STOPBITS_1;
+            break;
 		}
 
 		switch (en_flow_control)
@@ -202,8 +210,9 @@ namespace drivers
 
 		m_o_uart_handle.Init.Mode         = UART_MODE_TX_RX;
 		m_o_uart_handle.Init.OverSampling = UART_OVERSAMPLING_16;
+#ifdef STM32_FAMILY_F3
 		m_o_uart_handle.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-
+#endif
 
 
 		if(HAL_UART_DeInit(&m_o_uart_handle) != HAL_OK)

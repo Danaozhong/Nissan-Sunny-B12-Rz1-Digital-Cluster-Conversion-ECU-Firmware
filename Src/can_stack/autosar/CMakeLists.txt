@@ -1,6 +1,5 @@
 
 if (USE_CAN)
-
     SET(CAN_SOURCES
         Can/Can.c
         CanIf/CanIf.c
@@ -10,14 +9,19 @@ if (USE_CAN)
         Det/Det.c
     )
     
+
     add_library(LIB_CAN STATIC ${CAN_SOURCES})
+    
+    target_compile_definitions(LIB_CAN PUBLIC
+        -DHAL_CAN_MODULE_ENABLED
+    )
     
     target_include_directories(LIB_CAN PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMSIS_INCLUDE_DIRS}
         ${STM32HAL_INCLUDE_DIR}
     )
-
+    
     target_include_directories(LIB_CAN PUBLIC
         ../../../Inc # TODO find a better solution for this include
         Can

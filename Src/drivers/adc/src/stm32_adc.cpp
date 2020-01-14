@@ -1,8 +1,13 @@
 #include "stm32_adc.hpp"
 
 
+#ifdef STM32_FAMILY_F3
 #define ADCx_FORCE_RESET()              __HAL_RCC_ADC2_FORCE_RESET()
 #define ADCx_RELEASE_RESET()            __HAL_RCC_ADC2_RELEASE_RESET()
+#elif defined(STM32_FAMILY_F4)
+#define ADCx_FORCE_RESET()              __HAL_RCC_ADC_FORCE_RESET()
+#define ADCx_RELEASE_RESET()            __HAL_RCC_ADC_RELEASE_RESET()
+#endif
 
 
 namespace drivers
@@ -43,11 +48,12 @@ namespace drivers
 		/*       "HAL_RCCEx_PeriphCLKConfig()" (refer to comments in file           */
 		/*       "stm32f3_hal_adc.c_ex" header).                                    */
 
+#ifdef STM32_FAMILY_F3
 		/* Enable asynchronous clock source of ADCx */
 		RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC12;
 		RCC_PeriphCLKInitStruct.Adc12ClockSelection = RCC_ADC12PLLCLK_DIV1;
 		HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct);
-
+#endif
 		/* Enable clock of DMA associated to the peripheral */
 		//ADCx_DMA_CLK_ENABLE();
 		//__HAL_RCC_DMA2_CLK_ENABLE();
@@ -60,10 +66,12 @@ namespace drivers
 		GPIO_InitStruct.Pull = GPIO_NOPULL;
 		HAL_GPIO_Init(m_pt_gpio_block, &GPIO_InitStruct);
 
+#ifdef STM32_FAMILY_F3
 		/* NVIC configuration for ADC interrupt */
 		/* Priority: high-priority */
 		HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 0);
 		HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
+#endif
 
 		/* Configuration of ADCx init structure: ADC parameters and regular group */
 #ifdef HAL_ADC_MODULE_ENABLED
@@ -79,7 +87,9 @@ namespace drivers
 		m_adc_handle.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
 		m_adc_handle.Init.ScanConvMode          = DISABLE;                       /* Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1) */
 		m_adc_handle.Init.EOCSelection          = ADC_EOC_SEQ_CONV;
+#ifdef STM32_FAMILY_F3
 		m_adc_handle.Init.LowPowerAutoWait      = DISABLE;
+#endif
 		m_adc_handle.Init.ContinuousConvMode    = ENABLE;                       /* Continuous mode disabled to have only 1 conversion at each conversion trig */
 		m_adc_handle.Init.NbrOfConversion       = 1;                             /* Parameter discarded because sequencer is disabled */
 		m_adc_handle.Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
@@ -87,7 +97,9 @@ namespace drivers
 		m_adc_handle.Init.ExternalTrigConv      =  ADC_SOFTWARE_START;   // ???
 		m_adc_handle.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;
 		m_adc_handle.Init.DMAContinuousRequests = DISABLE;
+#ifdef STM32_FAMILY_F3
 		m_adc_handle.Init.Overrun               = ADC_OVR_DATA_OVERWRITTEN;
+#endif
 
 		if (HAL_ADC_Init(&m_adc_handle) != HAL_OK)
 		{
@@ -102,10 +114,16 @@ namespace drivers
 		/*       enabled), select sampling time and ADC clock with sufficient       */
 		/*       duration to not create an overhead situation in IRQHandler.        */
 		sConfig.Channel      = m_u32_adc_channel;
+
+#ifdef STM32_FAMILY_F3
 		sConfig.Rank         = ADC_REGULAR_RANK_1;
 		sConfig.SamplingTime = ADC_SAMPLETIME_181CYCLES_5;
-		sConfig.SingleDiff   = ADC_SINGLE_ENDED;
-		sConfig.OffsetNumber = ADC_OFFSET_NONE;
+        sConfig.SingleDiff   = ADC_SINGLE_ENDED;
+        sConfig.OffsetNumber = ADC_OFFSET_NONE;
+#elif defined (STM32_FAMILY_F4)
+        sConfig.Rank         = 1;
+        sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+#endif
 		sConfig.Offset       = 0;
 
 		if (HAL_ADC_ConfigChannel(&m_adc_handle, &sConfig) != HAL_OK)
@@ -113,13 +131,14 @@ namespace drivers
 			/* Channel Configuration Error */
 			Error_Handler();
 		}
-
-		/* Run the ADC calibration in single-ended mode */
+#ifdef STM32_FAMILY_F3
+		/* Run the ADC calibration in single-ended mode. Only needed for STM32F3 */
 		if (HAL_ADCEx_Calibration_Start(&m_adc_handle, ADC_SINGLE_ENDED) != HAL_OK)
 		{
 			/* Calibration Error */
 			Error_Handler();
 		}
+#endif
 
 		HAL_ADC_Start(&m_adc_handle);
 #endif
@@ -128,16 +147,17 @@ namespace drivers
 	/** Destructor. */
 	STM32ADC::~STM32ADC()
 	{
-		  /*##-1- Reset peripherals ##################################################*/
-		  ADCx_FORCE_RESET();
-		  ADCx_RELEASE_RESET();
+        /*##-1- Reset peripherals ##################################################*/
+        ADCx_FORCE_RESET();
+        ADCx_RELEASE_RESET();
 
-		  /*##-2- Disable peripherals and GPIO Clocks ################################*/
-		  /* De-initialize GPIO pin of the selected ADC channel */
-		  HAL_GPIO_DeInit(m_pt_gpio_block, m_u16_gpio_pin);
-
-		  /* Disable the NVIC configuration for ADC interrupt */
-		  HAL_NVIC_DisableIRQ(ADC1_2_IRQn);
+        /*##-2- Disable peripherals and GPIO Clocks ################################*/
+        /* De-initialize GPIO pin of the selected ADC channel */
+        HAL_GPIO_DeInit(m_pt_gpio_block, m_u16_gpio_pin);
+#ifdef STM32_FAMILY_F3
+        /* Disable the NVIC configuration for ADC interrupt */
+        HAL_NVIC_DisableIRQ(ADC1_2_IRQn);
+#endif
 	}
 
 	uint32_t STM32ADC::get_adc_min_value() const
@@ -171,11 +191,6 @@ namespace drivers
 	  /* User may add here some code to deal with this error */
 	  while(1)
 	  {
-#ifdef USE_STM32_F3_DISCO
-		  BSP_LED_Toggle(LED_RED);
-#elif defined USE_STM32F3XX_NUCLEO_32
-		  //BSP_LED_Toggle(LED_GREEN);
-#endif
 	    HAL_Delay(1000);
 	  }
 	}

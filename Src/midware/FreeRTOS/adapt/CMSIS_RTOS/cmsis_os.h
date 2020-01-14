@@ -30,7 +30,9 @@
 #endif
 
 #include <stdint.h>
-#include "core_cmFunc.h"
+#include "cmsis_compiler.h"
+
+//#include "core_cmFunc.h"
 	
 #include "FreeRTOS.h"
 #include "task.h"

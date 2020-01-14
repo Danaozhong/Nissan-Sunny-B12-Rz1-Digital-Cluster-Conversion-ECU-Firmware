@@ -45,7 +45,7 @@
 
 #elif (_EEPROM_F303xC_F303xB == 1)
 
-#include "stm32f3xx.h"
+#include "stm32fxxx.h"
 
 /* flash starts at 0x8000000, ends at 0x8040000 _B variants have 128K of flash, _C has 256K */
 #define     _EEPROM_FLASH_PAGE_SIZE                             1024
@@ -68,13 +68,15 @@ uint32_t	EEPROMPageBackup[_EEPROM_FLASH_PAGE_SIZE/4];
 //##########################################################################################################
 bool	EE_Format(void)
 {
+#ifdef STM32_FAMILY_F3
 	uint32_t	error;
 	HAL_FLASH_Unlock();
 	FLASH_EraseInitTypeDef	flashErase;
-	flashErase.NbPages=1;
+
 	#if ( _EEPROM_F1_LOW_DESTINY==1 || _EEPROM_F1_MEDIUM_DESTINY==1 || _EEPROM_F1_HIGH_DESTINY==1 )
 	flashErase.Banks = FLASH_BANK_1;
 	#endif
+	flashErase.NbPages=1;
 	flashErase.PageAddress = _EEPROM_FLASH_PAGE_ADDRESS;
 	flashErase.TypeErase = FLASH_TYPEERASE_PAGES;
 	if(HAL_FLASHEx_Erase(&flashErase,&error)==HAL_OK)
@@ -86,6 +88,7 @@ bool	EE_Format(void)
 			return true;	
 	}
 	HAL_FLASH_Lock();
+#endif
 	return false;	
 }
 //##########################################################################################################

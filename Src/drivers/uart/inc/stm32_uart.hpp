@@ -12,12 +12,7 @@
 #include <atomic>
 #include <mutex>
 
-#include "stm32f3xx_hal.h"
-#ifdef USE_STM32_F3_DISCO
-#include "stm32f3_discovery.h"
-#elif defined USE_STM32F3XX_NUCLEO_32
-//#include "stm32f3xx_nucleo_32.h"
-#endif
+#include "hwheader.h"
 
 /* Own headers */
 #include "generic_uart.hpp"

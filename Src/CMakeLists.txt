@@ -13,14 +13,23 @@ FIND_PACKAGE(CMSIS REQUIRED)
 FIND_PACKAGE(STM32HAL COMPONENTS gpio tim adc dac can dma uart flash REQUIRED)
 
 
-
+if(${STM32_FAMILY} STREQUAL "F3")
+    add_definitions(
+        -DSTM32_FAMILY_F3
+        -DSTM32F303xC
+    )
+elseif(${STM32_FAMILY} STREQUAL "F4")
+    add_definitions(
+        -DSTM32_FAMILY_F4
+        -DSTM32F429xx
+    )
+endif()
 
 add_definitions(
     -D_BSD_SOURCE
     -D_GCC_MULTITHREAD_FREERTOS_ENABLE
     -DconfigRECORD_STACK_HIGH_ADDRESS=1
     -DDEBUG
-    -DSTM32F303xC
     -DUSE_HAL_DRIVER
 )
 
@@ -117,6 +126,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 if (USE_CAN)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
         -DUSE_CAN
+        -DHAL_CAN_MODULE_ENABLED
     )
     
     target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC LIB_CAN)

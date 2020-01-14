@@ -15,8 +15,7 @@
 
 #include "Can.h"
 
-#include "stm32f3xx.h"
-#include "stm32f3xx_hal_can.h"
+#include "hwheader.h"
 //#include "Cpu.h"
 //#include "Mcu.h"
 #include "CanIf_Cbk.h"
@@ -200,7 +199,7 @@ static sint16 GetControllderId(const CAN_HW_t* Controller)
         i16_ret_val = 0;
     }
 #else
-    i16_ret_val = (Controller - (CAN_HW_t *)(CAN1_BASE) / 0x400);
+    i16_ret_val = ((int)(Controller - (CAN_HW_t *)(CAN1_BASE)) / 0x400);
     // Controllers that have more than 1 CAN interface
 #endif
     return i16_ret_val;
@@ -462,20 +461,19 @@ static void Can_RxIsr(int ControllerId)
  *
  * @param unit CAN controller number( from 0 )
  */
-//static void Can_TxIsr(int unit) {
-void USB_HP_CAN_TX_IRQHandler (void) {
-	int unit = 0;
+static void Can_TxIsr(int unit)
+{
+    CAN_HW_t *canHw= GetController(unit);
+      const Can_ControllerConfigType *canHwConfig= GET_CONTROLLER_CONFIG(Can_Global.channelMap[unit]);
+      Can_UnitType *canUnit = GET_PRIVATE_DATA(unit);
+      const Can_HardwareObjectType *hohObj;
 
-  CAN_HW_t *canHw= GetController(unit);
-  const Can_ControllerConfigType *canHwConfig= GET_CONTROLLER_CONFIG(Can_Global.channelMap[unit]);
-  Can_UnitType *canUnit = GET_PRIVATE_DATA(unit);
-  const Can_HardwareObjectType *hohObj;
-
-  // Loop over all the Hoh's
-  hohObj= canHwConfig->Can_Arc_Hoh;
-  --hohObj;
-  do {
-	++hohObj;
+      // Loop over all the Hoh's
+      hohObj= canHwConfig->Can_Arc_Hoh;
+      --hohObj;
+      do
+      {
+          ++hohObj;
 
 	if (hohObj->CanObjectType == CAN_OBJECT_TYPE_TRANSMIT)
 	{
@@ -485,9 +483,10 @@ void USB_HP_CAN_TX_IRQHandler (void) {
 		}
 		canUnit->swPduHandle = 0;  // Is this really necessary ??
 
+#if 0
 		// Clear Tx interrupts
 		CAN->TSR &= !(CAN_TSR_RQCP0 | CAN_TSR_RQCP1 | CAN_TSR_RQCP2);
-#if 0
+
 		// Todo transmit interrupt no idea so far
         CAN_ClearITPendingBit(canHw,CAN_IT_RQCP0);
         CAN_ClearITPendingBit(canHw,CAN_IT_RQCP1);

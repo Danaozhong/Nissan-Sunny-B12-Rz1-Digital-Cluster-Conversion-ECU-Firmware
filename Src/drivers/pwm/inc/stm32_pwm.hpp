@@ -3,7 +3,7 @@
 #define _STM32_PWM_HPP_
 
 /* System headers */
-#include "stm32f3xx_hal.h"
+#include "hwheader.h"
 
 /* Own headers */
 #include "generic_pwm.hpp"

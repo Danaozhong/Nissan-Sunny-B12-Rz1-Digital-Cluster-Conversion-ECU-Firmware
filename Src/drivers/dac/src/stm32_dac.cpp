@@ -10,8 +10,13 @@
 
 #include "stm32_dac.hpp"
 
+#if defined(STM32_FAMILY_F3)
 #define DACx_FORCE_RESET()              __HAL_RCC_DAC1_FORCE_RESET()
 #define DACx_RELEASE_RESET()            __HAL_RCC_DAC1_RELEASE_RESET()
+#elif defined(STM32_FAMILY_F4)
+#define DACx_FORCE_RESET()              __HAL_RCC_DAC_FORCE_RESET()
+#define DACx_RELEASE_RESET()            __HAL_RCC_DAC_RELEASE_RESET()
+#endif
 
 namespace drivers
 {
@@ -28,7 +33,11 @@ namespace drivers
 		}
 		if (DAC1 == pt_dac_peripheral)
 		{
-			__HAL_RCC_DAC1_CLK_ENABLE();
+#if defined(STM32_FAMILY_F3)
+		    __HAL_RCC_DAC1_CLK_ENABLE();
+#elif defined(STM32_FAMILY_F4)
+		    __HAL_RCC_DAC_CLK_ENABLE();
+#endif
 		}
 
 		GPIO_InitTypeDef GPIO_InitStruct;

@@ -1,5 +1,5 @@
 #include "uc_ports.hpp"
-#include "stm32f3xx.h"
+#include "stm32fxxx.h"
 
 
 
@@ -13,14 +13,22 @@
 /* Definition for CANx Pins */
 #define CANx_TX_PIN                    GPIO_PIN_1
 #define CANx_TX_GPIO_PORT              GPIOD
-#define CANx_TX_AF                     GPIO_AF7_CAN
 #define CANx_RX_PIN                    GPIO_PIN_0
 #define CANx_RX_GPIO_PORT              GPIOD
-#define CANx_RX_AF                     GPIO_AF7_CAN
+
 
 /* Definition for CAN's NVIC */
+#ifdef STM32_FAMILY_F3
+#define CANx_TX_AF                     GPIO_AF7_CAN
+#define CANx_RX_AF                     GPIO_AF7_CAN
 #define CANx_RX_IRQn                   USB_LP_CAN_RX0_IRQn
 #define CANx_RX_IRQHandler             USB_LP_CAN_RX0_IRQHandler
+#elif defined STM32_FAMILY_F4
+#define CANx_TX_AF                     GPIO_AF9_CAN1
+#define CANx_RX_AF                     GPIO_AF9_CAN1
+#define CANx_RX_IRQn                   CAN1_RX0_IRQn
+#define CANx_RX_IRQHandler             CAN1_RX0_IRQHandler
+#endif
 
 
 namespace

@@ -24,7 +24,8 @@ namespace drivers
 	enum UARTSignalStopBits
 	{
 		UART_STOP_BITS_1,
-		UART_STOP_BITS_1_5
+		UART_STOP_BITS_1_5,
+		UART_STOP_BITS_2
 	};
 
 	enum UARTSignalPartity

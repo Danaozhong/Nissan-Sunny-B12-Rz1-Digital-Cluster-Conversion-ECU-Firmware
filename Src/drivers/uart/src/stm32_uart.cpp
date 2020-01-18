@@ -118,7 +118,7 @@ namespace drivers
 
 			// STM32F303 UART2 peripherals
 			m_o_uart_handle.Instance        = USART1;
-			map_uart_peripheral_id_to_object.emplace(2, this);
+			map_uart_peripheral_id_to_object.emplace(1, this);
 		}
 		else if (pt_rx_gpio_block == GPIOA && u16_rx_pin == GPIO_PIN_3 &&
 				pt_tx_gpio_block == GPIOA && u16_tx_pin == GPIO_PIN_2)
@@ -156,6 +156,43 @@ namespace drivers
 			m_o_uart_handle.Instance        = USART2;
 			map_uart_peripheral_id_to_object.emplace(2, this);
 		}
+#elif defined STM32F429xx
+        if (pt_rx_gpio_block == GPIOA && u16_rx_pin == GPIO_PIN_10 &&
+            pt_tx_gpio_block == GPIOA && u16_tx_pin == GPIO_PIN_9)
+        {
+            /*##-1- Enable peripherals and GPIO Clocks #################################*/
+            /* Enable GPIO TX/RX clock */
+            __HAL_RCC_GPIOA_CLK_ENABLE();
+
+            /* Enable USARTx clock */
+            __HAL_RCC_USART1_CLK_ENABLE();
+
+            /*##-2- Configure peripheral GPIO ##########################################*/
+            /* UART TX GPIO pin configuration  */
+            GPIO_InitStruct.Pin       = u16_tx_pin;
+            GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+            GPIO_InitStruct.Pull      = GPIO_PULLUP;
+            GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_HIGH;
+            GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
+
+            HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+            /* UART RX GPIO pin configuration  */
+            GPIO_InitStruct.Pin = u16_rx_pin;
+            GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
+
+            HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+            /*##-3- Configure the NVIC for UART ########################################*/
+            /* NVIC for USART */
+            HAL_NVIC_SetPriority(USART1_IRQn, 0, 1);
+            HAL_NVIC_EnableIRQ(USART1_IRQn);
+
+
+            // STM32F303 UART2 peripherals
+            m_o_uart_handle.Instance        = USART1;
+            map_uart_peripheral_id_to_object.emplace(1, this);
+        }
 #endif
 	}
 
@@ -228,8 +265,9 @@ namespace drivers
 
 		auto main_func = std::bind(&STM32HardwareUART::uart_main, this);
 
-		//std::thread m_p_uart_buffer_thread(main_func);
-		m_p_uart_buffer_thread = new std_ex::thread(main_func, "UART_RxThread", 1u, 2048);
+		//std::thread* p_uart_buffer_thread = new std::thread(main_func);
+		//m_p_uart_buffer_thread.detach();
+		m_p_uart_buffer_thread = new std_ex::thread(main_func, "UART_RxThread", 1u, 0x1000);
 	}
 	void STM32HardwareUART::disconnect()
 	{
@@ -313,11 +351,6 @@ namespace drivers
 	{
 		while(true)
 		{
-		//
-			std_ex::sleep_for(std::chrono::milliseconds(100));
-		}
-		while(true)
-		{
 			char ai8_buffer[10] = { 0 };
 
 			HAL_StatusTypeDef ret_val;
@@ -366,7 +399,6 @@ namespace drivers
 				std_ex::sleep_for(std::chrono::milliseconds(100));
 			}
 		}
-
 		DEBUG_PRINTF("UART thread will terminate now.");
 	}
 
@@ -472,6 +504,11 @@ extern "C"
 	  //BSP_LED_On(LED5);
 
 	}
+
+    void USART1_IRQHandler(void)
+    {
+      HAL_UART_IRQHandler(&drivers::map_uart_peripheral_id_to_object[1]->m_o_uart_handle);
+    }
 
 	void USART2_IRQHandler(void)
 	{

@@ -37,7 +37,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32f3xx_it.h"
+#include "stm32fxxx_it.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

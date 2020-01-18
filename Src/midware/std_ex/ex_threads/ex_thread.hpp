@@ -202,6 +202,8 @@ namespace std_ex
 		size_t m_u_task_priority;
 		size_t m_u_stack_size;
 
+		_State_ptr m_p_state_ptr;
+
 		/** Helper to remember if the thread was already terminated */
 		std::atomic<bool> m_bo_thread_terminated;
 	private:

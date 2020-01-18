@@ -24,6 +24,10 @@ namespace app
 	    m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
 	#elif defined STM32F303xC
 	    m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
+#elif defined STM32F429xx
+	    m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_10, GPIOA, GPIO_PIN_9);
+#else
+#error "No valid pin configuration for UART this MCU set!"
 	#endif
 
 	    // ...open UART connection.
@@ -94,7 +98,11 @@ namespace app
 	int32_t MainApplication::init_speed_converter()
     {
         // TODO this is the configuration for the STM32 discovery, change to support the small board
+#ifdef STM32F429xx
+	    m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM2, TIM_CHANNEL_3, GPIOA, GPIO_PIN_2);
+#else
         m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM3, TIM_CHANNEL_1, GPIOC, GPIO_PIN_6);
+#endif
         m_po_speed_sensor_converter = std::make_shared<SpeedSensorConverter>(m_p_pwm, 1u, 4200u);
         return OSServices::ERROR_CODE_SUCCESS;
     }

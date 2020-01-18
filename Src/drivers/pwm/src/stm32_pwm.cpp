@@ -59,6 +59,10 @@ namespace drivers
 		{
 			GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
 		}
+		else if (TIM2 == pt_timer_unit)
+		{
+		    GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+		}
 		else
 		{
 			// TODO cover other cases

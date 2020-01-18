@@ -187,7 +187,7 @@ int main(void)
 
     xTaskCreate( MAIN_startup_thread,
                  "MAIN_startup_thread",
-                 1024,
+                 0x1000,
                  NULL,
                  2,
                  &xHandle );

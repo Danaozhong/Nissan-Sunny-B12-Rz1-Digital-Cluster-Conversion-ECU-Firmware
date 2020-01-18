@@ -53,7 +53,7 @@ namespace app
 	{
 		// start the data acquisition thread
 		auto main_func = std::bind(&FuelGaugeInputFromADC::thread_main, this);
-		m_po_data_acquisition_thread = new std_ex::thread(main_func, "FUEL_SensorInput", 2u, 1024u);
+		m_po_data_acquisition_thread = new std_ex::thread(main_func, "FUEL_SensorInput", 2u, 0x1000);
 	}
 
 	FuelGaugeInputFromADC::~FuelGaugeInputFromADC()

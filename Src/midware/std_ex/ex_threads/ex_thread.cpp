@@ -127,12 +127,13 @@ namespace std_ex
     	m_bo_thread_detached = false;
 
         m_bo_thread_terminated = false;
+        m_p_state_ptr = std::move(ptr);
 
 		void (*fp)(void*) = [](void* o)
 		{
 			if (nullptr != o)
 			{
-				static_cast<_State*>(o)->_M_run();
+				static_cast<thread*>(o)->m_p_state_ptr->_M_run();
 			}
 			// this should not happen, report an error here
 
@@ -145,7 +146,7 @@ namespace std_ex
 #ifdef REDUCE_CODE_FLASH_SIZE
 			  ptr,               	/* parameter of the task */
 #else
-    	      ptr.get(),               	/* parameter of the task */
+    	      this,               	/* parameter of the task */
 #endif
 			  m_u_task_priority,        /* priority of the task */
     	      &m_task_handle)          /* Task handle to keep track of created task */

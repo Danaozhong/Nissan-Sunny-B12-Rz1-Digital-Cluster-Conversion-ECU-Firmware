@@ -16,7 +16,7 @@ namespace app
     class SpeedSensorConverter
     {
     public:
-        SpeedSensorConverter(std::shared_ptr<drivers::GenericPWM> &p_output_pwm,
+        SpeedSensorConverter(std::shared_ptr<drivers::GenericPWM> p_output_pwm,
                 uint32_t u32_input_pulses_per_kmph_mHz,
                 uint32_t u32_output_pulses_per_kmph_mHz);
 
@@ -41,7 +41,7 @@ namespace app
 
         std::shared_ptr<drivers::GenericPWM> m_p_output_pwm;
 
-        std::unique_ptr<std_ex::thread> m_p_data_conversion_thread;
+        std_ex::thread* m_p_data_conversion_thread;
 
         std::atomic<SpeedOutputMode> m_en_current_speed_output_mode;
 

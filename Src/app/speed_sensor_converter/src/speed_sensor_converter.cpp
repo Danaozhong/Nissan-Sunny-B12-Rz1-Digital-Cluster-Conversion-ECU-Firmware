@@ -3,7 +3,7 @@
 
 namespace app
 {
-    SpeedSensorConverter::SpeedSensorConverter(std::shared_ptr<drivers::GenericPWM> &p_output_pwm,
+    SpeedSensorConverter::SpeedSensorConverter(std::shared_ptr<drivers::GenericPWM> p_output_pwm,
                 uint32_t u32_input_pulses_per_kmph_mHz,
                 uint32_t u32_output_pulses_per_kmph_mHz)
     : m_p_output_pwm(p_output_pwm), m_p_data_conversion_thread(nullptr),
@@ -15,7 +15,7 @@ namespace app
     {
         // Create the thread which cyclically converts the speed sensor signals
         auto o_main_func = std::bind(&SpeedSensorConverter::speed_sensor_converter_main, this);
-        m_p_data_conversion_thread = std::make_unique<std_ex::thread>(o_main_func, "Speed_Conv", 1u, 2048);
+        m_p_data_conversion_thread = new std_ex::thread(o_main_func, "Speed_Conv", 1u, 0x1000);
     }
 
     SpeedSensorConverter::~SpeedSensorConverter()
@@ -26,6 +26,7 @@ namespace app
         {
             // wait for the thread to finish
             this->m_p_data_conversion_thread->join();
+            delete this->m_p_data_conversion_thread;
         }
 
         // everything else is cleaned up automatically

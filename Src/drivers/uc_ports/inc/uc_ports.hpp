@@ -18,6 +18,8 @@ namespace drivers
         virtual int32_t deinit_ports_adc() { return 0; }
         virtual int32_t init_ports_dac() { return 0; }
         virtual int32_t deinit_ports_dac() { return 0; }
+        virtual int32_t init_ports_tim() { return 0; }
+        virtual int32_t deinit_ports_tim() { return 0; }
     };
 
     class STM32F303CCT6UcPorts : public UcPorts
@@ -30,6 +32,10 @@ namespace drivers
         virtual int32_t deinit_ports_adc();
         virtual int32_t init_ports_dac();
         virtual int32_t deinit_ports_dac();
+        virtual int32_t init_ports_tim();
+        virtual int32_t deinit_ports_tim();
+
+
     };
 }
 

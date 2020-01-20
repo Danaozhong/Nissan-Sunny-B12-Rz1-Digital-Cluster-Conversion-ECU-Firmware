@@ -3,6 +3,7 @@
 
 #include "ex_thread.hpp"
 #include "generic_pwm.hpp"
+#include "generic_pwm_ic.hpp"
 #include <atomic>
 
 namespace app
@@ -17,6 +18,7 @@ namespace app
     {
     public:
         SpeedSensorConverter(std::shared_ptr<drivers::GenericPWM> p_output_pwm,
+                std::shared_ptr<drivers::GenericPWM_IC> p_output_pwm_input_capture,
                 uint32_t u32_input_pulses_per_kmph_mHz,
                 uint32_t u32_output_pulses_per_kmph_mHz);
 
@@ -41,6 +43,8 @@ namespace app
 
         std::shared_ptr<drivers::GenericPWM> m_p_output_pwm;
 
+        std::shared_ptr<drivers::GenericPWM_IC> m_p_output_pwm_input_capture;
+
         std_ex::thread* m_p_data_conversion_thread;
 
         std::atomic<SpeedOutputMode> m_en_current_speed_output_mode;
@@ -50,7 +54,7 @@ namespace app
          */
         int32_t m_i32_manual_speed;
 
-        int32_t m_i32_current_vehicle_speed_kmph;
+        uint32_t m_u32_current_vehicle_speed_kmph;
 
         /** Unit is mili Hertz mHz */
         const uint32_t m_u32_input_pulses_per_kmph_mHz;

@@ -16,6 +16,7 @@
 #include "stm32_adc.hpp"
 #include "stm32_uart.hpp"
 #include "stm32_pwm.hpp"
+#include "stm32_pwm_ic.hpp"
 
 #include "os_console.hpp"
 #include "ex_thread.hpp"
@@ -72,14 +73,18 @@ namespace app
 		std::shared_ptr<drivers::GenericADC> m_p_adc;
 		std::shared_ptr<drivers::GenericDAC> m_p_dac;
 
-		/// the PWM output used for the speed sensor
+		/// the PWM output used to simulate the JDM speed sensor to the cluster
 		std::shared_ptr<drivers::GenericPWM> m_p_pwm;
+
+		/// The PWM Input Capture driver to read the PWM from the vehicle's speed sensor
+		std::shared_ptr<drivers::GenericPWM_IC> m_p_pwm_ic;
 
 		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_input_characteristic;
 		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_output_characteristic;
 
 		app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
 		std::shared_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
+
 
 		std::shared_ptr<SpeedSensorConverter> m_po_speed_sensor_converter;
 	};

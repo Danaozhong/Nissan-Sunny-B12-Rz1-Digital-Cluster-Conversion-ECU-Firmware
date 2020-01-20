@@ -99,11 +99,18 @@ namespace app
     {
         // TODO this is the configuration for the STM32 discovery, change to support the small board
 #ifdef STM32F429xx
-	    m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM2, TIM_CHANNEL_3, GPIOA, GPIO_PIN_2);
+	    m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM5, TIM_CHANNEL_4, GPIOA, GPIO_PIN_3);
+	    m_p_pwm_ic = std::make_shared<drivers::STM32PWM_IC>(TIM2, TIM_CHANNEL_2, TIM_CHANNEL_3, 1u, 65536u);
+
+	    if (OSServices::ERROR_CODE_SUCCESS != m_p_pwm_ic->init())
+	    {
+	        ExceptionHandler_handle_exception(EXCP_MODULE_PWM_IC, EXCP_TYPE_PWM_IC_INIT_FAILED,
+	                false, __FILE__, __LINE__, 0u);
+	    }
 #else
         m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM3, TIM_CHANNEL_1, GPIOC, GPIO_PIN_6);
 #endif
-        m_po_speed_sensor_converter = std::make_shared<SpeedSensorConverter>(m_p_pwm, 1u, 4200u);
+        m_po_speed_sensor_converter = std::make_shared<SpeedSensorConverter>(m_p_pwm, m_p_pwm_ic, 1u, 4200u);
         return OSServices::ERROR_CODE_SUCCESS;
     }
 

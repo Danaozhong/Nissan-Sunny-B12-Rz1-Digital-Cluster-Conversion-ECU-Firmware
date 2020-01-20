@@ -49,6 +49,7 @@ SET(PROJECT_SOURCES
     drivers/dac/src/stm32_dac.cpp
     drivers/eeprom/src/eeprom.c
     drivers/pwm/src/stm32_pwm.cpp
+    drivers/pwm_ic/src/stm32_pwm_ic.cpp
     drivers/uart/src/generic_uart.cpp
     drivers/uart/src/stm32_uart.cpp
     drivers/uc_ports/src/uc_ports.cpp
@@ -106,6 +107,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/dac/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/eeprom/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/pwm/inc
+    drivers/pwm_ic/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uart/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uc_ports/inc
     

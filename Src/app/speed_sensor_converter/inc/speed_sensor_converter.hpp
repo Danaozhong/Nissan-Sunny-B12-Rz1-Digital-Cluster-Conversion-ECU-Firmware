@@ -6,6 +6,7 @@
 #include "generic_pwm_ic.hpp"
 #include <atomic>
 
+//#define SPEED_CONVERTER_USE_OWN_TASK
 namespace app
 {
     enum SpeedOutputMode
@@ -36,16 +37,12 @@ namespace app
          */
         int32_t set_manual_speed(int32_t i32_speed_in_mph);
 
-    private:
         /** one single data processing cycle. Called cyclically from speed_sensor_converter_main */
         void cycle();
-        void speed_sensor_converter_main();
-
+    private:
         std::shared_ptr<drivers::GenericPWM> m_p_output_pwm;
 
         std::shared_ptr<drivers::GenericPWM_IC> m_p_output_pwm_input_capture;
-
-        std_ex::thread* m_p_data_conversion_thread;
 
         std::atomic<SpeedOutputMode> m_en_current_speed_output_mode;
 
@@ -61,8 +58,11 @@ namespace app
 
         /** Unit is mili Hertz mHz */
         const uint32_t m_u32_output_pulses_per_kmph_mHz;
-
+#ifdef SPEED_CONVERTER_USE_OWN_TASK
+        void speed_sensor_converter_main();
+        std_ex::thread* m_p_data_conversion_thread;
         std::atomic<bool> m_bo_terminate_thread;
+#endif
     };
 }
 #endif /* _SPEED_SENSOR_CONVERTER_HPP_ */

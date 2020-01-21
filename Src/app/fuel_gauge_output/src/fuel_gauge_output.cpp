@@ -5,7 +5,7 @@
 #define FUEL_GAUGE_OUTPUT_LOG(...)
 
 // Ugly macros to allow debug logging
-#if defined(FUEL_GAUGE_OUTPUT_ENABLE_LOGGING) && defined(USE_TRACE)
+#if defined(FUEL_GAUGE_OUTPUT_ENABLE_LOGGING) // && defined(USE_TRACE)
 /* Compile with debug output */
 #include "trace_if.h"
 #undef FUEL_GAUGE_OUTPUT_LOG

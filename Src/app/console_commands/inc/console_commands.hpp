@@ -28,6 +28,25 @@ namespace app
         uint32_t m_u32_buffer_size;
     };
 
+
+    class CommandFuel : public OSServices::Command
+    {
+    public:
+        CommandFuel() : Command("fuel") {}
+
+        virtual ~CommandFuel() {}
+
+        void display_usage();
+
+        virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size);
+
+    private:
+
+        uint32_t u32_get_output_buffer(char* &p_output_buffer);
+
+        char* m_pi8_output_buffer;
+        uint32_t m_u32_buffer_size;
+    };
 }
 
 #endif

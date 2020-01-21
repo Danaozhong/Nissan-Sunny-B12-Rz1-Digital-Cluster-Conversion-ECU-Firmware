@@ -78,6 +78,27 @@ ADC_HandleTypeDef    AdcHandle;
   * @retval None
   */
 
+
+void * operator new( size_t size )
+{
+    return pvPortMalloc( size );
+}
+
+void * operator new[]( size_t size )
+{
+    return pvPortMalloc(size);
+}
+
+void operator delete( void * ptr )
+{
+    vPortFree ( ptr );
+}
+
+void operator delete[]( void * ptr )
+{
+    vPortFree ( ptr );
+}
+
 extern "C"
 {
 
@@ -131,8 +152,27 @@ void vApplicationMallocFailedHook( void )
 }
 
 
+void MAIN_Cycle_100ms(void)
+{
+    app::MainApplication& o_application = app::MainApplication::get();
+    while(true)
+    {
+        if (nullptr != o_application.m_p_o_fuel_gauge_input)
+        {
+            o_application.m_p_o_fuel_gauge_input->process_cycle();
+        }
 
-void MAIN_startup_thread(void*)
+        if (nullptr != o_application.m_po_speed_sensor_converter)
+        {
+            o_application.m_po_speed_sensor_converter->cycle();
+        }
+
+        std_ex::sleep_for(std::chrono::milliseconds(100));
+    }
+}
+
+
+void MAIN_startup_thread(void)
 {
 	// This is the initial thread running after bootup.
 	/* Configure the system clock to 64 MHz */
@@ -156,16 +196,26 @@ void MAIN_startup_thread(void*)
 	app::MainApplication& o_application = app::MainApplication::get();
 	o_application.startup_from_reset();
 
+	// start the cyclic thread(s)
+    std_ex::thread* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
+
 	while (true)
 	{
 		// load balancing
-		std_ex::sleep_for(std::chrono::milliseconds(100));
+		std_ex::sleep_for(std::chrono::milliseconds(10));
 
+		// Check for data on the UART
+		drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
+		if (nullptr != po_uart)
+		{
+		    po_uart->uart_process_cycle();
+		}
 		// check for debug input
 		o_application.get_os_console()->run();
 	}
 	vTaskDelete(NULL);
 }
+
 
 
 int main(void)
@@ -185,12 +235,16 @@ int main(void)
 
 	// first thread still needs to be created with xTaskCreate, only after the scheduler has started, std::thread can be used.
 
+	std_ex::thread* startup_thread = new std_ex::thread(&MAIN_startup_thread, "Startup_Thread", 3u, 0x800);
+
+#if 0
     xTaskCreate( MAIN_startup_thread,
                  "MAIN_startup_thread",
-                 0x1000,
+                 0x800,
                  NULL,
                  2,
                  &xHandle );
+#endif
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();

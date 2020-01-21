@@ -13,6 +13,8 @@ namespace app
 {
 
 	MainApplication::MainApplication()
+	    : m_en_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION),
+	      m_i32_fuel_gauge_output_manual_value(0)
 	{}
 
 	void MainApplication::startup_from_reset()
@@ -44,7 +46,7 @@ namespace app
 	    auto po_trace_io_interface = std::make_shared<midware::UARTTraceIOInterface>(m_p_uart);
 	    m_po_trace->add_trace_io_interface(po_trace_io_interface);
 
-	    // and set the trace moduel as the default system tracer
+	    // and set the trace module as the default system tracer
 	    m_po_trace->set_as_default_trace();
 #endif
 
@@ -68,6 +70,7 @@ namespace app
 
         // register the debug commands in the os console, so that debugging of the speed signals is possible.
         this->m_po_os_console->register_command(new app::CommandSpeed());
+        this->m_po_os_console->register_command(new app::CommandFuel());
 	}
 
 	MainApplication& MainApplication::get()
@@ -87,12 +90,35 @@ namespace app
 	    return this->m_po_os_console;
 	}
 
+    void MainApplication::set_fuel_gauge_output_mode(FuelGaugeOutputMode en_fuel_output_mode)
+    {
+        m_en_fuel_gauge_output_mode = en_fuel_output_mode;
+        update_fuel_sensor_output();
+    }
+
+    int32_t MainApplication::set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value)
+    {
+        m_i32_fuel_gauge_output_manual_value = _i32_fuel_gauge_output_value;
+        update_fuel_sensor_output();
+    }
+
 	void MainApplication::fuel_sensor_input_received(int32_t i32_value)
 	{
-		if (m_p_o_fuel_gauge_output != nullptr)
-		{
-			m_p_o_fuel_gauge_output->set_fuel_level(i32_value);
-		}
+	    m_i32_fuel_sensor_read_value = i32_value;
+	    update_fuel_sensor_output();
+	}
+
+	void MainApplication::update_fuel_sensor_output()
+	{
+	    int32_t i32_output_value = m_i32_fuel_sensor_read_value;
+        if (FUEL_GAUGE_OUTPUT_MODE_MANUAL == m_en_fuel_gauge_output_mode)
+        {
+            i32_output_value = m_i32_fuel_gauge_output_manual_value;
+        }
+        if (m_p_o_fuel_gauge_output != nullptr)
+        {
+            m_p_o_fuel_gauge_output->set_fuel_level(i32_output_value);
+        }
 	}
 
 	int32_t MainApplication::init_speed_converter()
@@ -123,8 +149,11 @@ namespace app
     {
         // create the low-level hardware interfaces
         m_p_adc = std::make_shared<drivers::STM32ADC>(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);
+#ifdef STM32F303xC
         m_p_dac = std::make_shared<drivers::STM32DAC>(DAC1, GPIOA, GPIO_PIN_4);
-
+#else
+        m_p_dac = std::make_shared<drivers::STM32DAC>(DAC1, GPIOA, GPIO_PIN_4);
+#endif
         /* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full). See
          * http://texelography.com/2019/06/21/nissan-rz1-digital-cluster-conversion/ for the full dataset */
         std::pair<int32_t, int32_t> a_input_lut[] =

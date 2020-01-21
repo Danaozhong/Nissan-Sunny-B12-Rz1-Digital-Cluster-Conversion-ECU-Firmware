@@ -154,7 +154,7 @@ namespace drivers
 
 			// STM32F303 UART2 peripherals
 			m_o_uart_handle.Instance        = USART2;
-			map_uart_peripheral_id_to_object.emplace(2, this);
+			map_uart_peripheral_id_to_object[2] = this;
 		}
 #elif defined STM32F429xx
         if (pt_rx_gpio_block == GPIOA && u16_rx_pin == GPIO_PIN_10 &&
@@ -262,12 +262,10 @@ namespace drivers
 		}
 
 		m_u32_rx_buffer_usage = 0;
-
+#ifdef DRIVER_UART_HAS_OWN_TASK
 		auto main_func = std::bind(&STM32HardwareUART::uart_main, this);
-
-		//std::thread* p_uart_buffer_thread = new std::thread(main_func);
-		//m_p_uart_buffer_thread.detach();
-		m_p_uart_buffer_thread = new std_ex::thread(main_func, "UART_RxThread", 1u, 0x1000);
+		m_p_uart_buffer_thread = new std_ex::thread(main_func, "UART_RxThread", 1u, 0x800);
+#endif
 	}
 	void STM32HardwareUART::disconnect()
 	{
@@ -324,6 +322,10 @@ namespace drivers
 
 	size_t STM32HardwareUART::write(const uint8_t *a_u8_buffer, size_t size)
 	{
+	    if (0u == size)
+	    {
+	        return 0u;
+	    }
 		//wait for the device to be ready
 		while (m_o_uart_handle.gState != HAL_UART_STATE_READY)
 		{
@@ -347,60 +349,65 @@ namespace drivers
 		return size;
 	}
 
+	void STM32HardwareUART::uart_process_cycle()
+	{
+	    char ai8_buffer[10] = { 0 };
+
+        HAL_StatusTypeDef ret_val = HAL_OK;
+
+        while(HAL_OK == ret_val)
+        {
+#ifdef HAS_STD_MUTEX
+            std::lock_guard<std::mutex> guard(this->m_o_interrupt_mutex);
+#endif
+            // only read byte-wise, horribly slow, but works for now.
+            __HAL_UART_CLEAR_OREFLAG(&m_o_uart_handle);
+            __HAL_UART_CLEAR_NEFLAG(&m_o_uart_handle);
+            ret_val = HAL_UART_Receive(&m_o_uart_handle, reinterpret_cast<uint8_t*>(ai8_buffer), 1, 100);
+#if 0
+            if(HAL_OK == ret_val)
+            {
+                int32_t i32_counter = 0;
+                  while (m_uart_rx_interrupt_status != SET && i32_counter < 10)
+                  {
+                      ++i32_counter;
+                      std_ex::sleep_for(std::chrono::milliseconds(10));
+                  }
+
+                  if (m_uart_rx_interrupt_status != SET)
+                  {
+                      // abort interrupt
+                      HAL_UART_AbortReceive_IT(&m_o_uart_handle);
+                  }
+                  /* Reset transmission flag */
+                  m_uart_rx_interrupt_status = RESET;
+            }
+#endif
+
+            if (HAL_OK == ret_val)
+            {
+
+                if(m_u32_rx_buffer_usage < STM32UART_BUFFER_SIZE)
+                {
+                    m_au8_rx_buffer[m_u32_rx_buffer_usage] = ai8_buffer[0];
+                    m_u32_rx_buffer_usage++;
+                }
+            }
+        }
+	}
+
+#ifdef DRIVER_UART_HAS_OWN_TASK
 	void STM32HardwareUART::uart_main()
 	{
 		while(true)
 		{
-			char ai8_buffer[10] = { 0 };
-
-			HAL_StatusTypeDef ret_val;
-
-			{
-#ifdef HAS_STD_MUTEX
-				std::lock_guard<std::mutex> guard(this->m_o_interrupt_mutex);
-#endif
-				// only read byte-wise, horribly slow, but works for now.
-				__HAL_UART_CLEAR_OREFLAG(&m_o_uart_handle);
-				__HAL_UART_CLEAR_NEFLAG(&m_o_uart_handle);
-				ret_val = HAL_UART_Receive(&m_o_uart_handle, reinterpret_cast<uint8_t*>(ai8_buffer), 1, 100);
-#if 0
-				if(HAL_OK == ret_val)
-				{
-					int32_t i32_counter = 0;
-					  while (m_uart_rx_interrupt_status != SET && i32_counter < 10)
-					  {
-						  ++i32_counter;
-						  std_ex::sleep_for(std::chrono::milliseconds(10));
-					  }
-
-					  if (m_uart_rx_interrupt_status != SET)
-					  {
-						  // abort interrupt
-						  HAL_UART_AbortReceive_IT(&m_o_uart_handle);
-					  }
-					  /* Reset transmission flag */
-					  m_uart_rx_interrupt_status = RESET;
-				}
-#endif
-			}
-
-			if (HAL_OK == ret_val)
-			{
-
-				if(m_u32_rx_buffer_usage < STM32UART_BUFFER_SIZE)
-				{
-					m_au8_rx_buffer[m_u32_rx_buffer_usage] = ai8_buffer[0];
-					m_u32_rx_buffer_usage++;
-				}
-			}
-			else
-			{
-				// load balancing
-				std_ex::sleep_for(std::chrono::milliseconds(100));
-			}
+		    uart_process_cycle();
+		    // load balancing
+		    std_ex::sleep_for(std::chrono::milliseconds(100));
 		}
 		DEBUG_PRINTF("UART thread will terminate now.");
 	}
+#endif
 
 	void STM32HardwareUART::Error_Handler(void) const
 	{
@@ -512,7 +519,10 @@ extern "C"
 
 	void USART2_IRQHandler(void)
 	{
-	  HAL_UART_IRQHandler(&drivers::map_uart_peripheral_id_to_object[2]->m_o_uart_handle);
+	    if (drivers::map_uart_peripheral_id_to_object.find(2) != drivers::map_uart_peripheral_id_to_object.end())
+	    {
+	        HAL_UART_IRQHandler(&drivers::map_uart_peripheral_id_to_object[2]->m_o_uart_handle);
+	    }
 	}
 }
 

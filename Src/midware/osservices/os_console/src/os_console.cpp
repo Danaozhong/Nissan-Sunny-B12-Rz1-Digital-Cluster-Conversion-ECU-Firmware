@@ -211,8 +211,8 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 		char* p_i8_token = strtok(ai8_command_copy, delimiter);
 		while (nullptr != p_i8_token)
 		{
-		    ++u32_num_of_delimiters;
 		    api8_delimiters[u32_num_of_delimiters] = p_i8_token;
+		    ++u32_num_of_delimiters;
 		    p_i8_token = strtok(nullptr, delimiter);
 		}
 
@@ -230,7 +230,7 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
                     char ai8_output_buffer[cu32_output_buffer_size] = { 0 };
                     /* u32_num_of_delimiters -1 because the first delimiter is the command,
                      * which does not count as a delimiter */
-                    int32_t i32_return_code = p_command->execute(api8_delimiters,
+                    int32_t i32_return_code = p_command->execute(api8_delimiters + 1,
                             u32_num_of_delimiters - 1,
                             ai8_output_buffer, cu32_output_buffer_size);
                     m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_output_buffer), strlen(ai8_output_buffer));

@@ -4,7 +4,7 @@ PROJECT(SunnyRz1FuelGaugeConverter  VERSION 1.0 DESCRIPTION "Test")
 
 
 # some options
-option(USE_CAN "Enable / disable the CAN subsystem" ON)
+option(USE_CAN "Enable / disable the CAN subsystem" OFF)
 option(USE_TRACE "Enable / disable the tracing" ON)
 
 ENABLE_LANGUAGE(ASM)
@@ -135,6 +135,10 @@ if (USE_CAN)
 endif()
 
 if (USE_TRACE)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
+        -DUSE_TRACE
+    )
+    
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/midware/trace/inc
     )

@@ -175,11 +175,11 @@ namespace midware
         uint8_t au8_buffer[this->m_u_data_flash_buffer_size];
         size_t u_buffer_written_size = 0u;
 
-        int32_t i32_ret_val = this->store_into_buffer(au8_buffer, m_u_data_flash_buffer_size, u_buffer_written_size);
+        int32_t i32_ret_val = OSServices::ERROR_CODE_SUCCESS; //this->store_into_buffer(au8_buffer, m_u_data_flash_buffer_size, u_buffer_written_size);
 
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {
-            // Some error occured when trying to store the data.
+            // Some error occurred when trying to store the data.
             return i32_ret_val;
         }
 

@@ -21,7 +21,6 @@ namespace app
 				int32_t i32_amplifying_factor, int32_t i32_aplifiying_offset);
 
 		int32_t set_fuel_level(int32_t i32_fuel_level);
-
 	private:
 		/// The ADC used to retrieve data
 		std::shared_ptr<drivers::GenericDAC> m_p_dac;

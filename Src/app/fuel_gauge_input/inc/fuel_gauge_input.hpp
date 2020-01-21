@@ -43,6 +43,8 @@ namespace app
 		int32_t m_i32_supply_voltage;
 	};
 
+//#define FUEL_GAUGE_INPUT_USE_OWN_TASK
+
 	class FuelGaugeInputFromADC
 	{
 	public:
@@ -52,11 +54,14 @@ namespace app
 		~FuelGaugeInputFromADC();
 		/// Signal triggered when a new value from the fuel sensor was retrieved
 		boost::signals2::signal<int32_t> m_sig_fuel_level_changed;
-	private:
-		void thread_main(void);
 
+		void process_cycle();
+	private:
+#ifdef FUEL_GAUGE_INPUT_USE_OWN_TASK
+		void thread_main(void);
 		// data acquisition thread
 		std_ex::thread* m_po_data_acquisition_thread;
+#endif
 
 		int32_t get_average_fuel_percentage() const;
 
@@ -71,6 +76,11 @@ namespace app
 		uint32_t m_u32_invalid_read_counter;
 
 		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_fuel_input_characteristic;
+
+        // the voltage divider is supplied by 5V, and has a 220Ohm resistor on top,
+        // and a 330Ohm resistor in parallel to the fuel gauge.
+        VoltageDivider m_o_voltage_divider;
+
 
 
 	};

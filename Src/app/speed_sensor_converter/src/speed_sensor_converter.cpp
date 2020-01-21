@@ -8,20 +8,22 @@ namespace app
                 uint32_t u32_input_pulses_per_kmph_mHz,
                 uint32_t u32_output_pulses_per_kmph_mHz)
     : m_p_output_pwm(p_output_pwm), m_p_output_pwm_input_capture(p_output_pwm_input_capture),
-      m_p_data_conversion_thread(nullptr),
       m_en_current_speed_output_mode(OUTPUT_MODE_CONVERSION),
       m_i32_manual_speed(0), m_u32_current_vehicle_speed_kmph(0u),
       m_u32_input_pulses_per_kmph_mHz(u32_input_pulses_per_kmph_mHz),
-      m_u32_output_pulses_per_kmph_mHz(u32_output_pulses_per_kmph_mHz),
-      m_bo_terminate_thread(false)
+      m_u32_output_pulses_per_kmph_mHz(u32_output_pulses_per_kmph_mHz)
     {
+#ifdef SPEED_CONVERTER_USE_OWN_TASK
+        m_bo_terminate_thread = false;
         // Create the thread which cyclically converts the speed sensor signals
         auto o_main_func = std::bind(&SpeedSensorConverter::speed_sensor_converter_main, this);
-        m_p_data_conversion_thread = new std_ex::thread(o_main_func, "Speed_Conv", 1u, 0x1000);
+        m_p_data_conversion_thread = new std_ex::thread(o_main_func, "Speed_Conv", 1u, 0x800);
+#endif
     }
 
     SpeedSensorConverter::~SpeedSensorConverter()
     {
+#ifdef SPEED_CONVERTER_USE_OWN_TASK
         // notify the data thread that the object is destroyed
         m_bo_terminate_thread = true;
         if (nullptr != this->m_p_data_conversion_thread)
@@ -30,7 +32,7 @@ namespace app
             this->m_p_data_conversion_thread->join();
             delete this->m_p_data_conversion_thread;
         }
-
+#endif
         // everything else is cleaned up automatically
     }
 
@@ -93,7 +95,7 @@ namespace app
         // change the pwm frequency on the output side
         m_p_output_pwm->set_frequency(new_output_frequency_mHz);
     }
-
+#ifdef SPEED_CONVERTER_USE_OWN_TASK
     void SpeedSensorConverter::speed_sensor_converter_main()
     {
         while(false == m_bo_terminate_thread)
@@ -103,6 +105,6 @@ namespace app
             // suspend the task fro 250ms
             std_ex::sleep_for(std::chrono::milliseconds(250));
         }
-
     }
+#endif
 }

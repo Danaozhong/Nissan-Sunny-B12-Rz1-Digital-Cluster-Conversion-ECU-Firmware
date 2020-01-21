@@ -26,6 +26,12 @@
 
 namespace app
 {
+    enum FuelGaugeOutputMode
+    {
+        FUEL_GAUGE_OUTPUT_MODE_CONVERSION,
+        FUEL_GAUGE_OUTPUT_MODE_MANUAL
+    };
+
 	class MainApplication
 	{
 	public:
@@ -45,6 +51,8 @@ namespace app
 		/** Callback used when the fuel sensor input has detected an input level change */
 		void fuel_sensor_input_received(int32_t i32_value);
 
+		void update_fuel_sensor_output();
+
 		/** Singleton accessor */
 		static MainApplication& get();
 
@@ -52,7 +60,19 @@ namespace app
 
 		OSServices::OSConsole* get_os_console();
 
-    private:
+
+        /** Use this to select the mode in which the speed signal is sent out to the cluster.
+         * use OUTPUT_MODE_CONVERSION to derive the speed signal from the input speed sensor,
+         * alternatively; use OUTPUT_MODE_MANUAL to manually configure a speed value. */
+        void set_fuel_gauge_output_mode(FuelGaugeOutputMode en_speed_output_mode);
+
+        /** When the speed sensor conversion is in manual mode, use this function to set the manual
+         * speed value.
+         * \param[in] i32_speed_in_mph  The velocity in meters / hour.
+         */
+        int32_t set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value);
+
+    //private:
         // prevent copying
         MainApplication(MainApplication &other) = delete;
 
@@ -85,6 +105,9 @@ namespace app
 		app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
 		std::shared_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
 
+		FuelGaugeOutputMode m_en_fuel_gauge_output_mode;
+		int32_t m_i32_fuel_sensor_read_value;
+		int32_t m_i32_fuel_gauge_output_manual_value;
 
 		std::shared_ptr<SpeedSensorConverter> m_po_speed_sensor_converter;
 	};

@@ -41,7 +41,7 @@ namespace app
 #ifdef USE_TRACE
 	    // Initialize the trace module
 	    m_po_trace = new midware::Trace();
-
+        m_po_trace->init();
 	    // Enable trace logging via UART
 	    auto po_trace_io_interface = std::make_shared<midware::UARTTraceIOInterface>(m_p_uart);
 	    m_po_trace->add_trace_io_interface(po_trace_io_interface);
@@ -75,7 +75,7 @@ namespace app
 
 	MainApplication& MainApplication::get()
 	{
-		// singleton will be instatiated when first called.
+		// singleton will be instantiated when first called.
 		static MainApplication o_main_application;
 		return o_main_application;
 	}
@@ -121,6 +121,8 @@ namespace app
         }
 	}
 
+	drivers::STM32PWM* po_dummy_pwm = nullptr;
+
 	int32_t MainApplication::init_speed_converter()
     {
         // TODO this is the configuration for the STM32 discovery, change to support the small board
@@ -134,9 +136,17 @@ namespace app
 	                false, __FILE__, __LINE__, 0u);
 	    }
 #else
-        m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM3, TIM_CHANNEL_1, GPIOC, GPIO_PIN_6);
+        m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_6);
+        m_p_pwm_ic = std::make_shared<drivers::STM32PWM_IC>(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 1u, 65536u); // Pins PA11 PA12
+
+        po_dummy_pwm = new drivers::STM32PWM(TIM1, TIM_CHANNEL_3, GPIOA, GPIO_PIN_10);
+        po_dummy_pwm->set_frequency(500000*1000); // for some reasons, for timer1, need to multiply with 1000
+        po_dummy_pwm->set_duty_cycle(500);
 #endif
+        m_p_pwm_ic->init();
+
         m_po_speed_sensor_converter = std::make_shared<SpeedSensorConverter>(m_p_pwm, m_p_pwm_ic, 1u, 4200u);
+
         return OSServices::ERROR_CODE_SUCCESS;
     }
 

@@ -106,12 +106,20 @@ namespace midware
 
     void Trace::debug_printf(const char * format_str, ...)
     {
+        va_list args;
+        va_start(args, format_str);
+        debug_printf_internal(format_str, args);
+        va_end(args);
+    }
+
+    void Trace::debug_printf_internal(const char* format_str, va_list args)
+    {
         /* This function does not use a mutex lock, because the critical size variable is only increased
          * m_u_buffer_usage after the buffer was updated. Since this function is actually called from
          * application context, it must run as fast as possible to not block the caller. */
 
         // check if there is still space in the buffer. If full, make sure to increase the ov counter.
-        if (TRACE_BUFFER_LENGTH < m_u_buffer_usage - 1)
+        if (TRACE_BUFFER_LENGTH == m_u_buffer_usage + 1)
         {
             m_u8_number_of_buffer_overflows++;
             return;
@@ -120,10 +128,8 @@ namespace midware
         // Use a vsnprintf() to print the string into the trace buffer, then immediately return.
         char* pi8_print_buffer_position = m_pa_out_buffer + m_u_buffer_usage;
         const size_t u_remaining_buffer_size = TRACE_BUFFER_LENGTH - m_u_buffer_usage;
-        va_list args;
-        va_start(args, format_str);
+
         vsnprintf(pi8_print_buffer_position, u_remaining_buffer_size, format_str, args);
-        va_end(args);
 
         // recalculated buffer usage.
         m_u_buffer_usage = strnlen(m_pa_out_buffer, TRACE_BUFFER_LENGTH);
@@ -186,11 +192,14 @@ extern "C"
 {
     void Trace_debug_printf(const char * format_str, ...)
     {
-        va_list args;
+
         midware::Trace* po_default_trace = midware::Trace::get_default_trace();
         if (po_default_trace != nullptr)
         {
-            m_p_system_default_trace->debug_printf(format_str, args);
+            va_list args;
+            va_start(args, format_str);
+            m_p_system_default_trace->debug_printf_internal(format_str, args);
+            va_end(args);
         }
     }
 }

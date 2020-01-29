@@ -5,7 +5,7 @@
 #define FUEL_GAUGE_OUTPUT_LOG(...)
 
 // Ugly macros to allow debug logging
-#if defined(FUEL_GAUGE_OUTPUT_ENABLE_LOGGING) // && defined(USE_TRACE)
+#if defined(FUEL_GAUGE_OUTPUT_ENABLE_LOGGING) && defined(USE_TRACE)
 /* Compile with debug output */
 #include "trace_if.h"
 #undef FUEL_GAUGE_OUTPUT_LOG
@@ -32,14 +32,26 @@ namespace app
 
 		//m_d_set_voltage = d_fuel_level;
 		// Calculate the desired final voltage
-		int32_t i32_final_voltage = m_p_fuel_output_characteristic->get_y(i32_fuel_level);
+		m_i32_set_voltage_output = m_p_fuel_output_characteristic->get_y(i32_fuel_level);
 
-		FUEL_GAUGE_OUTPUT_LOG("Setting output to voltage %s\r\n", i32_final_voltage);
+		FUEL_GAUGE_OUTPUT_LOG("Setting output to voltage %i\r\n", static_cast<int>(i32_final_voltage));
+
 		// ...take the effects of the OpAmp into account.
-		m_i32_set_voltage = (i32_final_voltage - m_i32_aplifiying_offset) / m_i32_amplifying_factor;
+		// the m_i32_amplifying_factor is given in x1000, therefore needs to multiply 1000 to balance out
+		m_i32_set_voltage_dac = (m_i32_set_voltage_output - m_i32_aplifiying_offset) * 1000 / m_i32_amplifying_factor;
 
 
 		// and then send the signal to the DAC.
-		return m_p_dac->set_output_voltage(m_i32_set_voltage);
+		return m_p_dac->set_output_voltage(m_i32_set_voltage_dac);
 	}
+
+    int32_t FuelGaugeOutput::get_voltage_output() const
+    {
+        return m_i32_set_voltage_output;
+    }
+
+    int32_t FuelGaugeOutput::get_voltage_dac() const
+    {
+        return m_i32_set_voltage_dac;
+    }
 }

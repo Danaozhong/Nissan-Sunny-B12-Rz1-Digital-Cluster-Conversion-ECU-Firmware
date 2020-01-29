@@ -25,13 +25,18 @@ namespace drivers
 		void Error_Handler(void);
 		int32_t calculate_prescaler_value(uint32_t u32_frequency_mhz) const;
 
+		int32_t reconfigure_pwm(uint32_t u32_frequency, uint32_t u32_duty_cycle);
+
 #ifdef HAL_TIM_MODULE_ENABLED
 		/* Timer handler declaration */
 		TIM_HandleTypeDef    o_timer_handle;
+		uint32_t m_u32_timer_channel;
 		/* Timer Output Compare Configuration Structure declaration */
 		TIM_OC_InitTypeDef sConfig;
 		/* Counter Prescaler value */
 		uint32_t u32_prescaler_value;
+
+		uint32_t u32_timer_value;
 #endif
 
 	};

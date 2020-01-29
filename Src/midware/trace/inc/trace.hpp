@@ -56,6 +56,8 @@ namespace midware
          * Internally, this will just copy the string into a buffer, before continuing execution. */
         void debug_printf(const char *, ...);
 
+        void debug_printf_internal(const char *, va_list args);
+
         /** An IO interface can be used by several tracers, hence needs to be a smart pointer */
         int32_t add_trace_io_interface(const std::shared_ptr<TraceIOInterface> &po_trace_io_interface);
 

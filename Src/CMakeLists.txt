@@ -43,6 +43,7 @@ SET(PROJECT_SOURCES
     app/lookup_table/src/lookup_table.cpp
     app/main_application/src/main_application.cpp
     app/speed_sensor_converter/src/speed_sensor_converter.cpp
+    app/replay_curve/src/replay_curve.cpp
     
     drivers/adc/src/stm32_adc.cpp
     drivers/dac/src/generic_dac.cpp
@@ -83,6 +84,12 @@ SET(PROJECT_SOURCES
     midware/FreeRTOS/src/portable/MemMang/heap_4.c
 )
 
+if (USE_TRACE)
+    list(APPEND PROJECT_SOURCES
+        midware/trace/src/trace.cpp
+    )
+endif()
+
 add_subdirectory(can_stack/autosar)
 add_subdirectory(midware/trace)
 
@@ -102,6 +109,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/main_application/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/speed_sensor_converter/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/replay_curve/inc
         
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/adc/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/dac/inc
@@ -138,7 +146,6 @@ if (USE_TRACE)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
         -DUSE_TRACE
     )
-    
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/midware/trace/inc
     )

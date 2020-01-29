@@ -104,4 +104,8 @@ namespace OSServices
 	};
 }
 
+
+/** This function takes a C string, and processes all the backspaces in it. */
+size_t erase_backspaces(char* pc_string);
+
 #endif

@@ -12,6 +12,9 @@ namespace app
 	class CharacteristicCurve
 	{
 	public:
+	    CharacteristicCurve() : m_u32_num_of_data_points(0), m_p_lookup_table(nullptr) {}
+
+	    /** Paramter constructor */
 		CharacteristicCurve(std::pair<Tx, Ty> data_points[], uint32_t u32_num_of_data_points)
 			//:m_a_lookup_table(data_points)
 		{
@@ -24,9 +27,42 @@ namespace app
 			}
 		}
 
+		/** copy constructor */
+		CharacteristicCurve(const CharacteristicCurve &other)
+		{
+		    m_u32_num_of_data_points = other.m_u32_num_of_data_points;
+		    m_p_lookup_table = new std::pair<Tx, Ty>[m_u32_num_of_data_points];
+            for (uint32_t u32_i = 0u; u32_i < m_u32_num_of_data_points; ++u32_i)
+            {
+                m_p_lookup_table[u32_i] = other.m_p_lookup_table[u32_i];
+            }
+		}
+
+		/** Move constructor */
+		CharacteristicCurve(CharacteristicCurve&& other)
+		{
+		    m_u32_num_of_data_points = other.m_u32_num_of_data_points;
+		    m_p_lookup_table = other.m_p_lookup_table;
+		    other.m_p_lookup_table = nullptr;
+		}
+
+		CharacteristicCurve& operator=(const CharacteristicCurve &other)
+		{
+            m_u32_num_of_data_points = other.m_u32_num_of_data_points;
+            m_p_lookup_table = new std::pair<Tx, Ty>[m_u32_num_of_data_points];
+            for (uint32_t u32_i = 0u; u32_i < m_u32_num_of_data_points; ++u32_i)
+            {
+                m_p_lookup_table[u32_i] = other.m_p_lookup_table[u32_i];
+            }
+		    return *this;
+		}
+
 		~CharacteristicCurve()
 		{
-			delete[] m_p_lookup_table;
+		    if (nullptr != m_p_lookup_table)
+		    {
+		        delete[] m_p_lookup_table;
+		    }
 		}
 
 
@@ -35,7 +71,7 @@ namespace app
 			using namespace std;
 			if (m_u32_num_of_data_points == 0)
 			{
-				return 0;
+				return Ty(0);
 			}
 
 			if (d_x < get<0>(m_p_lookup_table[0]))
@@ -52,10 +88,10 @@ namespace app
 
 				if(d_x < next_x)
 				{
-					if (static_cast<int32_t>(next_x - current_x) != 0)
+					if ((next_x - current_x) != Tx(0))
 					{
 						// do linear interpolation
-						return current_y + (next_y - current_y) / (next_x - current_x) * (d_x - current_x);
+						return current_y + ((next_y - current_y) * static_cast<Ty>(d_x - current_x)) / static_cast<Ty>(next_x - current_x);
 					}
 					return current_y;
 				}
@@ -70,7 +106,7 @@ namespace app
 		{
 			if (m_u32_num_of_data_points == 0)
 			{
-				return 0;
+				return Tx(0);
 			}
 
 			// within the valid range of the lookup table, do a linear interpolation
@@ -91,8 +127,26 @@ namespace app
 			}
 
 			// value must be outside of the LUT.
-			return 0;
+			return Tx(0);
 		}
+
+		Tx get_first_x() const
+		{
+            if (m_u32_num_of_data_points == 0)
+            {
+                return Tx(0);
+            }
+            return std::get<0>(m_p_lookup_table[0]);
+		}
+
+        Tx get_last_x() const
+        {
+            if (m_u32_num_of_data_points == 0)
+            {
+                return Tx(0);
+            }
+            return std::get<0>(m_p_lookup_table[m_u32_num_of_data_points - 1]);
+        }
 
 	private:
 		std::pair<Tx, Ty>* m_p_lookup_table;

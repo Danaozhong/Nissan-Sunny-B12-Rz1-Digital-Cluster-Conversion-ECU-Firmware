@@ -49,6 +49,10 @@ namespace app
             {
                 po_speed_sensor_converter->set_speed_output_mode(OUTPUT_MODE_CONVERSION);
             }
+            else if (0 == strcmp(params[1], "replay"))
+            {
+                po_speed_sensor_converter->set_speed_output_mode(OUTPUT_MODE_REPLAY);
+            }
             else
             {
                 display_usage();
@@ -69,6 +73,26 @@ namespace app
 
             // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
             po_speed_sensor_converter->set_manual_speed(1000 * u32_speed_value);
+        }
+        else if (0 == strcmp(params[0], "show"))
+        {
+            // print all the parameters
+            int i_output_speed = static_cast<int>(po_speed_sensor_converter->get_current_speed());
+            int i_input_speed = 0;
+            unsigned int u_output_frequency  = static_cast<unsigned int>(po_speed_sensor_converter->get_current_frequency());
+
+            char* pi8_buffer = nullptr;
+            uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
+            snprintf(pi8_buffer, u32_buf_size, "Speed Sensor Conversion Characteristics:\n\r"
+                    "\n\r"
+                    "  Measured vehicle speed:  %i\n\r"
+                    "  Displayed vehicle speed:  %i\n\r"
+                    "  Display PWM frequency: %u.%u Hz\n\r",
+                    i_input_speed,
+                    i_output_speed,
+                    u_output_frequency / 1000u,
+                    u_output_frequency % 1000u
+                    );
         }
         // if no early return, the command was executed successfully.
         return OSServices::ERROR_CODE_SUCCESS;
@@ -143,7 +167,7 @@ namespace app
             }
 
             // TODO use something better than atoi
-            int32_t i32_fuel_value = atoi(params[1]);
+            int32_t i32_fuel_value = atoi(params[1]) * 100;
 
             // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
             o_application.set_manual_fuel_gauge_output_value(i32_fuel_value);
@@ -151,6 +175,30 @@ namespace app
             char* pi8_buffer = nullptr;
             uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
             snprintf(pi8_buffer, u32_buf_size, "Fuel signal set to manual conversion, fuel value is %i", o_application.m_i32_fuel_gauge_output_manual_value);
+        }
+        else if (0 == strcmp(params[0], "show"))
+        {
+            // print all the parameters
+            int i32_average_fuel_level_sensor = o_application.m_i32_fuel_sensor_read_value;
+            int i32_manually_set_fuel_level = o_application.m_i32_fuel_gauge_output_manual_value;
+            int i32_voltage_cluster = o_application.m_p_o_fuel_gauge_output->get_voltage_output();
+            int i32_voltage_dac = o_application.m_p_o_fuel_gauge_output->get_voltage_dac();
+
+            char* pi8_buffer = nullptr;
+            uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
+            snprintf(pi8_buffer, u32_buf_size, "Fuel Level Conversion Characteristics:\n\r"
+                    "\n\r"
+                    "  Input fuel sensor level:  %i%%\n\r"
+                    "  Manually set fuel sensor level: %i%%\n\r"
+                    "  Simulated sensor voltage: %i.%iV\n\r"
+                    "  Output voltage DAC: %i.%iV\n\r",
+                    i32_average_fuel_level_sensor / 100,
+                    i32_manually_set_fuel_level / 100,
+                    i32_voltage_cluster / 1000,
+                    (i32_voltage_cluster % 1000) / 10,
+                    i32_voltage_dac / 1000,
+                    (i32_voltage_dac % 1000) / 10
+                    );
         }
         // if no early return, the command was executed successfully.
         return OSServices::ERROR_CODE_SUCCESS;

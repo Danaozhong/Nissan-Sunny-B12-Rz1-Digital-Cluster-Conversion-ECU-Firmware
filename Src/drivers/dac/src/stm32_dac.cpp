@@ -77,8 +77,8 @@ namespace drivers
 	/** Function to set the output by value */
 	int32_t STM32DAC::set_output_value(uint32_t value)
 	{
-		//value = std::min(value, this->get_max_value());
-		//value = std::max(value, this->get_min_value());
+		value = std::min(value, this->get_max_value());
+		value = std::max(value, this->get_min_value());
 #ifdef HAL_DAC_MODULE_ENABLED
 		/*##-3- Set DAC Channel1 DHR register ######################################*/
 		if (HAL_DAC_SetValue(&this->m_dac_handle, get_dac_channel(), DAC_ALIGN_8B_R, static_cast<uint8_t>(value)) != HAL_OK)
@@ -121,8 +121,8 @@ namespace drivers
 	int32_t STM32DAC::set_output_voltage(int32_t i32_value)
 	{
 		i32_value = std::max(i32_value, static_cast<int32_t>(0));
-		const uint32_t u32_adc_value = static_cast<uint32_t>(i32_value * get_max_value()) / 3300u;
-		return set_output_value(u32_adc_value);
+		uint32_t u32_dac_value = static_cast<uint32_t>(i32_value * get_max_value()) / 3300u;
+		return set_output_value(u32_dac_value);
 	}
 
 	uint32_t STM32DAC::get_dac_channel() const

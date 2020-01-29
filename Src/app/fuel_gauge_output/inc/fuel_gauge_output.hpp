@@ -7,7 +7,7 @@
 
 
 /* Enable this if you want to have additional log output for the fuel sensor acquisition module */
-#define FUEL_GAUGE_OUTPUT_ENABLE_LOGGING
+//#define FUEL_GAUGE_OUTPUT_ENABLE_LOGGING
 
 
 namespace app
@@ -21,6 +21,9 @@ namespace app
 				int32_t i32_amplifying_factor, int32_t i32_aplifiying_offset);
 
 		int32_t set_fuel_level(int32_t i32_fuel_level);
+
+		int32_t get_voltage_output() const;
+		int32_t get_voltage_dac() const;
 	private:
 		/// The ADC used to retrieve data
 		std::shared_ptr<drivers::GenericDAC> m_p_dac;
@@ -28,8 +31,11 @@ namespace app
 		/// The current set fuel level percentage
 		int32_t m_i32_current_fuel_percentage;
 
-		/// the current voltage level set on the output
-		int32_t m_i32_set_voltage;
+		/// the expected voltage level on the digital cluster output port
+		uint32_t m_i32_set_voltage_output;
+
+		/// the current voltage level set on the output DAC (before amplifying)
+		int32_t m_i32_set_voltage_dac;
 
 		/// If the DAC drives an opamp, this opamp might have an amplifing characteristic.
 		const int32_t m_i32_amplifying_factor;

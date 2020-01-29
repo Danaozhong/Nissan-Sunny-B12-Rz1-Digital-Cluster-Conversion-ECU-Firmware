@@ -1,10 +1,13 @@
 #ifndef _SPEED_SENSOR_CONVERTER_HPP_
 #define _SPEED_SENSOR_CONVERTER_HPP_
 
+#include <atomic>
+
 #include "ex_thread.hpp"
 #include "generic_pwm.hpp"
 #include "generic_pwm_ic.hpp"
-#include <atomic>
+#include "replay_curve.hpp"
+
 
 //#define SPEED_CONVERTER_USE_OWN_TASK
 namespace app
@@ -12,7 +15,8 @@ namespace app
     enum SpeedOutputMode
     {
         OUTPUT_MODE_CONVERSION,
-        OUTPUT_MODE_MANUAL
+        OUTPUT_MODE_MANUAL,
+        OUTPUT_MODE_REPLAY
     };
 
     class SpeedSensorConverter
@@ -37,6 +41,12 @@ namespace app
          */
         int32_t set_manual_speed(int32_t i32_speed_in_mph);
 
+        /** Returns the currently displayed speed on the cluster. */
+        int32_t get_current_speed() const;
+
+        /** Returns the PWM frequency of the speed mode converter */
+        uint32_t get_current_frequency() const;
+
         /** one single data processing cycle. Called cyclically from speed_sensor_converter_main */
         void cycle();
     private:
@@ -51,7 +61,13 @@ namespace app
          */
         int32_t m_i32_manual_speed;
 
+        /**
+         * A data curve that will be replayed when the output is in mode OUTPUT_MODE_REPLAY */
+        ReplayCurve m_o_replay_curve;
+
         uint32_t m_u32_current_vehicle_speed_kmph;
+
+        uint32_t m_u32_new_output_frequency_mHz;
 
         /** Unit is mili Hertz mHz */
         const uint32_t m_u32_input_pulses_per_kmph_mHz;

@@ -9,7 +9,7 @@
 
 
 /* Enable this if you want to have additional log output for the fuel sensor acquisition module */
-#define FUEL_GAUGE_INPUT_ENABLE_LOGGING
+//#define FUEL_GAUGE_INPUT_ENABLE_LOGGING
 
 
 #define FUEL_GAUGE_INPUT_AVERAGING_SIZE   (7u)
@@ -56,15 +56,14 @@ namespace app
 		boost::signals2::signal<int32_t> m_sig_fuel_level_changed;
 
 		void process_cycle();
-	private:
-#ifdef FUEL_GAUGE_INPUT_USE_OWN_TASK
-		void thread_main(void);
-		// data acquisition thread
-		std_ex::thread* m_po_data_acquisition_thread;
-#endif
 
 		int32_t get_average_fuel_percentage() const;
-
+    private:
+#ifdef FUEL_GAUGE_INPUT_USE_OWN_TASK
+        void thread_main(void);
+        // data acquisition thread
+        std_ex::thread* m_po_data_acquisition_thread;
+#endif
 		/// The ADC used to retrieve data
 		std::shared_ptr<drivers::GenericADC> m_p_adc;
 

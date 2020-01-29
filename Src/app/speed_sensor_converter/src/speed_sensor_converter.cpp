@@ -13,6 +13,31 @@ namespace app
       m_u32_input_pulses_per_kmph_mHz(u32_input_pulses_per_kmph_mHz),
       m_u32_output_pulses_per_kmph_mHz(u32_output_pulses_per_kmph_mHz)
     {
+        // Create a dummy replay curve
+        std::pair<int32_t, int32_t> replay_curve_data[] =
+        {
+            std::make_pair(0, 0),
+            std::make_pair(2000, 180*1000),
+            std::make_pair(3000, 150*1000),
+            std::make_pair(9000, 160*1000),
+            std::make_pair(11000, 160*1000),
+            std::make_pair(14000, 0*1000),
+            std::make_pair(15000, 25*1000),
+            std::make_pair(16000, 60*1000),
+            std::make_pair(17000, 25*1000),
+            std::make_pair(18000, 60*1000),
+            std::make_pair(22000, 0*1000),
+            std::make_pair(22000, 0*1000),
+            std::make_pair(25000, 0*1000),
+            std::make_pair(28000, 40*1000),
+            std::make_pair(35000, 55*1000)
+        };
+
+
+        app::CharacteristicCurve<int32_t, int32_t> replay_dataset(replay_curve_data, sizeof(replay_curve_data) / sizeof(replay_curve_data[0]));
+
+        m_o_replay_curve.load_data(replay_dataset);
+
 #ifdef SPEED_CONVERTER_USE_OWN_TASK
         m_bo_terminate_thread = false;
         // Create the thread which cyclically converts the speed sensor signals
@@ -41,7 +66,13 @@ namespace app
      * alternatively; use OUTPUT_MODE_MANUAL to manually configure a speed value. */
     void SpeedSensorConverter::set_speed_output_mode(SpeedOutputMode en_speed_output_mode)
     {
-        this->m_en_current_speed_output_mode = en_speed_output_mode;
+        m_en_current_speed_output_mode = en_speed_output_mode;
+        m_o_replay_curve.stop();
+
+        if (OUTPUT_MODE_REPLAY == m_en_current_speed_output_mode)
+        {
+            m_o_replay_curve.play();
+        }
     }
 
     /** When the speed sensor conversion is in manual mode, use this function to set the manual
@@ -57,6 +88,24 @@ namespace app
             return 0;
         }
         return -1;
+    }
+
+    int32_t SpeedSensorConverter::get_current_speed() const
+    {
+        if (OUTPUT_MODE_CONVERSION == m_en_current_speed_output_mode)
+        {
+            return m_u32_current_vehicle_speed_kmph;
+        }
+        else if (OUTPUT_MODE_REPLAY == m_en_current_speed_output_mode)
+        {
+            return m_o_replay_curve.get_current_data();
+        }
+        return m_i32_manual_speed;
+    }
+
+    uint32_t SpeedSensorConverter::get_current_frequency() const
+    {
+        return m_u32_new_output_frequency_mHz;
     }
 
     void SpeedSensorConverter::cycle()
@@ -80,20 +129,27 @@ namespace app
             m_u32_current_vehicle_speed_kmph = input_frequency_mHz / m_u32_input_pulses_per_kmph_mHz;
         }
 
-        int32_t new_output_frequency_mHz;
         if (OUTPUT_MODE_CONVERSION == m_en_current_speed_output_mode)
         {
             // in this mode, derive the output speed from the signal of the speed sensor
-            new_output_frequency_mHz = m_u32_current_vehicle_speed_kmph * m_u32_output_pulses_per_kmph_mHz;
+            m_u32_new_output_frequency_mHz = m_u32_current_vehicle_speed_kmph * m_u32_output_pulses_per_kmph_mHz;
         }
-        else
+        else if (OUTPUT_MODE_MANUAL == m_en_current_speed_output_mode)
         {
             // in manual mode, use the speed value passed from the console
-            new_output_frequency_mHz = m_i32_manual_speed * m_u32_output_pulses_per_kmph_mHz;
+            m_u32_new_output_frequency_mHz = m_i32_manual_speed * m_u32_output_pulses_per_kmph_mHz;
+        }
+        else if (OUTPUT_MODE_REPLAY == m_en_current_speed_output_mode)
+        {
+            m_o_replay_curve.cycle();
+            m_u32_new_output_frequency_mHz = m_o_replay_curve.get_current_data() * m_u32_output_pulses_per_kmph_mHz;
         }
 
         // change the pwm frequency on the output side
-        m_p_output_pwm->set_frequency(new_output_frequency_mHz);
+        if (0 != m_u32_new_output_frequency_mHz)
+        {
+            m_p_output_pwm->set_frequency(m_u32_new_output_frequency_mHz);
+        }
     }
 #ifdef SPEED_CONVERTER_USE_OWN_TASK
     void SpeedSensorConverter::speed_sensor_converter_main()

@@ -5,9 +5,7 @@ if (USE_TRACE)
         -DUSE_TRACE
     )
    
-    list(APPEND PROJECT_SOURCES
-        midware/trace/src/trace.cpp
-    )
+
 else()
 
 endif()

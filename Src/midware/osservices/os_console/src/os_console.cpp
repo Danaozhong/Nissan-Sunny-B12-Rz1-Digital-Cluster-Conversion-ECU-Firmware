@@ -205,6 +205,9 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 		// first copy it so that we can run strtok() on it.
 		strncpy(ai8_command_copy, ai8_input_command, COMMAND_MAXIMUM_LENGTH);
 
+		// process all backspace commands, if the user has mistyped something
+		erase_backspaces(ai8_command_copy);
+
         const char* api8_delimiters[100]  = { nullptr };
         uint32_t u32_num_of_delimiters = 0u;
 		// then search for all spaces and split the lines
@@ -323,4 +326,34 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 		char ai8_bootscreen[] = "FreeRTOS Platform V0.1\n\r(c) 2019 \n\r";
 		m_po_io_interface->write(reinterpret_cast<const uint8_t*>(ai8_bootscreen), strlen(ai8_bootscreen));
 	}
+}
+
+
+size_t erase_backspaces(char* pc_string)
+{
+    const size_t string_len = strlen(pc_string);
+    char* write_ptr = pc_string;
+    char* read_ptr = pc_string; // how many backspaces have already been erased
+
+    while (read_ptr != pc_string + string_len) // check if end of string reached
+    {
+        if (*read_ptr == '\b')
+        {
+            // when reading a backspace, ignore this character and jump to the one after it
+            read_ptr++;
+            if (write_ptr != pc_string) // only erase a character if this is not start of string
+            {
+                // remove one character (will be overwritten in the next loop)
+                write_ptr--;
+            }
+            // execute while condition statement, to make sure we don't overrun the buffer
+            continue;
+        }
+        *write_ptr = *read_ptr;
+        write_ptr++;
+        read_ptr++;
+    }
+    // append a null terminator
+    *write_ptr = '\0';
+    return read_ptr - write_ptr;
 }

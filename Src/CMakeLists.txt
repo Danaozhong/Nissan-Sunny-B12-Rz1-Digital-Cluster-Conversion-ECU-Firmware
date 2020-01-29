@@ -82,6 +82,8 @@ SET(PROJECT_SOURCES
 
     midware/FreeRTOS/src/portable/GCC/ARM_CM4F/port.c
     midware/FreeRTOS/src/portable/MemMang/heap_4.c
+    
+    misc/ascii_arts/src/ascii_diagram.cpp
 )
 
 if (USE_TRACE)
@@ -131,6 +133,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/freertos
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/portable/GCC/ARM_CM4F
+    
+    misc/ascii_arts/inc
 )
 
 if (USE_CAN)

@@ -4,17 +4,21 @@ namespace OSServices
 {
 
 
-int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size)
+int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
 {
-	if (nullptr == p_i8_output_buffer || u32_buffer_size < 2)
+	if (nullptr == p_o_io_interface)
 	{
 		return -1;
 	}
+
+    const uint32_t u32_buffer_size = 1024;
+    char p_i8_output_buffer[1024] = "";
 
 	//char ai8_buffer[400] = { 0 };
 #ifdef USE_FREERTOS_TASK_LIST
 	vTaskList(p_i8_output_buffer);
 #else
+
 
 		UBaseType_t uxArraySize;
 		char* pcWriteBuffer = &p_i8_output_buffer[0];
@@ -94,21 +98,27 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 			pcWriteBuffer += strlen( pcWriteBuffer ); /*lint !e9016 Pointer arithmetic ok on char pointers especially as in this case where it best denotes the intent of the code. */
 		}
 #endif
+
+        p_o_io_interface << p_i8_output_buffer;
+
 		return 0;
 	}
 
-	int32_t CommandMemory::execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size)
-	{
-		memset(p_i8_output_buffer, 0, u32_buffer_size);
-
+    int32_t CommandMemory::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    {
 		int i_free_heap = xPortGetFreeHeapSize();
 	    int i_min_heap = xPortGetMinimumEverFreeHeapSize();
 
-	    snprintf(p_i8_output_buffer, u32_buffer_size - 1,
+	    char ac_output_buffer[1024] = "";
+
+	    snprintf(ac_output_buffer, 1024,
 	    		"Current heap size: %u bytes\r\n"
 	    		"Minimum ever heap size: %u bytes\r\n",
 				i_free_heap, i_min_heap
 	    );
+
+	    p_o_io_interface << ac_output_buffer;
+
 
 
 #if 0
@@ -182,8 +192,31 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 	}
 
 
+    OSConsoleUartIOInterface::OSConsoleUartIOInterface(drivers::GenericUART* po_io_interface)
+        : m_po_io_interface(po_io_interface)
+    {
+    }
 
-	OSConsole::OSConsole(drivers::GenericUART* po_io_interface)
+    void OSConsoleUartIOInterface::write_data(const char* pc_data, size_t s_data_size)
+    {
+        if (nullptr != m_po_io_interface)
+        {
+            m_po_io_interface->write(reinterpret_cast<const uint8_t*>(pc_data), s_data_size);
+        }
+    }
+
+    int OSConsoleUartIOInterface::available() const
+    {
+        return m_po_io_interface->available();
+    }
+
+    int OSConsoleUartIOInterface::read()
+    {
+        return m_po_io_interface->read();
+    }
+
+
+    OSConsole::OSConsole(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface)
 	: m_po_io_interface(po_io_interface), m_u32_num_of_registered_commands(0u), m_bo_entering_command(false)
 	{
 		memset(this->m_ai8_command_buffer, 0x0, sizeof(this->m_ai8_command_buffer));
@@ -234,15 +267,13 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
                     /* u32_num_of_delimiters -1 because the first delimiter is the command,
                      * which does not count as a delimiter */
                     int32_t i32_return_code = p_command->execute(api8_delimiters + 1,
-                            u32_num_of_delimiters - 1,
-                            ai8_output_buffer, cu32_output_buffer_size);
-                    m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_output_buffer), strlen(ai8_output_buffer));
+                            u32_num_of_delimiters - 1, m_po_io_interface);
 
                     // and print the return code.
                     char ai8_print_str[LINE_LENGTH] = { 0 };
                     snprintf(ai8_print_str, LINE_LENGTH - 1, "\r\nProgram \'%s\' has terminated with return code %i.\r\n", \
                             p_command->get_command(), static_cast<int>(i32_return_code));
-                    m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_print_str), strlen(ai8_print_str));
+                    m_po_io_interface->write_data(ai8_print_str, strlen(ai8_print_str));
 
                     bo_program_executed = true;
                 }
@@ -253,8 +284,8 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 			if (strlen(ai8_input_command) > 0)
 			{
 				char ai8_print_str[LINE_LENGTH] = { 0 };
-				snprintf(ai8_print_str, LINE_LENGTH - 1, "No command found with name \'%s\'.\r\n", ai8_input_command);
-				m_po_io_interface->write(reinterpret_cast<uint8_t*>(ai8_print_str), strlen(ai8_print_str));
+				snprintf(ai8_print_str, LINE_LENGTH - 1, "No command found with name \'%s\'.\r\n", ai8_command_copy);
+				m_po_io_interface->write_data(ai8_print_str, strlen(ai8_print_str));
 			}
 		}
 	}
@@ -276,18 +307,18 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 					if (m_bo_entering_command == false)
 					{
 						m_bo_entering_command = true;
-						const char ai8_command_prompt[] = "\r\n\r\nFreeRTOS> ";
-						m_po_io_interface->write(reinterpret_cast<const uint8_t*>(ai8_command_prompt), strlen(ai8_command_prompt));
+						m_po_io_interface << "\r\n\r\nFreeRTOS> ";
+						//m_po_io_interface->write_data(ai8_command_prompt, strlen(ai8_command_prompt));
 					}
 
 					// print out the character to the serial (like in a terminal)
-					m_po_io_interface->write(reinterpret_cast<uint8_t*>(&i8_read_char), 1);
+					m_po_io_interface->write_data(&i8_read_char, 1);
 
 					if ('\r' == i8_read_char)
 					{
 						// command finished, new line
 						const char ai8_command_prompt[] = "\r\n\r\n";
-						m_po_io_interface->write(reinterpret_cast<const uint8_t*>(ai8_command_prompt), strlen(ai8_command_prompt));
+						m_po_io_interface->write_data(ai8_command_prompt, strlen(ai8_command_prompt));
 
 						// command end, process
 						this->process_input(m_ai8_command_buffer);
@@ -324,10 +355,30 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 	void OSConsole::print_bootscreen() const
 	{
 		char ai8_bootscreen[] = "FreeRTOS Platform V0.1\n\r(c) 2019 \n\r";
-		m_po_io_interface->write(reinterpret_cast<const uint8_t*>(ai8_bootscreen), strlen(ai8_bootscreen));
+		m_po_io_interface << ai8_bootscreen;
+		//m_po_io_interface->write_data(ai8_bootscreen, strlen(ai8_bootscreen));
 	}
 }
 
+
+//OSConsoleGenericIOInterface* operator<< (OSConsoleGenericIOInterface* po_console_io_interface, char* c_string)
+std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, char* pc_string)
+{
+    if (nullptr != po_console_io_interface)
+    {
+        po_console_io_interface->write_data(pc_string, strlen(pc_string));
+    }
+    return po_console_io_interface;
+}
+
+std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, int32_t i32_value)
+{
+    char ac_buffer[64] = "";
+    snprintf(ac_buffer, 64, "%i", static_cast<int>(i32_value));
+    po_console_io_interface << ac_buffer;
+    return po_console_io_interface;
+
+}
 
 size_t erase_backspaces(char* pc_string)
 {

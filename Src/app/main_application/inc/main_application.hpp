@@ -83,8 +83,14 @@ namespace app
         int32_t init_fuel_level_converter();
         int32_t deinit_fuel_level_converter();
 
+        const std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> get_fuel_input_characterics() const;
+        const std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> get_fuel_output_characterics() const;
+
+
         drivers::GenericUART* m_p_uart;
         OSServices::OSConsole* m_po_os_console;
+        std::shared_ptr<OSServices::OSConsoleGenericIOInterface> m_po_os_io_interface;
+
         midware::ExceptionHandler* m_po_exception_handler;
 #ifdef USE_TRACE
         midware::Trace* m_po_trace;

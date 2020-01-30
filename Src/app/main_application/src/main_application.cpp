@@ -36,7 +36,8 @@ namespace app
 	    m_p_uart->connect(9600, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
 
 	    // Create the debug console
-	    m_po_os_console = new OSServices::OSConsole(m_p_uart);
+	    m_po_os_io_interface = std::make_shared<OSServices::OSConsoleUartIOInterface>(m_p_uart);
+	    m_po_os_console = new OSServices::OSConsole(m_po_os_io_interface);
 
 #ifdef USE_TRACE
 	    // Initialize the trace module
@@ -226,6 +227,16 @@ namespace app
 
         return OSServices::ERROR_CODE_SUCCESS;
     }
+
+    const std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> MainApplication::get_fuel_input_characterics() const
+    {
+        return m_p_o_fuel_gauge_input_characteristic;
+    }
+    const std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> MainApplication::get_fuel_output_characterics() const
+    {
+        return m_p_o_fuel_gauge_output_characteristic;
+    }
+
 
 
 }

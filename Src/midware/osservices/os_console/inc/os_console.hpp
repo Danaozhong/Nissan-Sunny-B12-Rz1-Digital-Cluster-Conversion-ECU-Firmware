@@ -26,14 +26,14 @@ namespace OSServices
     const int32_t ERROR_CODE_NOT_ENOUGH_MEMORY = -21;
     const int32_t ERROR_CODE_UNEXPECTED_VALUE = -22;
 
+    /* forward declaration */
+    class OSConsoleGenericIOInterface;
 
 	class Command
 	{
 	public:
-
-
 		Command(const char* ai8_command)
-		{
+	    {
 			strncpy(m_ai8_command_str, ai8_command, COMMAND_MAXIMUM_LENGTH - 1);
 		}
 
@@ -44,11 +44,10 @@ namespace OSServices
 			return m_ai8_command_str;
 		}
 
-		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size)
+		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
 		{
 			return 0;
 		}
-	protected:
 		char m_ai8_command_str[COMMAND_MAXIMUM_LENGTH];
 
 	};
@@ -62,7 +61,7 @@ namespace OSServices
 
 		virtual ~CommandListTasks() {}
 
-		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size);
+		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
 	};
 
 	/** This command prints out the heap memory size */
@@ -73,13 +72,37 @@ namespace OSServices
 
 		virtual ~CommandMemory() {}
 
-		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size);
+		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
+	};
+
+	/** Something like a generic IO stream object */
+	class OSConsoleGenericIOInterface
+	{
+	public:
+	    virtual ~OSConsoleGenericIOInterface() {}
+
+	    virtual void write_data(const char* pc_data, size_t s_data_size) = 0;
+	    virtual int available() const = 0;
+	    virtual int read() = 0;
+	};
+
+	class OSConsoleUartIOInterface : public OSConsoleGenericIOInterface
+	{
+	public:
+	    OSConsoleUartIOInterface(drivers::GenericUART* po_io_interface);
+	    virtual ~OSConsoleUartIOInterface() {}
+
+	    virtual void write_data(const char* pc_data, size_t s_data_size);
+        virtual int available() const;
+        virtual int read();
+	private:
+	    drivers::GenericUART* m_po_io_interface;
 	};
 
 	class OSConsole
 	{
 	public:
-		OSConsole(drivers::GenericUART* po_io_interface);
+		OSConsole(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface);
 		~OSConsole() {}
 
 		void run();
@@ -92,7 +115,7 @@ namespace OSServices
 
 
 		/// The input/output interface which this console is running on.
-		drivers::GenericUART* m_po_io_interface;
+		std::shared_ptr<OSConsoleGenericIOInterface> m_po_io_interface;
 
 		/// the executable commands that can be run in this console context
 		Command* m_apo_commands[OS_CONSOLE_MAX_NUM_OF_COMMANDS];
@@ -103,6 +126,11 @@ namespace OSServices
 		bool m_bo_entering_command;
 	};
 }
+
+/** Allow comfortable c++ like stream outputs for C strings */
+std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, char* pc_string);
+
+std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, int32_t i32_value);
 
 
 /** This function takes a C string, and processes all the backspaces in it. */

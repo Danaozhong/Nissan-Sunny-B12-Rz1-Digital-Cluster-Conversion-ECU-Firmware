@@ -148,6 +148,26 @@ namespace app
             return std::get<0>(m_p_lookup_table[m_u32_num_of_data_points - 1]);
         }
 
+        Ty get_max_y() const
+        {
+            auto found_element = std::max_element(m_p_lookup_table, m_p_lookup_table + m_u32_num_of_data_points,
+                    [](const std::pair<Tx, Ty>& e1, const std::pair<Tx, Ty>& e2) -> bool
+            {
+                return std::get<1>(e1) < std::get<1>(e2);
+            });
+            return std::get<1>(*found_element);
+        }
+
+        Ty get_min_y() const
+        {
+            auto found_element = std::min_element(m_p_lookup_table, m_p_lookup_table + m_u32_num_of_data_points,
+                    [](const std::pair<Tx, Ty>& e1, const std::pair<Tx, Ty>& e2) -> bool
+            {
+                return std::get<1>(e1) < std::get<1>(e2);
+            });
+            return std::get<1>(*found_element);
+        }
+
 	private:
 		std::pair<Tx, Ty>* m_p_lookup_table;
 		uint32_t m_u32_num_of_data_points;

@@ -2,20 +2,20 @@
 #include "main_application.hpp"
 #include <cstring>
 
+#include "ascii_diagram.hpp"
+
+using namespace OSServices;
+
 namespace app
 {
 
-    void CommandSpeed::display_usage()
+    void CommandSpeed::display_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
     {
-        char* pi8_buffer = nullptr;
-        uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
-        snprintf(pi8_buffer, u32_buf_size, "Wrong usage command, or wrong parameters.");
+        p_o_io_interface<< "Wrong usage command, or wrong parameters.";
     }
 
-    int32_t CommandSpeed::execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size)
+    int32_t CommandSpeed::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
     {
-        m_pi8_output_buffer = p_i8_output_buffer;
-        m_u32_buffer_size = u32_buffer_size;
 
         auto po_speed_sensor_converter = MainApplication::get().get_speed_sensor_converter();
         if (nullptr == po_speed_sensor_converter)
@@ -27,7 +27,7 @@ namespace app
         if (u32_num_of_params == 0)
         {
             // parameter error, no parameter provided
-            display_usage();
+            display_usage(p_o_io_interface);
             return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
         }
 
@@ -36,26 +36,34 @@ namespace app
             // change the speed operating mode
             if (u32_num_of_params != 2)
             {
-                display_usage();
+                p_o_io_interface << "Please provide a parameter to option \"mode\". Possible parameters are:\n\r"
+                        "   manual: Allows manually setting a vehicle speed using the console.\r\n"
+                        "   conversion: Converts the speed sensor input (default)\r\n"
+                        "   replay: replays a pre-stored curve.\r\n";
+                display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
 
             if (0 == strcmp(params[1], "manual"))
             {
                 po_speed_sensor_converter->set_speed_output_mode(OUTPUT_MODE_MANUAL);
+                p_o_io_interface << "Speed conversion mode set to manual data input via console.\n\r";
 
             }
             else if (0 == strcmp(params[1], "conversion"))
             {
                 po_speed_sensor_converter->set_speed_output_mode(OUTPUT_MODE_CONVERSION);
+                p_o_io_interface << "Speed conversion mode set to sensor data conversion.\n\r";
             }
             else if (0 == strcmp(params[1], "replay"))
             {
                 po_speed_sensor_converter->set_speed_output_mode(OUTPUT_MODE_REPLAY);
+                p_o_io_interface << "Speed conversion starts replaying test curve.\n\r";
             }
             else
             {
-                display_usage();
+                p_o_io_interface << "Please provide a parameter.\r\n";
+                display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_PARAMETER_WRONG;
             }
         }
@@ -64,7 +72,7 @@ namespace app
             // set a manual speed value
             if (u32_num_of_params != 2)
             {
-                display_usage();
+                display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
 
@@ -81,9 +89,8 @@ namespace app
             int i_input_speed = 0;
             unsigned int u_output_frequency  = static_cast<unsigned int>(po_speed_sensor_converter->get_current_frequency());
 
-            char* pi8_buffer = nullptr;
-            uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
-            snprintf(pi8_buffer, u32_buf_size, "Speed Sensor Conversion Characteristics:\n\r"
+            char pi8_buffer[512] = "";
+            snprintf(pi8_buffer, 512, "Speed Sensor Conversion Characteristics:\n\r"
                     "\n\r"
                     "  Measured vehicle speed:  %i\n\r"
                     "  Displayed vehicle speed:  %i\n\r"
@@ -93,38 +100,28 @@ namespace app
                     u_output_frequency / 1000u,
                     u_output_frequency % 1000u
                     );
+
+            p_o_io_interface << pi8_buffer;
+
         }
+
         // if no early return, the command was executed successfully.
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
-    uint32_t CommandSpeed::u32_get_output_buffer(char* &p_output_buffer)
+
+    void CommandFuel::display_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
     {
-        auto x = strlen(p_output_buffer);
-        uint32_t u32_strlen = strnlen(m_pi8_output_buffer, m_u32_buffer_size);
-        p_output_buffer = m_pi8_output_buffer + u32_strlen; // The buffer position is passed by reference
-        return m_u32_buffer_size - u32_strlen; // the remaining buffer length as the return value
+        p_o_io_interface << "Wrong usage command, or wrong parameters.";
     }
-
-
-    void CommandFuel::display_usage()
+    int32_t CommandFuel::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
     {
-        char* pi8_buffer = nullptr;
-        uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
-        snprintf(pi8_buffer, u32_buf_size, "Wrong usage command, or wrong parameters.");
-    }
-
-    int32_t CommandFuel::execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size)
-    {
-        m_pi8_output_buffer = p_i8_output_buffer;
-        m_u32_buffer_size = u32_buffer_size;
-
         MainApplication& o_application  = MainApplication::get();
 
         if (u32_num_of_params == 0)
         {
             // parameter error, no parameter provided
-            display_usage();
+            display_usage(p_o_io_interface);
             return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
         }
 
@@ -133,27 +130,28 @@ namespace app
             // change the speed operating mode
             if (u32_num_of_params != 2)
             {
-                display_usage();
+                display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
 
             if (0 == strcmp(params[1], "manual"))
             {
                 o_application.set_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_MANUAL);
-                char* pi8_buffer = nullptr;
-                uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
-                snprintf(pi8_buffer, u32_buf_size, "Fuel signal set to manual conversion, fuel value is %i", o_application.m_i32_fuel_gauge_output_manual_value);
+                //char pi8_buffer[128];
+                //snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", o_application.m_i32_fuel_gauge_output_manual_value);
+                p_o_io_interface << "Fuel signal set to manual conversion, fuel value is"
+                        << o_application.m_i32_fuel_gauge_output_manual_value
+                        << ".";
             }
             else if (0 == strcmp(params[1], "conversion"))
             {
                 o_application.set_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION);
                 char* pi8_buffer = nullptr;
-                uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
-                snprintf(pi8_buffer, u32_buf_size, "Fuel signal set to vehicle  data conversion.");
+                p_o_io_interface << "Fuel signal set to vehicle  data conversion.";
             }
             else
             {
-                display_usage();
+                display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_PARAMETER_WRONG;
             }
         }
@@ -162,7 +160,7 @@ namespace app
             // set a manual speed value
             if (u32_num_of_params != 2)
             {
-                display_usage();
+                display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
 
@@ -172,9 +170,9 @@ namespace app
             // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
             o_application.set_manual_fuel_gauge_output_value(i32_fuel_value);
 
-            char* pi8_buffer = nullptr;
-            uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
-            snprintf(pi8_buffer, u32_buf_size, "Fuel signal set to manual conversion, fuel value is %i", o_application.m_i32_fuel_gauge_output_manual_value);
+            char pi8_buffer[128];
+            snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", o_application.m_i32_fuel_gauge_output_manual_value);
+            p_o_io_interface << pi8_buffer;
         }
         else if (0 == strcmp(params[0], "show"))
         {
@@ -184,9 +182,9 @@ namespace app
             int i32_voltage_cluster = o_application.m_p_o_fuel_gauge_output->get_voltage_output();
             int i32_voltage_dac = o_application.m_p_o_fuel_gauge_output->get_voltage_dac();
 
-            char* pi8_buffer = nullptr;
-            uint32_t u32_buf_size = u32_get_output_buffer(pi8_buffer);
-            snprintf(pi8_buffer, u32_buf_size, "Fuel Level Conversion Characteristics:\n\r"
+            char pi8_buffer[256] = "";
+
+            snprintf(pi8_buffer, 256, "Fuel Level Conversion Characteristics:\n\r"
                     "\n\r"
                     "  Input fuel sensor level:  %i%%\n\r"
                     "  Manually set fuel sensor level: %i%%\n\r"
@@ -199,17 +197,53 @@ namespace app
                     i32_voltage_dac / 1000,
                     (i32_voltage_dac % 1000) / 10
                     );
+            p_o_io_interface << pi8_buffer;
+        }
+        else if (0 == strcmp(params[0], "diag_in"))
+        {
+            p_o_io_interface << "Fuel Input Characteristics\n\r\n\r";
+            p_o_io_interface << "x axis: fuel level in %% * 100\n\r";
+            p_o_io_interface << "y axis: resistor value in mOhm\n\r\n\r";
+
+            // show the maps of the fuel sensors
+            misc::ASCIIDiagram o_ascii_diagram(82, 70, 40);
+            const size_t s_buffer_size = 128u;
+            char ac_buffer[s_buffer_size];
+            size_t s_buffer_offset = 0u;
+            while (0 != o_ascii_diagram.draw(*o_application.get_fuel_input_characterics(),
+                    ac_buffer,
+                    s_buffer_size,
+                    s_buffer_offset))
+            {
+                // keep looping until the entire diagram is printed.
+                s_buffer_offset += s_buffer_size - 1;
+                p_o_io_interface << ac_buffer;
+            }
+            p_o_io_interface << ac_buffer;
+        }
+        else if (0 == strcmp(params[0], "diag_out"))
+        {
+            p_o_io_interface << "Fuel Input Characteristics\n\r\n\r";
+            p_o_io_interface << "x axis: fuel level in %% * 100\n\r";
+            p_o_io_interface << "y axis: sensor voltage in mV\n\r\n\r";
+            // show the maps of the fuel sensors
+            misc::ASCIIDiagram o_ascii_diagram(82, 70, 25);
+            const size_t s_buffer_size = 512u;
+            char ac_buffer[s_buffer_size];
+            size_t s_buffer_offset = 0u;
+            while (0 != o_ascii_diagram.draw(*o_application.get_fuel_output_characterics(),
+                    ac_buffer,
+                    s_buffer_size,
+                    s_buffer_offset))
+            {
+                // keep looping until the entire diagram is printed.
+                s_buffer_offset += s_buffer_size - 1;
+                p_o_io_interface << ac_buffer;
+            }
+            p_o_io_interface << ac_buffer;
         }
         // if no early return, the command was executed successfully.
         return OSServices::ERROR_CODE_SUCCESS;
-    }
-
-    uint32_t CommandFuel::u32_get_output_buffer(char* &p_output_buffer)
-    {
-        auto x = strlen(p_output_buffer);
-        uint32_t u32_strlen = strnlen(m_pi8_output_buffer, m_u32_buffer_size);
-        p_output_buffer = m_pi8_output_buffer + u32_strlen; // The buffer position is passed by reference
-        return m_u32_buffer_size - u32_strlen; // the remaining buffer length as the return value
     }
 }
 

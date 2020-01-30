@@ -16,16 +16,9 @@ namespace app
 
         virtual ~CommandSpeed() {}
 
-        void display_usage();
+        void display_usage(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
 
-        virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size);
-
-    private:
-
-        uint32_t u32_get_output_buffer(char* &p_output_buffer);
-
-        char* m_pi8_output_buffer;
-        uint32_t m_u32_buffer_size;
+        virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
     };
 
 
@@ -36,16 +29,9 @@ namespace app
 
         virtual ~CommandFuel() {}
 
-        void display_usage();
+        void display_usage(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
 
-        virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size);
-
-    private:
-
-        uint32_t u32_get_output_buffer(char* &p_output_buffer);
-
-        char* m_pi8_output_buffer;
-        uint32_t m_u32_buffer_size;
+        virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
     };
 }
 

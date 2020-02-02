@@ -144,9 +144,14 @@ namespace app
         po_dummy_pwm->set_frequency(500000*1000); // for some reasons, for timer1, need to multiply with 1000
         po_dummy_pwm->set_duty_cycle(500);
 #endif
-        m_p_pwm_ic->init();
+        int32_t i32_ret_val = m_p_pwm_ic->init();
+        if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
+        {
+            ExceptionHandler_handle_exception(EXCP_MODULE_PWM_IC, EXCP_TYPE_PWM_IC_INIT_FAILED,
+                    false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
+        }
 
-        m_po_speed_sensor_converter = std::make_shared<SpeedSensorConverter>(m_p_pwm, m_p_pwm_ic, 1u, 4200u);
+        m_po_speed_sensor_converter = std::make_shared<SpeedSensorConverter>(m_p_pwm, m_p_pwm_ic, 5u, 4200u * 1000u);
 
         return OSServices::ERROR_CODE_SUCCESS;
     }

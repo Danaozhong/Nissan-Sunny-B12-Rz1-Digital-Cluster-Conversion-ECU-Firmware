@@ -59,6 +59,7 @@ void SysTick_Handler(void);
 void ADCx_IRQHandler(void);
 void ADCx_DMA_IRQHandler(void);
 void CANx_RX_IRQHandler(void);
+void TIM4_IRQHandler(void);
 
 #ifdef __cplusplus
 }

@@ -6,6 +6,7 @@
 namespace
 {
     std::map<const TIM_HandleTypeDef*, drivers::STM32PWM_IC*> map_tim_handles_to_object;
+    std::map<int32_t, TIM_HandleTypeDef*> map_timer_id_to_tim_handle;
 }
 namespace drivers
 {
@@ -19,8 +20,33 @@ namespace drivers
           m_u16_arr(u16_arr),
           m_bo_initialized(false)
       {
+        m_o_last_input_capture_timestamp = 0u;
+
         map_tim_handles_to_object[&m_timer_handle] = this;
-      }
+
+        int32_t i32_timer_id = -1;
+        if (TIM1 == pt_timer_unit)
+        {
+            i32_timer_id = 1;
+        }
+        else if (TIM2 == pt_timer_unit)
+        {
+            i32_timer_id = 2;
+        }
+        else if (TIM3 == pt_timer_unit)
+        {
+            i32_timer_id = 3;
+        }
+        else if (TIM4 == pt_timer_unit)
+        {
+            i32_timer_id = 4;
+        }
+        else if (TIM8 == pt_timer_unit)
+        {
+            i32_timer_id = 8;
+        }
+        map_timer_id_to_tim_handle[i32_timer_id] = &m_timer_handle;
+    }
 
     int32_t STM32PWM_IC::init()
     {
@@ -39,9 +65,9 @@ namespace drivers
 
         /* USER CODE END TIM2_Init 1 */
         m_timer_handle.Instance = m_pt_timer_unit;
-        m_timer_handle.Init.Prescaler = 0;
+        m_timer_handle.Init.Prescaler = 15;
         m_timer_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
-        m_timer_handle.Init.Period = m_u16_arr - 1;
+        m_timer_handle.Init.Period = 0xffff-1; //m_u16_arr - 1;
         m_timer_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
         m_timer_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
         if (HAL_TIM_Base_Init(&m_timer_handle) != HAL_OK)
@@ -52,36 +78,56 @@ namespace drivers
         {
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
-        sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
-        sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
-        sSlaveConfig.TriggerPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
-        sSlaveConfig.TriggerFilter = 0;
-        if (HAL_TIM_SlaveConfigSynchronization(&m_timer_handle, &sSlaveConfig) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-        sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-        sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-        if (HAL_TIMEx_MasterConfigSynchronization(&m_timer_handle, &sMasterConfig) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-        sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
-        sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+
+        sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_FALLING;
+        sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI; //TIM_ICSELECTION_DIRECTTI;
         sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
         sConfigIC.ICFilter = 0;
         if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_first_channel) != HAL_OK)
         {
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
-        sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_FALLING;
+        sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+        sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI; //TIM_ICSELECTION_DIRECTTI;
         if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_second_channel) != HAL_OK)
         {
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
+
+        sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+        sSlaveConfig.InputTrigger = TIM_TS_TI1FP1; //TIM_TS_TI2FP2;
+        sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
+        sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
+        sSlaveConfig.TriggerFilter = 0;
+        if (HAL_TIM_SlaveConfigSynchronization(&m_timer_handle, &sSlaveConfig) != HAL_OK)
+        {
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+#if 0
+        sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+        sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+        if (HAL_TIMEx_MasterConfigSynchronization(&m_timer_handle, &sMasterConfig) != HAL_OK)
+        {
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+#endif
+
         /* USER CODE BEGIN TIM2_Init 2 */
 
         /* USER CODE END TIM2_Init 2 */
+        //HAL_TIM_Base_Start(&m_timer_handle);
+
+        // start the input capture in interrupt mode
+        if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_first_channel) != HAL_OK)
+        {
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+        if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_second_channel) != HAL_OK)
+        {
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+
+
         m_bo_initialized = true;
         return OSServices::ERROR_CODE_SUCCESS;
     }
@@ -102,8 +148,17 @@ namespace drivers
         {
             return OSServices::ERROR_CODE_UNINITIALIZED;
         }
-        u32_frequency_in_milihz = m_u32_frequency_in_milihz;
-        u32_duty_cycle_permil = m_u32_duty_cycle_permil;
+
+        if (HAL_GetTick() - m_o_last_input_capture_timestamp < 50u)
+        {
+            u32_frequency_in_milihz = m_u32_frequency_in_milihz;
+            u32_duty_cycle_permil = m_u32_duty_cycle_permil;
+        }
+        else
+        {
+            u32_frequency_in_milihz = 0u;
+            u32_duty_cycle_permil = 0u;
+        }
         return OSServices::ERROR_CODE_SUCCESS;
 
     }
@@ -114,6 +169,9 @@ namespace drivers
         HAL_TIM_ActiveChannel en_expected_channel = HAL_TIM_ACTIVE_CHANNEL_1;
         switch (m_u32_first_channel)
         {
+        case TIM_CHANNEL_1:
+            en_expected_channel = HAL_TIM_ACTIVE_CHANNEL_1;
+            break;
         case TIM_CHANNEL_2:
             en_expected_channel = HAL_TIM_ACTIVE_CHANNEL_2;
             break;
@@ -139,12 +197,18 @@ namespace drivers
 
                 m_u32_frequency_in_milihz = (2*HAL_RCC_GetPCLK1Freq() * 1000 / IC_Val1);
                 // As my timer2 clock is 2X the PCLK1 CLOCK that's why X2.
+                //TIM_ClearFlag(TIM4, TIM_IT_CC1);
+                //TIM_ClearFlag(TIM4, TIM_IT_CC2);
+
             }
             else
             {
                 m_u32_duty_cycle_permil = 0u;
                 m_u32_frequency_in_milihz = 0u;
             }
+
+            // save a timestamp when the last input capture was done
+            m_o_last_input_capture_timestamp = HAL_GetTick();
         }
     }
 
@@ -171,5 +235,28 @@ extern "C"
 
     }
 
+    void TIM4_IRQHandler(void)
+    {
+      /* USER CODE BEGIN TIM2_IRQn 0 */
+      TIM_HandleTypeDef *po_timer_handle = nullptr;
+      po_timer_handle = map_timer_id_to_tim_handle[4];
+        if (nullptr != po_timer_handle)
+        {
+        /* USER CODE END TIM2_IRQn 0 */
+          HAL_TIM_IRQHandler(po_timer_handle);
+        }
+    }
+
+    void TIM8_IRQHandler(void)
+    {
+      /* USER CODE BEGIN TIM2_IRQn 0 */
+      TIM_HandleTypeDef *po_timer_handle = nullptr;
+      po_timer_handle = map_timer_id_to_tim_handle[8];
+        if (nullptr != po_timer_handle)
+        {
+        /* USER CODE END TIM2_IRQn 0 */
+          HAL_TIM_IRQHandler(po_timer_handle);
+        }
+    }
 
 }

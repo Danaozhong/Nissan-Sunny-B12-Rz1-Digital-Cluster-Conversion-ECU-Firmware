@@ -16,9 +16,9 @@ namespace midware
 
         virtual ~CommandListExceptions() {}
 
-        virtual int32_t execute(const char** params, uint32_t u32_num_of_params, char* p_i8_output_buffer, uint32_t u32_buffer_size);
+        virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
 
-        void display_usage() const;
+        void display_usage(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface) const;
     };
 
 }

@@ -1,5 +1,6 @@
 #include "speed_sensor_converter.hpp"
 #include "os_console.hpp"
+#include "excp_handler_if.h"
 
 namespace app
 {
@@ -17,20 +18,20 @@ namespace app
         std::pair<int32_t, int32_t> replay_curve_data[] =
         {
             std::make_pair(0, 0),
-            std::make_pair(2000, 180*1000),
-            std::make_pair(3000, 150*1000),
-            std::make_pair(9000, 160*1000),
-            std::make_pair(11000, 160*1000),
-            std::make_pair(14000, 0*1000),
-            std::make_pair(15000, 25*1000),
-            std::make_pair(16000, 60*1000),
-            std::make_pair(17000, 25*1000),
-            std::make_pair(18000, 60*1000),
-            std::make_pair(22000, 0*1000),
-            std::make_pair(22000, 0*1000),
-            std::make_pair(25000, 0*1000),
-            std::make_pair(28000, 40*1000),
-            std::make_pair(35000, 55*1000)
+            std::make_pair(2000, 180),
+            std::make_pair(3000, 150),
+            std::make_pair(9000, 160),
+            std::make_pair(11000, 160),
+            std::make_pair(14000, 0),
+            std::make_pair(15000, 25),
+            std::make_pair(16000, 60),
+            std::make_pair(17000, 25),
+            std::make_pair(18000, 60),
+            std::make_pair(22000, 0),
+            std::make_pair(22000, 0),
+            std::make_pair(25000, 0),
+            std::make_pair(28000, 40),
+            std::make_pair(35000, 55)
         };
 
 
@@ -82,12 +83,12 @@ namespace app
     int32_t SpeedSensorConverter::set_manual_speed(int32_t i32_speed_in_mph)
     {
         // speed limit protection, make sure to not damage the cluster
-        if (i32_speed_in_mph < 250000 && i32_speed_in_mph > -250000)
+        if (true == check_if_speed_is_valid(i32_speed_in_mph / 1000))
         {
-            this->m_i32_manual_speed = i32_speed_in_mph;
-            return 0;
+            m_i32_manual_speed = i32_speed_in_mph / 1000;
+            return OSServices::ERROR_CODE_SUCCESS;
         }
-        return -1;
+        return OSServices::ERROR_CODE_PARAMETER_WRONG;
     }
 
     int32_t SpeedSensorConverter::get_current_speed() const
@@ -112,6 +113,7 @@ namespace app
     {
         if (nullptr == m_p_output_pwm_input_capture || nullptr == m_p_output_pwm)
         {
+            ExceptionHandler_handle_exception(EXCP_MODULE_SPEED_SENSOR_CONVERTER, EXCP_TYPE_NULLPOINTER, false, __FILE__, __LINE__, 0u);
             return;
         }
 
@@ -120,6 +122,7 @@ namespace app
         // read the current frequency from the speed sensor
         if (OSServices::ERROR_CODE_SUCCESS != m_p_output_pwm_input_capture->read_frequency_and_duty_cycle(input_frequency_mHz, input_duty_cylce))
         {
+            ExceptionHandler_handle_exception(EXCP_MODULE_SPEED_SENSOR_CONVERTER, EXCP_TYPE_SPEED_SENSOR_CONVERTER_PWM_READ_FAILED, false, __FILE__, __LINE__, 0u);
             return;
         }
 
@@ -129,28 +132,43 @@ namespace app
             m_u32_current_vehicle_speed_kmph = input_frequency_mHz / m_u32_input_pulses_per_kmph_mHz;
         }
 
-        if (OUTPUT_MODE_CONVERSION == m_en_current_speed_output_mode)
-        {
-            // in this mode, derive the output speed from the signal of the speed sensor
-            m_u32_new_output_frequency_mHz = m_u32_current_vehicle_speed_kmph * m_u32_output_pulses_per_kmph_mHz;
-        }
-        else if (OUTPUT_MODE_MANUAL == m_en_current_speed_output_mode)
+        int32_t i32_set_speed = m_u32_current_vehicle_speed_kmph;
+        if (OUTPUT_MODE_MANUAL == m_en_current_speed_output_mode)
         {
             // in manual mode, use the speed value passed from the console
-            m_u32_new_output_frequency_mHz = m_i32_manual_speed * m_u32_output_pulses_per_kmph_mHz;
+            i32_set_speed = m_i32_manual_speed;
         }
         else if (OUTPUT_MODE_REPLAY == m_en_current_speed_output_mode)
         {
             m_o_replay_curve.cycle();
-            m_u32_new_output_frequency_mHz = m_o_replay_curve.get_current_data() * m_u32_output_pulses_per_kmph_mHz;
+            i32_set_speed = m_o_replay_curve.get_current_data();
         }
 
-        // change the pwm frequency on the output side
-        if (0 != m_u32_new_output_frequency_mHz)
+        if (false == check_if_speed_is_valid(i32_set_speed))
         {
+            // Somehow we converted an invalid speed value
+            ExceptionHandler_handle_exception(EXCP_MODULE_SPEED_SENSOR_CONVERTER,
+                    EXCP_TYPE_SPEED_SENSOR_CONVERTER_VALID_SPEED_RANGE_EXCEEEDED,
+                    false, __FILE__, __LINE__, static_cast<uint32_t>(i32_set_speed));
+            return;
+        }
+        else
+        {
+            m_u32_new_output_frequency_mHz = i32_set_speed * m_u32_output_pulses_per_kmph_mHz;
+            // change the pwm frequency on the output side
             m_p_output_pwm->set_frequency(m_u32_new_output_frequency_mHz);
         }
     }
+
+    bool SpeedSensorConverter::check_if_speed_is_valid(int32_t i32_speed_value_in_kmph)
+    {
+        if (i32_speed_value_in_kmph > 250 || i32_speed_value_in_kmph < -50)
+        {
+            return false;
+        }
+        return true;
+    }
+
 #ifdef SPEED_CONVERTER_USE_OWN_TASK
     void SpeedSensorConverter::speed_sensor_converter_main()
     {

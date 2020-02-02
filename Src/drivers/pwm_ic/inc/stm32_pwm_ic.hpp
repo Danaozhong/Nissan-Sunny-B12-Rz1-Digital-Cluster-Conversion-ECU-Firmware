@@ -37,6 +37,8 @@ namespace drivers
         uint32_t m_u32_duty_cycle_permil;
 
         bool m_bo_initialized;
+
+        uint32_t m_o_last_input_capture_timestamp;
     };
 }
 

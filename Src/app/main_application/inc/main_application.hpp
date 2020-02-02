@@ -18,6 +18,8 @@
 #include "stm32_pwm.hpp"
 #include "stm32_pwm_ic.hpp"
 
+#include "nonvolatile_data_handler.hpp"
+
 #include "os_console.hpp"
 #include "ex_thread.hpp"
 #ifdef USE_TRACE
@@ -109,13 +111,15 @@ namespace app
 		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_output_characteristic;
 
 		app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
-		std::shared_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
+		std::unique_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
 
 		FuelGaugeOutputMode m_en_fuel_gauge_output_mode;
 		int32_t m_i32_fuel_sensor_read_value;
 		int32_t m_i32_fuel_gauge_output_manual_value;
 
-		std::shared_ptr<SpeedSensorConverter> m_po_speed_sensor_converter;
+		std::unique_ptr<SpeedSensorConverter> m_po_speed_sensor_converter;
+
+		std::unique_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
 	};
 
 

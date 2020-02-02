@@ -50,6 +50,9 @@ namespace app
         /** one single data processing cycle. Called cyclically from speed_sensor_converter_main */
         void cycle();
     private:
+
+        bool check_if_speed_is_valid(int32_t i32_speed_value_in_kmph);
+
         std::shared_ptr<drivers::GenericPWM> m_p_output_pwm;
 
         std::shared_ptr<drivers::GenericPWM_IC> m_p_output_pwm_input_capture;

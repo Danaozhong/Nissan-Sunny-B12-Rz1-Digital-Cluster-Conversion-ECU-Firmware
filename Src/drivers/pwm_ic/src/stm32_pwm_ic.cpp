@@ -65,7 +65,7 @@ namespace drivers
 
         /* USER CODE END TIM2_Init 1 */
         m_timer_handle.Instance = m_pt_timer_unit;
-        m_timer_handle.Init.Prescaler = 15;
+        m_timer_handle.Init.Prescaler = m_u32_prescaler;
         m_timer_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
         m_timer_handle.Init.Period = 0xffff-1; //m_u16_arr - 1;
         m_timer_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -79,7 +79,7 @@ namespace drivers
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
 
-        sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_FALLING;
+        sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING; //TIM_INPUTCHANNELPOLARITY_FALLING;
         sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI; //TIM_ICSELECTION_DIRECTTI;
         sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
         sConfigIC.ICFilter = 0;
@@ -87,7 +87,7 @@ namespace drivers
         {
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
-        sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+        sConfigIC.ICPolarity =TIM_INPUTCHANNELPOLARITY_FALLING;// TIM_INPUTCHANNELPOLARITY_RISING;
         sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI; //TIM_ICSELECTION_DIRECTTI;
         if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_second_channel) != HAL_OK)
         {
@@ -149,7 +149,7 @@ namespace drivers
             return OSServices::ERROR_CODE_UNINITIALIZED;
         }
 
-        if (HAL_GetTick() - m_o_last_input_capture_timestamp < 50u)
+        if (HAL_GetTick() - m_o_last_input_capture_timestamp < 500u)
         {
             u32_frequency_in_milihz = m_u32_frequency_in_milihz;
             u32_duty_cycle_permil = m_u32_duty_cycle_permil;
@@ -195,7 +195,7 @@ namespace drivers
 
                 // calculate frequency
 
-                m_u32_frequency_in_milihz = (2*HAL_RCC_GetPCLK1Freq() * 1000 / IC_Val1);
+                m_u32_frequency_in_milihz = ((2000ull*static_cast<uint64_t>(HAL_RCC_GetPCLK1Freq())) / (static_cast<uint64_t>(IC_Val1) * static_cast<uint64_t>(this->m_u32_prescaler + 1u)));
                 // As my timer2 clock is 2X the PCLK1 CLOCK that's why X2.
                 //TIM_ClearFlag(TIM4, TIM_IT_CC1);
                 //TIM_ClearFlag(TIM4, TIM_IT_CC2);

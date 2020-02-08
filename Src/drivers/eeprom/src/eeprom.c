@@ -52,8 +52,8 @@
 /* Base address of the Flash sectors */
 #define ADDR_FLASH_PAGE_0     ((uint32_t)0x08000000) /* Base @ of Page 0, 2 Kbytes */
 #define _EEPROM_FLASH_PAGE_ADDRESS    (ADDR_FLASH_PAGE_0|(_EEPROM_FLASH_PAGE_SIZE*_EEPROM_USE_FLASH_PAGE))
-#if (_EEPROM_USE_FLASH_PAGE>63)
-#error  "Please Enter correct value _EEPROM_USE_FLASH_PAGE  (0 to 63)"
+#if (_EEPROM_USE_FLASH_PAGE>255)
+#error  "Please Enter correct value _EEPROM_USE_FLASH_PAGE  (0 to 255)"
 #endif
 #else
 #error "Please configure a valid chip"
@@ -66,7 +66,7 @@ uint32_t	EEPROMPageBackup[_EEPROM_FLASH_PAGE_SIZE/4];
 //##########################################################################################################
 //##########################################################################################################
 //##########################################################################################################
-bool	EE_Format(void)
+bool EE_ErasePage(uint16_t u16_page)
 {
 #ifdef STM32_FAMILY_F3
 	uint32_t	error;
@@ -77,7 +77,7 @@ bool	EE_Format(void)
 	flashErase.Banks = FLASH_BANK_1;
 	#endif
 	flashErase.NbPages=1;
-	flashErase.PageAddress = _EEPROM_FLASH_PAGE_ADDRESS;
+	flashErase.PageAddress = _EEPROM_FLASH_PAGE_ADDRESS + u16_page * _EEPROM_FLASH_PAGE_SIZE;
 	flashErase.TypeErase = FLASH_TYPEERASE_PAGES;
 	if(HAL_FLASHEx_Erase(&flashErase,&error)==HAL_OK)
 	{
@@ -158,9 +158,9 @@ bool EE_Reads(uint16_t StartVirtualAddress,uint16_t HowMuchToRead,uint32_t* Data
 	return true;
 }
 //##########################################################################################################
-bool 	EE_Writes(uint16_t StartVirtualAddress,uint16_t HowMuchToWrite,uint32_t* Data)
+uint32_t EE_Writes(uint16_t StartVirtualAddress,uint16_t HowMuchToWrite,uint32_t* Data)
 {
-	if((StartVirtualAddress+HowMuchToWrite) >	(_EEPROM_FLASH_PAGE_SIZE/4))
+	if((StartVirtualAddress+HowMuchToWrite) > (_EEPROM_FLASH_PAGE_SIZE/4))
 		return false;
 	#if (_EEPROM_AUTO_ERASE___NEED_MORE_RAM==1)
 	if( EE_Reads(0,(_EEPROM_FLASH_PAGE_SIZE/4),EEPROMPageBackup)==false)
@@ -185,17 +185,20 @@ bool 	EE_Writes(uint16_t StartVirtualAddress,uint16_t HowMuchToWrite,uint32_t* D
 	}
 	#else
 	HAL_FLASH_Unlock();
+	//__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_WRPERR); //FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
 	for(uint16_t i=0; i<HowMuchToWrite ; i++)
 	{		
 		if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,((i+StartVirtualAddress)*4)+_EEPROM_FLASH_PAGE_ADDRESS,(uint64_t)Data[i])!=HAL_OK)
 		{
+		    uint32_t u32_error_code = HAL_FLASH_GetError();
+
 			HAL_FLASH_Lock();
-			return false;
+			return u32_error_code;
 		}
 	}	
 	#endif
 	HAL_FLASH_Lock();
-	return true;
+	return 0u;
 }
 //##########################################################################################################
 uint16_t	EE_GetSize(void)

@@ -4,8 +4,6 @@
 #include "excp_handler.hpp"
 #include "os_console.hpp"
 #include "util_algorithms.hpp"
-
-#include "eeprom.h"
 #include "trace_if.h"
 
 namespace
@@ -15,7 +13,7 @@ namespace
 
 namespace midware
 {
-    const size_t ExceptionHandler::m_u_maximum_number_of_exceptions = 50u;
+    const size_t ExceptionHandler::m_u_maximum_number_of_exceptions = 10u;
 
     Exception::Exception(ExceptionModuleID en_module_id,
             ExceptionTypeID en_exception_id,
@@ -69,17 +67,50 @@ namespace midware
 
     void Exception::print(char* pi8_buffer, size_t u_buffer_size) const
     {
-        snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%u\t%u\t%l\t%s\r\n",
+        snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%u\t%u\t%lu\t%s\r\n",
             static_cast<unsigned int>(m_en_module_id),
             static_cast<unsigned int>(m_en_exception_id),
             static_cast<unsigned int>(m_u32_misc),
             static_cast<unsigned int>(m_u32_occurence_count),
-            static_cast<unsigned int>(m_u64_timestamp),
+            static_cast<unsigned long>(m_u64_timestamp),
             m_ai8_file);
+    }
+
+#ifdef USE_NVDH
+    ExceptionHandler::ExceptionHandler(std::shared_ptr<midware::NonvolatileDataHandler> po_nonvolatile_data_handler)
+    :   m_u_data_flash_buffer_size(256u),
+        m_cu8_flash_section_name("EXCPHDL"),
+        m_po_nonvolatile_data_handler(po_nonvolatile_data_handler)
+#else
+    ExceptionHandler::ExceptionHandler()
+    : m_u_data_flash_buffer_size(256u)
+#endif
+    {
     }
 
     void ExceptionHandler::init()
     {
+#ifdef USE_NVDH
+        if (nullptr != m_po_nonvolatile_data_handler)
+        {
+            if (false == m_po_nonvolatile_data_handler->section_exist(m_cu8_flash_section_name))
+            {
+                // section does not yet exist in flash, create one!
+                int32_t i32_err_code = m_po_nonvolatile_data_handler->register_data(m_cu8_flash_section_name, m_u_data_flash_buffer_size);
+                if (OSServices::ERROR_CODE_SUCCESS != i32_err_code)
+                {
+                    ExceptionHandler_handle_exception(
+                            EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
+                            false, __FILE__, __LINE__, static_cast<uint32_t>(i32_err_code));
+                }
+            }
+            else
+            {
+                // TODO get m_u_data_flash_buffer_size from the NVDH
+            }
+        }
+#endif
+
         int32_t i32_ret_val = this->read_from_data_flash();
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {
@@ -123,7 +154,6 @@ namespace midware
         itr->m_u32_occurence_count++;
         //itr->m_u64_timestamp = std::chrono::high_resolution_clock::now().; // TODO update this when a time measurement library is available
 
-#if 1
         // TODO move this part into the section that will trigger the reset after timeout, or before going to sleep.
         // update the exception information in flash
         // TODO this should be done anynchronously, doing flash writes from this process is not performant
@@ -132,7 +162,7 @@ namespace midware
             // don't handle an exception here, could lead to a stack overflow. Find something better
             DEBUG_PRINTF("Exception Handler: storing the exceptions in flash failed!");
         }
-#endif
+
         // Afterwards, when all information is safely stored in EEPROM, process the exception
         if (true == o_excp.m_bo_critical)
         {
@@ -146,6 +176,11 @@ namespace midware
     void ExceptionHandler::set_as_default_exception_handler()
     {
         po_default_exception_handler = this;
+        // just a dummy exception
+        ExceptionHandler_handle_exception(
+                EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
+                false, __FILE__, __LINE__, 134u);
+
     }
 
     ExceptionHandler* ExceptionHandler::get_default_exception_handler()
@@ -172,10 +207,10 @@ namespace midware
     int32_t ExceptionHandler::store_into_data_flash() const
     {
         // create a temporary buffer to write the data to it
-        uint8_t au8_buffer[this->m_u_data_flash_buffer_size];
+        std::vector<uint8_t> au8_buffer(this->m_u_data_flash_buffer_size);
         size_t u_buffer_written_size = 0u;
 
-        int32_t i32_ret_val = OSServices::ERROR_CODE_SUCCESS; //this->store_into_buffer(au8_buffer, m_u_data_flash_buffer_size, u_buffer_written_size);
+        int32_t i32_ret_val = this->store_into_buffer(au8_buffer.data(), m_u_data_flash_buffer_size, u_buffer_written_size);
 
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {
@@ -183,16 +218,18 @@ namespace midware
             return i32_ret_val;
         }
 
-        // calculate the amount of data to be written in 32-bit block sizes
-        uint16_t u16_buffer_size_in_words = u_buffer_written_size / 4;
-        if (u_buffer_written_size % 4 != 0)
-        {
-            // if the data ends non-aligned, ensure the last word is also written
-            u16_buffer_size_in_words++;
-        }
         // write to code flash
-        if (true != EE_Writes(m_u16_data_flash_address, u16_buffer_size_in_words, reinterpret_cast<uint32_t*>(au8_buffer)))
+        au8_buffer.resize(u_buffer_written_size);
+
+        if (nullptr == m_po_nonvolatile_data_handler)
         {
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+        i32_ret_val = m_po_nonvolatile_data_handler->write_section(m_cu8_flash_section_name, 0,au8_buffer);
+        /* = EE_Writes(m_u16_data_flash_address, u16_buffer_size_in_words, reinterpret_cast<uint32_t*>(au8_buffer)); */
+        if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
+        {
+            DEBUG_PRINTF("Error code while flashing, %u", i32_ret_val);
             // storing into flash failed
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
@@ -205,16 +242,24 @@ namespace midware
 
     int32_t ExceptionHandler::read_from_data_flash()
     {
-        uint8_t au8_buffer[this->m_u_data_flash_buffer_size];
-        if (true != EE_Reads(m_u16_data_flash_address,
-                static_cast<uint16_t>(this->m_u_data_flash_buffer_size / 4),
-                reinterpret_cast<uint32_t*>(au8_buffer)))
+        int32_t i32_ret_val = OSServices::ERROR_CODE_NOT_SUPPORTED;
+#ifdef USE_NVDH
+        std::vector<uint8_t> au8_buffer(this->m_u_data_flash_buffer_size);
+        if (nullptr == m_po_nonvolatile_data_handler)
+        {
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+
+        }
+        i32_ret_val = m_po_nonvolatile_data_handler->read_section(m_cu8_flash_section_name, au8_buffer);
+        if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {
             // reading from flash failed
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            return i32_ret_val;
         }
         // and parse the stuff we have read from flash.
-        return this->read_from_buffer(au8_buffer, m_u_data_flash_buffer_size);
+        return this->read_from_buffer(au8_buffer.data(), m_u_data_flash_buffer_size);
+#endif
+        return i32_ret_val;
     }
 
 
@@ -286,6 +331,7 @@ namespace midware
         const uint32_t u32_crc = midware::Algorithms::calculate_crc8(reinterpret_cast<uint8_t*>(p_memory) + 4,  u_required_memory_size - 4);
         memcpy(&pu8_header_location[0], &u32_crc, 4);
 
+        written_size = u_required_memory_size;
         return OSServices::ERROR_CODE_SUCCESS;
     }
 

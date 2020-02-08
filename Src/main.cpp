@@ -36,11 +36,14 @@
 
 /* Includes ------------------------------------------------------------------*/
 
+
+
 /* OS headers */
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main_application.hpp"
 #include "uc_ports.hpp"
+
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -155,6 +158,8 @@ void vApplicationMallocFailedHook( void )
 void MAIN_Cycle_100ms(void)
 {
     app::MainApplication& o_application = app::MainApplication::get();
+    int32_t counter = 0;
+
     while(true)
     {
         if (nullptr != o_application.m_p_o_fuel_gauge_input)
@@ -165,6 +170,14 @@ void MAIN_Cycle_100ms(void)
         if (nullptr != o_application.m_po_speed_sensor_converter)
         {
             o_application.m_po_speed_sensor_converter->cycle();
+        }
+
+        counter++;
+        if (counter > 10)
+        {
+            counter = 0;
+            // backup the shadow to flash every second
+            o_application.get_nonvolatile_data_handler()->store();
         }
 
         std_ex::sleep_for(std::chrono::milliseconds(100));
@@ -199,6 +212,9 @@ void MAIN_startup_thread(void)
 	// start the cyclic thread(s)
     std_ex::thread* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
 
+    std::vector<uint32_t> a_freqs = { 1, 3, 5, 8, 220 };
+
+
 	while (true)
 	{
 		// load balancing
@@ -215,7 +231,6 @@ void MAIN_startup_thread(void)
 	}
 	vTaskDelete(NULL);
 }
-
 
 
 int main(void)
@@ -409,6 +424,7 @@ void SystemClock_Config_STM32F303xC(void)
   {
     /* Initialization Error */
     while(1);
+
   }
 }
 #endif

@@ -51,13 +51,25 @@ namespace app
 	    m_po_trace->set_as_default_trace();
 #endif
 
+#ifdef USE_NVDH
+        // initialize non-volatile memory (uses 1 block of size 1024) TODO move config to CMake
+        m_po_nonvolatile_data_handler = std::make_shared<midware::NonvolatileDataHandler>(1u, 1024u);
+        m_po_nonvolatile_data_handler->load();
+#endif /* USE_NVDH */
+
         // Initialize the exception storage module, to be able to log / debug exceptions
+#ifdef USE_NVDH
+        m_po_exception_handler = new midware::ExceptionHandler(m_po_nonvolatile_data_handler);
+#else
         m_po_exception_handler = new midware::ExceptionHandler();
+#endif
         m_po_exception_handler->init();
         m_po_exception_handler->set_as_default_exception_handler();
 
 	    // register the command to debug the exception handler on the os console
 	    m_po_os_console->register_command(new midware::CommandListExceptions());
+
+
 
 #ifdef USE_CAN
 	    /* Init the CAN interface (AUTOSAR conform) */
@@ -86,6 +98,13 @@ namespace app
 	    return m_po_speed_sensor_converter;
     }
 
+#ifdef USE_NVDH
+        std::shared_ptr<midware::NonvolatileDataHandler> MainApplication::get_nonvolatile_data_handler() const
+        {
+            return m_po_nonvolatile_data_handler;
+        }
+#endif
+
 	OSServices::OSConsole* MainApplication::get_os_console()
 	{
 	    return this->m_po_os_console;
@@ -97,7 +116,7 @@ namespace app
         update_fuel_sensor_output();
     }
 
-    int32_t MainApplication::set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value)
+    void MainApplication::set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value)
     {
         m_i32_fuel_gauge_output_manual_value = _i32_fuel_gauge_output_value;
         update_fuel_sensor_output();
@@ -138,10 +157,10 @@ namespace app
 	    }
 #else
         m_p_pwm = std::make_shared<drivers::STM32PWM>(TIM3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_6);
-        m_p_pwm_ic = std::make_shared<drivers::STM32PWM_IC>(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 1u, 65536u); // Pins PA11 PA12
+        m_p_pwm_ic = std::make_shared<drivers::STM32PWM_IC>(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 1023u, 65536u); // Pins PA11 PA12
 
         po_dummy_pwm = new drivers::STM32PWM(TIM1, TIM_CHANNEL_3, GPIOA, GPIO_PIN_10);
-        po_dummy_pwm->set_frequency(500000*1000); // for some reasons, for timer1, need to multiply with 1000
+        po_dummy_pwm->set_frequency(80000*1000); // for some reasons, for timer1, need to multiply with 1000
         po_dummy_pwm->set_duty_cycle(500);
 #endif
         int32_t i32_ret_val = m_p_pwm_ic->init();
@@ -151,7 +170,7 @@ namespace app
                     false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
         }
 
-        m_po_speed_sensor_converter = std::make_shared<SpeedSensorConverter>(m_p_pwm, m_p_pwm_ic, 5u, 4200u * 1000u);
+        m_po_speed_sensor_converter = std::make_shared<SpeedSensorConverter>(m_p_pwm, m_p_pwm_ic, 700u, 4200u);
 
         return OSServices::ERROR_CODE_SUCCESS;
     }
@@ -207,7 +226,7 @@ namespace app
         m_p_o_fuel_gauge_output_characteristic = std::make_shared<app::CharacteristicCurve<int32_t, int32_t>>(a_output_lut, sizeof(a_output_lut) / sizeof(a_output_lut[0]));
 
         // start the data output thread
-        m_p_o_fuel_gauge_output = std::make_shared<app::FuelGaugeOutput>(m_p_dac, m_p_o_fuel_gauge_output_characteristic, 1500, 0);
+        m_p_o_fuel_gauge_output = std::make_unique<app::FuelGaugeOutput>(m_p_dac, m_p_o_fuel_gauge_output_characteristic, 1500, 0);
         // start the data acquisition thread
         m_p_o_fuel_gauge_input = new app::FuelGaugeInputFromADC(m_p_adc, m_p_o_fuel_gauge_input_characteristic);
 

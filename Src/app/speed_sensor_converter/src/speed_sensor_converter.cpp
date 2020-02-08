@@ -91,6 +91,11 @@ namespace app
         return OSServices::ERROR_CODE_PARAMETER_WRONG;
     }
 
+    int32_t SpeedSensorConverter::get_current_input_speed() const
+    {
+        return m_u32_current_vehicle_speed_kmph;
+    }
+
     int32_t SpeedSensorConverter::get_current_speed() const
     {
         if (OUTPUT_MODE_CONVERSION == m_en_current_speed_output_mode)
@@ -109,6 +114,11 @@ namespace app
         return m_u32_new_output_frequency_mHz;
     }
 
+    uint32_t SpeedSensorConverter::get_current_input_frequency() const
+    {
+        return m_u32_input_frequency_mHz;
+    }
+
     void SpeedSensorConverter::cycle()
     {
         if (nullptr == m_p_output_pwm_input_capture || nullptr == m_p_output_pwm)
@@ -118,9 +128,9 @@ namespace app
         }
 
         uint32_t input_duty_cylce = 0u;
-        uint32_t input_frequency_mHz = 0u;
+        m_u32_input_frequency_mHz = 0u;
         // read the current frequency from the speed sensor
-        if (OSServices::ERROR_CODE_SUCCESS != m_p_output_pwm_input_capture->read_frequency_and_duty_cycle(input_frequency_mHz, input_duty_cylce))
+        if (OSServices::ERROR_CODE_SUCCESS != m_p_output_pwm_input_capture->read_frequency_and_duty_cycle(m_u32_input_frequency_mHz, input_duty_cylce))
         {
             ExceptionHandler_handle_exception(EXCP_MODULE_SPEED_SENSOR_CONVERTER, EXCP_TYPE_SPEED_SENSOR_CONVERTER_PWM_READ_FAILED, false, __FILE__, __LINE__, 0u);
             return;
@@ -129,7 +139,7 @@ namespace app
         // convert to the output pulses
         if (0u != m_u32_input_pulses_per_kmph_mHz)
         {
-            m_u32_current_vehicle_speed_kmph = input_frequency_mHz / m_u32_input_pulses_per_kmph_mHz;
+            m_u32_current_vehicle_speed_kmph = m_u32_input_frequency_mHz / m_u32_input_pulses_per_kmph_mHz;
         }
 
         int32_t i32_set_speed = m_u32_current_vehicle_speed_kmph;

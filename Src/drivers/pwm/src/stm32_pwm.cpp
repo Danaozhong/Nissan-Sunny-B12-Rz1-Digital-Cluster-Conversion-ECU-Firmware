@@ -205,7 +205,7 @@ namespace drivers
 		// TODO
         HAL_TIM_PWM_Stop(&o_timer_handle, m_u32_timer_channel);  // Stop PWM
 
-        reconfigure_pwm(u32_frequency_mhz / 1000, 500);  // re-initialize the Timer2
+        reconfigure_pwm(u32_frequency_mhz, 500);  // re-initialize the Timer2
 
         //HAL_TIM_PWM_Start(&o_timer_handle,u32_timer_channel); // Start PWM again
 

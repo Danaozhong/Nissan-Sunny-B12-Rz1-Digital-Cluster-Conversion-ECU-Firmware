@@ -19,6 +19,21 @@ ELSE()
   )
 ENDIF()
 
+if(1)
+    set(STM32_EEPROM_EMULATION_SIZE 1024)
+    set (STM32_EEPROM_EMULATION_SECTION
+  #"   .eeprom_emulation 0x0803FC00 :\n"
+  "  .eeprom_emulation (${STM32_FLASH_ORIGIN} + ${STM32_FLASH_SIZE} - ${STM32_EEPROM_EMULATION_SIZE}) :\n"
+  "  {\n"
+  "   . = ALIGN(4)\;\n"
+  "      KEEP(*(.eeprom_emulation))\;\n"
+  "   . = ALIGN(4)\;\n"
+  "  } >FLASH\n"
+  #". = 0x08040000; /* End of flash */\n"
+  )
+
+endif()
+
 SET(STM32_LINKER_SCRIPT_TEXT
   "ENTRY(Reset_Handler)\n"
   "_estack = ${STM32_RAM_ORIGIN} + ${STM32_RAM_SIZE} - 1\;\n"
@@ -84,6 +99,7 @@ SET(STM32_LINKER_SCRIPT_TEXT
   "    KEEP (*(.fini_array*))\n"
   "    PROVIDE_HIDDEN (__fini_array_end = .)\;\n"
   "  } >FLASH\n"
+  "${STM32_EEPROM_EMULATION_SECTION}"
   "  _sidata = LOADADDR(.data)\;\n"
   "  .data : \n"
   "  {\n"

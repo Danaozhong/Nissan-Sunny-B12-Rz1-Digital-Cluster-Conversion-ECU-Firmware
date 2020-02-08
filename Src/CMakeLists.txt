@@ -6,6 +6,8 @@ PROJECT(SunnyRz1FuelGaugeConverter  VERSION 1.0 DESCRIPTION "Test")
 # some options
 option(USE_CAN "Enable / disable the CAN subsystem" OFF)
 option(USE_TRACE "Enable / disable the tracing" ON)
+option(USE_NVDH "Enable / disable non-volatile data handler" ON)
+
 
 ENABLE_LANGUAGE(ASM)
 
@@ -92,6 +94,12 @@ if (USE_TRACE)
     )
 endif()
 
+if (USE_NVDH)
+    list(APPEND PROJECT_SOURCES
+        midware/nonvolatile_data/src/nonvolatile_data_handler.cpp
+    )
+endif()
+
 add_subdirectory(can_stack/autosar)
 add_subdirectory(midware/trace)
 
@@ -128,6 +136,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/std_ex/ex_threads
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/util_algorithms/inc
     
+    
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt/CMSIS_RTOS
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/freertos
@@ -151,7 +160,16 @@ if (USE_TRACE)
         -DUSE_TRACE
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/midware/trace/inc
+        midware/trace/inc
+    )
+endif()
+
+if (USE_NVDH)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
+        -DUSE_NVDH
+    )
+    target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+        midware/nonvolatile_data/inc
     )
 endif()
     

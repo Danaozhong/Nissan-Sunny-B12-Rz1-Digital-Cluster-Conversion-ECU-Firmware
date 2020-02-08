@@ -261,9 +261,6 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 
                 if (strcmp(pi8_command, p_command->get_command()) == 0)
                 {
-                    // execute the command and print the buffer
-                    const uint32_t cu32_output_buffer_size = 1024;
-                    char ai8_output_buffer[cu32_output_buffer_size] = { 0 };
                     /* u32_num_of_delimiters -1 because the first delimiter is the command,
                      * which does not count as a delimiter */
                     int32_t i32_return_code = p_command->execute(api8_delimiters + 1,

@@ -3,6 +3,7 @@
 
 #include "excp_handler_if.h"
 #include <vector>
+#include "nonvolatile_data_handler.hpp"
 
 // TODO make this code thread safe
 namespace midware
@@ -39,10 +40,11 @@ namespace midware
     class ExceptionHandler
     {
     public:
-        ExceptionHandler()
-    : m_u_data_flash_buffer_size(1024u),
-      m_u16_data_flash_address(110u*1024u) // located at 110K flash
-    {}
+#ifdef USE_NVDH
+        ExceptionHandler(std::shared_ptr<midware::NonvolatileDataHandler> po_nonvolatile_data_handler);
+#else
+        ExceptionHandler();
+#endif
 
         ~ExceptionHandler() {}
 
@@ -79,7 +81,6 @@ namespace midware
         /** Loads a list of exceptions from a memory location */
         int32_t read_from_buffer(const uint8_t* pc_memory, size_t u_memory_size);
     private:
-
         std::vector<Exception>::iterator store_exception_in_list(const Exception &o_excp);
 
         static const size_t m_u_maximum_number_of_exceptions;
@@ -92,10 +93,11 @@ namespace midware
         int32_t read_from_memory_version_100(const uint8_t* pc_memory, size_t u_memory_size);
 
         /// How much memory in data flash is used for storing exceptions
-        const size_t m_u_data_flash_buffer_size;
-
-        /// the address of where the exception data flash is located
-        const uint16_t m_u16_data_flash_address;
+        size_t m_u_data_flash_buffer_size;
+#ifdef USE_NVDH
+        const char m_cu8_flash_section_name[8];
+        std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
+#endif /* USE_NVDH */
     };
 
     namespace ExceptionFactory

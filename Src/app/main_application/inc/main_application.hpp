@@ -18,8 +18,9 @@
 #include "stm32_pwm.hpp"
 #include "stm32_pwm_ic.hpp"
 
+#ifdef USE_NVDH
 #include "nonvolatile_data_handler.hpp"
-
+#endif /* USE_NVDH */
 #include "os_console.hpp"
 #include "ex_thread.hpp"
 #ifdef USE_TRACE
@@ -28,6 +29,8 @@
 
 namespace app
 {
+    extern drivers::STM32PWM* po_dummy_pwm;
+
     enum FuelGaugeOutputMode
     {
         FUEL_GAUGE_OUTPUT_MODE_CONVERSION,
@@ -60,6 +63,9 @@ namespace app
 
 		std::shared_ptr<SpeedSensorConverter> get_speed_sensor_converter() const;
 
+#ifdef USE_NVDH
+        std::shared_ptr<midware::NonvolatileDataHandler> get_nonvolatile_data_handler() const;
+#endif
 		OSServices::OSConsole* get_os_console();
 
 
@@ -72,7 +78,7 @@ namespace app
          * speed value.
          * \param[in] i32_speed_in_mph  The velocity in meters / hour.
          */
-        int32_t set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value);
+        void set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value);
 
     //private:
         // prevent copying
@@ -117,9 +123,10 @@ namespace app
 		int32_t m_i32_fuel_sensor_read_value;
 		int32_t m_i32_fuel_gauge_output_manual_value;
 
-		std::unique_ptr<SpeedSensorConverter> m_po_speed_sensor_converter;
-
-		std::unique_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
+		std::shared_ptr<SpeedSensorConverter> m_po_speed_sensor_converter;
+#ifdef USE_NVDH
+		std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
+#endif /* USE_NVDH */
 	};
 
 

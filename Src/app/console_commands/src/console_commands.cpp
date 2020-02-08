@@ -85,17 +85,21 @@ namespace app
         else if (0 == strcmp(params[0], "show"))
         {
             // print all the parameters
+            unsigned int u_input_frequency = static_cast<unsigned int>(po_speed_sensor_converter->get_current_input_frequency());
             int i_output_speed = static_cast<int>(po_speed_sensor_converter->get_current_speed());
-            int i_input_speed = 0;
+            int i_input_speed = static_cast<int>(po_speed_sensor_converter->get_current_input_speed());
             unsigned int u_output_frequency  = static_cast<unsigned int>(po_speed_sensor_converter->get_current_frequency());
 
-            char pi8_buffer[512] = "";
-            snprintf(pi8_buffer, 512, "Speed Sensor Conversion Characteristics:\n\r"
+            char pi8_buffer[1024] = "";
+            snprintf(pi8_buffer, 1024, "Speed Sensor Conversion Characteristics:\n\r"
                     "\n\r"
                     "  Measured vehicle speed:  %i\n\r"
+                    "  Measured PWM frequency: %u.%u Hz\n\r"
                     "  Displayed vehicle speed:  %i\n\r"
                     "  Display PWM frequency: %u.%u Hz\n\r",
                     i_input_speed,
+                    u_input_frequency / 1000u,
+                    u_input_frequency % 1000u,
                     i_output_speed,
                     u_output_frequency / 1000u,
                     u_output_frequency % 1000u

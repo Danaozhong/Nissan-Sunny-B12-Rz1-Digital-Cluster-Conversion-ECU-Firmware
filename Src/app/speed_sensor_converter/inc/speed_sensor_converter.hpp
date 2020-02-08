@@ -41,11 +41,15 @@ namespace app
          */
         int32_t set_manual_speed(int32_t i32_speed_in_mph);
 
+        int32_t get_current_input_speed() const;
+
         /** Returns the currently displayed speed on the cluster. */
         int32_t get_current_speed() const;
 
         /** Returns the PWM frequency of the speed mode converter */
         uint32_t get_current_frequency() const;
+
+        uint32_t get_current_input_frequency() const;
 
         /** one single data processing cycle. Called cyclically from speed_sensor_converter_main */
         void cycle();
@@ -69,6 +73,8 @@ namespace app
         ReplayCurve m_o_replay_curve;
 
         uint32_t m_u32_current_vehicle_speed_kmph;
+
+        uint32_t m_u32_input_frequency_mHz;
 
         uint32_t m_u32_new_output_frequency_mHz;
 

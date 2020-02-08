@@ -22,6 +22,7 @@ namespace OSServices
     const int32_t ERROR_CODE_NUM_OF_PARAMETERS = -2;
     const int32_t ERROR_CODE_PARAMETER_WRONG = -3;
     const int32_t ERROR_CODE_UNINITIALIZED = -4;
+    const int32_t ERROR_CODE_NOT_SUPPORTED = -5;
     const int32_t ERROR_CODE_INTERNAL_ERROR = -20;
     const int32_t ERROR_CODE_NOT_ENOUGH_MEMORY = -21;
     const int32_t ERROR_CODE_UNEXPECTED_VALUE = -22;

@@ -146,6 +146,10 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     misc/ascii_arts/inc
 )
 
+# Link the LibFort library (used for ASCII table drawing)
+add_subdirectory(misc/libs/libfort)
+target_link_libraries(${CMAKE_PROJECT_NAME} fort)
+
 if (USE_CAN)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
         -DUSE_CAN

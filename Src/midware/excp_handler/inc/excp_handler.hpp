@@ -2,9 +2,11 @@
 #define EXCP_HANDLER_HPP_
 
 #include "excp_handler_if.h"
+#include "os_console.hpp"
 #include <vector>
 #include "nonvolatile_data_handler.hpp"
 
+#define EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH (16)
 // TODO make this code thread safe
 namespace midware
 {
@@ -30,7 +32,7 @@ namespace midware
         ExceptionModuleID m_en_module_id;
         ExceptionTypeID m_en_exception_id;
         bool m_bo_critical;
-        char m_ai8_file[16];
+        char m_ai8_file[EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH];
         uint32_t m_u32_line;
         uint32_t m_u32_misc;
         uint32_t m_u32_occurence_count;
@@ -67,7 +69,7 @@ namespace midware
 
         void clear_exceptions();
 
-        void print(char* pi8_buffer, size_t u_buffer_size) const;
+        void print(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface) const;
 
         /// saves everything into data flash ((EEPROM emulation)
         int32_t store_into_data_flash() const;

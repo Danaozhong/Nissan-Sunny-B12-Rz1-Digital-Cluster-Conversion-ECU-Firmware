@@ -81,7 +81,20 @@ ADC_HandleTypeDef    AdcHandle;
   * @retval None
   */
 
+extern "C"
+{
+void* malloc (size_t size) // _NOTHROW
+{
+    /* Call the FreeRTOS version of malloc. */
+    return pvPortMalloc( size );
+}
+void free (void* ptr)
+{
+    /* Call the FreeRTOS version of free. */
+    vPortFree( ptr );
+}
 
+}
 void * operator new( size_t size )
 {
     return pvPortMalloc( size );

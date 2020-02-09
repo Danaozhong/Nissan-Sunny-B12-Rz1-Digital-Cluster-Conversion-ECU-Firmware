@@ -5,6 +5,8 @@
 #include "os_console.hpp"
 #include "util_algorithms.hpp"
 #include "trace_if.h"
+#include "fort.h"
+
 
 namespace
 {
@@ -25,7 +27,23 @@ namespace midware
           m_u32_line(u32_line), m_u32_misc(u32_misc),
           m_u32_occurence_count(0u)
     {
-        strncpy(m_ai8_file, pci8_file, 16);
+        std::memset(m_ai8_file, 0, EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH);
+
+        const size_t s_src_file_str_len = strlen(pci8_file);
+
+        if (s_src_file_str_len  >= EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH)
+        {
+            /*
+             * Copy starting from the right side, ignore the start of the file name.
+             * Make sure to still keep one space for the termination .
+            */
+            const size_t s_number_of_chars_to_ignore = s_src_file_str_len - EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH + 1;
+            std::memcpy(m_ai8_file, pci8_file + s_number_of_chars_to_ignore, EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH - 1);
+        }
+        else
+        {
+            std::strncpy(m_ai8_file, pci8_file, EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH - 1);
+        }
     }
 
     int32_t Exception::store_into_buffer_version_100(uint8_t* pu8_memory, size_t u_memory_size, size_t &written_size) const
@@ -193,15 +211,70 @@ namespace midware
         this->m_ao_stored_exceptions.clear();
     }
 
-    void ExceptionHandler::print(char* pi8_buffer, size_t u_buffer_size) const
+    void ExceptionHandler::print(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface) const
     {
+        ft_table_t* table = ft_create_table();
+        ft_set_border_style(table, FT_BASIC_STYLE);
+        ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+        ft_write_ln(table, "Module ID", "Excp ID", "Misc", "Count", "Timestamp", "Line", "File");
+
+        for (auto itr = m_ao_stored_exceptions.begin(); itr != m_ao_stored_exceptions.end(); ++itr)
+        {
+            char ac_module_id[10] = "";
+            char ac_excp_id[10] = "";
+            char ac_misc[10] = "";
+            char ac_count[10] = "";
+            char ac_timestamp[10] = "";
+            char ac_line[10] = "";
+
+            snprintf(ac_module_id, 10, "%u", static_cast<unsigned int>(itr->m_en_module_id));
+            snprintf(ac_excp_id, 10, "%u", static_cast<unsigned int>(itr->m_en_exception_id));
+            snprintf(ac_misc, 10, "%u", static_cast<unsigned int>(itr->m_u32_misc));
+            snprintf(ac_count, 10, "%u", static_cast<unsigned int>(itr->m_u32_occurence_count));
+            snprintf(ac_timestamp, 10, "%ul", static_cast<unsigned long>(itr->m_u64_timestamp));
+            snprintf(ac_line, 10, "%u", static_cast<unsigned int>(itr->m_u32_line));
+
+            ft_write_ln(table,ac_module_id, ac_excp_id, ac_misc, ac_count, ac_timestamp, ac_line, itr->m_ai8_file);
+        }
+
+        char buffer[256];
+        for (size_t i = 0; i != ft_get_number_of_rows_to_print(table); ++i)
+        {
+            memset(buffer, 0, 128);
+            if (0 == ft_print_single_row(table, i, buffer, 256))
+            {
+                p_o_io_interface << buffer;
+            }
+        }
+        //std::snprintf(pi8_buffer,u_buffer_size, "%s\n\r", ft_to_string(table));
+        ft_destroy_table(table);
+
+#if 0
+        snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%u\t%u\t%lu\t%s\r\n",
+            static_cast<unsigned int>(m_en_module_id),
+            static_cast<unsigned int>(m_en_exception_id),
+            static_cast<unsigned int>(m_u32_misc),
+            static_cast<unsigned int>(m_u32_occurence_count),
+            static_cast<unsigned long>(m_u64_timestamp),
+            m_ai8_file);
+
         snprintf(pi8_buffer, u_buffer_size, "Currently logged exceptions:\n\r");
+
+
+
+        size_t current_str_len = strlen(pi8_buffer);
+        char* current_string_end  = pi8_buffer + current_str_len;
+        size_t u_remaining_length = u_buffer_size - current_str_len;
+
+
+
         for (auto itr = m_ao_stored_exceptions.begin(); itr != m_ao_stored_exceptions.end(); ++itr)
         {
             size_t current_str_len = strlen(pi8_buffer);
             char* current_string_end  = pi8_buffer + current_str_len;
             itr->print(current_string_end, u_buffer_size - current_str_len);
         }
+#endif
     }
 
     int32_t ExceptionHandler::store_into_data_flash() const
@@ -465,6 +538,7 @@ namespace midware
             uint32_t u32_module_id = 0u;
             uint32_t u32_exception_id = 0u;
 
+            o_result.m_bo_critical = false;
             memcpy(&u32_module_id, &pc_buffer[0], 4);
             memcpy(&u32_exception_id, &pc_buffer[4], 4);
             memcpy(&o_result.m_u32_misc, &pc_buffer[8], 4);

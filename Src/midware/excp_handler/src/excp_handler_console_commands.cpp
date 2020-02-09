@@ -24,10 +24,8 @@ namespace midware
         if (0 == strcmp(params[0], "list"))
         {
             // List all exceptions
-            char ac_buffer[256] = "";
-
-            p_exception_handler->print(ac_buffer, 256);
-            p_o_io_interface << ac_buffer;
+            p_exception_handler->print(p_o_io_interface);
+            //p_o_io_interface << ac_buffer;
             return OSServices::ERROR_CODE_SUCCESS;
         }
         else if (0 == strcmp(params[0], "clear"))

@@ -364,25 +364,7 @@ namespace drivers
             __HAL_UART_CLEAR_OREFLAG(&m_o_uart_handle);
             __HAL_UART_CLEAR_NEFLAG(&m_o_uart_handle);
             ret_val = HAL_UART_Receive(&m_o_uart_handle, reinterpret_cast<uint8_t*>(ai8_buffer), 1, 100);
-#if 0
-            if(HAL_OK == ret_val)
-            {
-                int32_t i32_counter = 0;
-                  while (m_uart_rx_interrupt_status != SET && i32_counter < 10)
-                  {
-                      ++i32_counter;
-                      std_ex::sleep_for(std::chrono::milliseconds(10));
-                  }
 
-                  if (m_uart_rx_interrupt_status != SET)
-                  {
-                      // abort interrupt
-                      HAL_UART_AbortReceive_IT(&m_o_uart_handle);
-                  }
-                  /* Reset transmission flag */
-                  m_uart_rx_interrupt_status = RESET;
-            }
-#endif
 
             if (HAL_OK == ret_val)
             {
@@ -391,6 +373,7 @@ namespace drivers
                 {
                     m_au8_rx_buffer[m_u32_rx_buffer_usage] = ai8_buffer[0];
                     m_u32_rx_buffer_usage++;
+                    m_cv_input_available.notify_all();
                 }
             }
         }

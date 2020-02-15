@@ -167,11 +167,11 @@ void vApplicationMallocFailedHook( void )
 	}
 }
 
-
 void MAIN_Cycle_100ms(void)
 {
     app::MainApplication& o_application = app::MainApplication::get();
     int32_t counter = 0;
+    drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
 
     while(true)
     {
@@ -183,6 +183,12 @@ void MAIN_Cycle_100ms(void)
         if (nullptr != o_application.m_po_speed_sensor_converter)
         {
             o_application.m_po_speed_sensor_converter->cycle();
+        }
+
+        // TODO temporarly check this here
+        if (nullptr != po_uart)
+        {
+            po_uart->uart_process_cycle();
         }
 
         counter++;
@@ -226,19 +232,16 @@ void MAIN_startup_thread(void)
     std_ex::thread* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
 
     std::vector<uint32_t> a_freqs = { 1, 3, 5, 8, 220 };
-
-
 	while (true)
 	{
-		// load balancing
-		std_ex::sleep_for(std::chrono::milliseconds(10));
-
 		// Check for data on the UART
 		drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
 		if (nullptr != po_uart)
 		{
 		    po_uart->uart_process_cycle();
 		}
+        // load balancing
+        std_ex::sleep_for(std::chrono::milliseconds(10));
 		// check for debug input
 		o_application.get_os_console()->run();
 	}

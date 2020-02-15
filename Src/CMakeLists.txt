@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
 
 PROJECT(SunnyRz1FuelGaugeConverter  VERSION 1.0 DESCRIPTION "Test")
-
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
 # some options
 option(USE_CAN "Enable / disable the CAN subsystem" OFF)
@@ -43,6 +43,7 @@ SET(PROJECT_SOURCES
     app/fuel_gauge_input/src/fuel_gauge_input.cpp
     app/fuel_gauge_output/src/fuel_gauge_output.cpp
     app/lookup_table/src/lookup_table.cpp
+    app/lookup_table_editor/src/lookup_table_editor.cpp
     app/main_application/src/main_application.cpp
     app/speed_sensor_converter/src/speed_sensor_converter.cpp
     app/replay_curve/src/replay_curve.cpp
@@ -103,7 +104,14 @@ endif()
 add_subdirectory(can_stack/autosar)
 add_subdirectory(midware/trace)
 
-ADD_EXECUTABLE(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})
+add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})
+
+# Make sure the file extension of the created binary is *.elf
+set_target_properties(
+    ${CMAKE_PROJECT_NAME} 
+    PROPERTIES 
+        SUFFIX ".elf"
+)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -117,6 +125,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/app/fuel_gauge_input/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/fuel_gauge_output/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table_editor/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/main_application/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/speed_sensor_converter/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/replay_curve/inc

@@ -1,7 +1,6 @@
 #ifndef _FUEL_GAUGE_OUTPUT_HPP_
 #define _FUEL_GAUGE_OUTPUT_HPP_
 
-#include <memory>
 #include "generic_dac.hpp"
 #include "lookup_table.hpp"
 
@@ -16,8 +15,8 @@ namespace app
 	class FuelGaugeOutput
 	{
 	public:
-		FuelGaugeOutput(std::shared_ptr<drivers::GenericDAC> p_dac, \
-				std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> p_fuel_output_characteristic, \
+		FuelGaugeOutput(drivers::GenericDAC* p_dac, \
+				app::CharacteristicCurve<int32_t, int32_t>* p_fuel_output_characteristic, \
 				int32_t i32_amplifying_factor, int32_t i32_aplifiying_offset);
 
 		int32_t set_fuel_level(int32_t i32_fuel_level);
@@ -26,7 +25,7 @@ namespace app
 		int32_t get_voltage_dac() const;
 	private:
 		/// The ADC used to retrieve data
-		std::shared_ptr<drivers::GenericDAC> m_p_dac;
+		drivers::GenericDAC* m_p_dac;
 
 		/// The current set fuel level percentage
 		int32_t m_i32_current_fuel_percentage;
@@ -44,7 +43,7 @@ namespace app
 		const int32_t m_i32_aplifiying_offset;
 
 		/* This map maps fuel levels to voltages */
-		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_fuel_output_characteristic;
+		app::CharacteristicCurve<int32_t, int32_t>* m_p_fuel_output_characteristic;
 	};
 }
 

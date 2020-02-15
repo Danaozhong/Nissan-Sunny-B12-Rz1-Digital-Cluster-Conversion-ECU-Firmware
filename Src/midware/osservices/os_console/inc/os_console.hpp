@@ -3,7 +3,8 @@
 
 /* Standard Library */
 #include <memory>
-//#include <vector>
+#include <vector>
+#include <chrono>
 #include <cstring>
 
 /* FreeRTOS OS calls */
@@ -45,10 +46,7 @@ namespace OSServices
 			return m_ai8_command_str;
 		}
 
-		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
-		{
-			return 0;
-		}
+		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface) = 0;
 		char m_ai8_command_str[COMMAND_MAXIMUM_LENGTH];
 
 	};
@@ -62,7 +60,7 @@ namespace OSServices
 
 		virtual ~CommandListTasks() {}
 
-		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
+		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
 	};
 
 	/** This command prints out the heap memory size */
@@ -73,7 +71,7 @@ namespace OSServices
 
 		virtual ~CommandMemory() {}
 
-		virtual int32_t execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
+		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
 	};
 
 	/** Something like a generic IO stream object */
@@ -85,6 +83,8 @@ namespace OSServices
 	    virtual void write_data(const char* pc_data, size_t s_data_size) = 0;
 	    virtual int available() const = 0;
 	    virtual int read() = 0;
+
+        virtual int32_t wait_for_input_to_be_available(const std::chrono::milliseconds& waiting_time) = 0;
 	};
 
 	class OSConsoleUartIOInterface : public OSConsoleGenericIOInterface
@@ -96,6 +96,7 @@ namespace OSServices
 	    virtual void write_data(const char* pc_data, size_t s_data_size);
         virtual int available() const;
         virtual int read();
+        virtual int32_t wait_for_input_to_be_available(const std::chrono::milliseconds& waiting_time);
 	private:
 	    drivers::GenericUART* m_po_io_interface;
 	};
@@ -121,12 +122,11 @@ namespace OSServices
 		/// the executable commands that can be run in this console context
 		Command* m_apo_commands[OS_CONSOLE_MAX_NUM_OF_COMMANDS];
 		uint32_t m_u32_num_of_registered_commands;
-
-		char m_ai8_command_buffer[LINE_LENGTH];
-
-		bool m_bo_entering_command;
 	};
+
+	std::vector<char> read_input_line(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface);
 }
+
 
 /** Allow comfortable c++ like stream outputs for C strings */
 std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, char* pc_string);

@@ -35,6 +35,7 @@ namespace midware
 
         bool section_exist(const char *cac_name) const;
     private:
+        int32_t try_to_load();
         const uint32_t cu32_header_size = 32u;
 
         ///

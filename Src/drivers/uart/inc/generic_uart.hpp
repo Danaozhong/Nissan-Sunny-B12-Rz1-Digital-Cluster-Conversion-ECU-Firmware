@@ -10,6 +10,8 @@
 
 #include <cstdint>
 #include <stddef.h>
+#include <mutex>
+#include <condition_variable>
 
 namespace drivers
 {
@@ -58,6 +60,8 @@ namespace drivers
 	    virtual void flush(void) = 0;
 	    //virtual size_t write(uint8_t) = 0;
 	    virtual size_t write(const uint8_t *a_u8_buffer, size_t size) = 0;
+
+	    std::condition_variable m_cv_input_available;
 	};
 }
 

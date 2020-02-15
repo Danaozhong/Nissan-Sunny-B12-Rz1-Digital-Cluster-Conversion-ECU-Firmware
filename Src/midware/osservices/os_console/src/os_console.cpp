@@ -4,7 +4,7 @@ namespace OSServices
 {
 
 
-int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
 {
 	if (nullptr == p_o_io_interface)
 	{
@@ -104,7 +104,7 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 		return 0;
 	}
 
-    int32_t CommandMemory::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandMemory::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
     {
 		int i_free_heap = xPortGetFreeHeapSize();
 	    int i_min_heap = xPortGetMinimumEverFreeHeapSize();
@@ -215,13 +215,26 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
         return m_po_io_interface->read();
     }
 
+    int32_t OSConsoleUartIOInterface::wait_for_input_to_be_available(const std::chrono::milliseconds& waiting_time)
+    {
+        if (m_po_io_interface->available() > 0)
+        {
+            // data already available
+            return 0;
+        }
+        std::mutex mtx;
+        std::unique_lock<std::mutex> lck(mtx);
+        if (std::cv_status::timeout == m_po_io_interface->m_cv_input_available.wait_for(lck, waiting_time))
+        {
+            return -1;
+        }
+        return 0;
+    }
+
 
     OSConsole::OSConsole(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface)
-	: m_po_io_interface(po_io_interface), m_u32_num_of_registered_commands(0u), m_bo_entering_command(false)
+	: m_po_io_interface(po_io_interface), m_u32_num_of_registered_commands(0u)
 	{
-		memset(this->m_ai8_command_buffer, 0x0, sizeof(this->m_ai8_command_buffer));
-
-		// removed to save some memory
 		this->register_command(new CommandListTasks());
 		this->register_command(new CommandMemory());
 		print_bootscreen();
@@ -263,7 +276,7 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
                 {
                     /* u32_num_of_delimiters -1 because the first delimiter is the command,
                      * which does not count as a delimiter */
-                    int32_t i32_return_code = p_command->execute(api8_delimiters + 1,
+                    int32_t i32_return_code = p_command->command_main(api8_delimiters + 1,
                             u32_num_of_delimiters - 1, m_po_io_interface);
 
                     // and print the return code.
@@ -292,46 +305,17 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 		if (this->m_po_io_interface != nullptr)
 		{
 			int i_read_char = 0;
-			while(this->m_po_io_interface->available() > 0)
+			if(this->m_po_io_interface->available() > 0)
 			{
-				i_read_char = m_po_io_interface->read();
+			    // show the prompt
+			    m_po_io_interface << "\r\n\r\nFreeRTOS> ";
+			    std::vector<char> ai8_input = read_input_line(m_po_io_interface);
 
-				if (i_read_char >= 0)
-				{
-					char i8_read_char = static_cast<char>(i_read_char);
+                // command finished, new line
+                m_po_io_interface << "\r\n\r\n";
 
-					// first character of a new command is entered.
-					if (m_bo_entering_command == false)
-					{
-						m_bo_entering_command = true;
-						m_po_io_interface << "\r\n\r\nFreeRTOS> ";
-						//m_po_io_interface->write_data(ai8_command_prompt, strlen(ai8_command_prompt));
-					}
-
-					// print out the character to the serial (like in a terminal)
-					m_po_io_interface->write_data(&i8_read_char, 1);
-
-					if ('\r' == i8_read_char)
-					{
-						// command finished, new line
-						const char ai8_command_prompt[] = "\r\n\r\n";
-						m_po_io_interface->write_data(ai8_command_prompt, strlen(ai8_command_prompt));
-
-						// command end, process
-						this->process_input(m_ai8_command_buffer);
-						// reset the buffer to all 0s
-						memset(m_ai8_command_buffer, 0, LINE_LENGTH);
-						m_bo_entering_command = false;
-					}
-					else
-					{
-						// make sure the entered command fits the buffer
-						if (strlen(m_ai8_command_buffer) < LINE_LENGTH - 1)
-						{
-							m_ai8_command_buffer[strlen(m_ai8_command_buffer)] = i8_read_char;
-						}
-					}
-				}
+                // command end, process
+                this->process_input(ai8_input.data());
 			}
 		}
 	}
@@ -353,8 +337,45 @@ int32_t CommandListTasks::execute(const char** params, uint32_t u32_num_of_param
 	{
 		char ai8_bootscreen[] = "FreeRTOS Platform V0.1\n\r(c) 2019 \n\r";
 		m_po_io_interface << ai8_bootscreen;
-		//m_po_io_interface->write_data(ai8_bootscreen, strlen(ai8_bootscreen));
 	}
+
+	std::vector<char> read_input_line(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface)
+    {
+	    std::vector<char> ai8_output = {'\0'};
+        char input = '\0';
+
+	    while ('\r' != input)
+        {
+	        const size_t s_previous_size = strlen(ai8_output.data());
+
+            po_io_interface->wait_for_input_to_be_available(std::chrono::milliseconds(100000));
+            input = static_cast<char>(po_io_interface->read());
+            if (input != '\r')
+            {
+                *ai8_output.rbegin() = input; // insert at second last position to keep the 0 termination
+                ai8_output.push_back('\0');
+
+                // filter backspaces, if needed
+                erase_backspaces(ai8_output.data());
+                ai8_output.resize(strlen(ai8_output.data()) + 1);
+
+                if ('\b' != input || s_previous_size > 0) // only write if we don't delete already existing things
+                {
+                    if ('\b' == input)
+                    {
+                        char ai8_delete_last_char[] = "\b \b"; // go back one char, space, and back again.
+                        po_io_interface->write_data(ai8_delete_last_char, 3);
+                    }
+                    else
+                    {
+                        // print out the character to the serial (like in a terminal)
+                        po_io_interface->write_data(&input, 1);
+                    }
+                }
+            }
+        }
+        return ai8_output;
+    }
 }
 
 

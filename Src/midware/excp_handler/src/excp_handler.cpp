@@ -134,7 +134,7 @@ namespace midware
         {
             // raise exception that storing the exception data in data flash failed
             ExceptionHandler_handle_exception(
-                    EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
+                    EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_READING_DATA_FLASH_FAILED,
                     false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
         }
     }
@@ -146,7 +146,7 @@ namespace midware
         {
             // raise exception that storing the exception data in data flash failed
             ExceptionHandler_handle_exception(
-                    EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_READING_DATA_FLASH_FAILED,
+                    EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
                     false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
         }
 
@@ -194,11 +194,6 @@ namespace midware
     void ExceptionHandler::set_as_default_exception_handler()
     {
         po_default_exception_handler = this;
-        // just a dummy exception
-        ExceptionHandler_handle_exception(
-                EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
-                false, __FILE__, __LINE__, 134u);
-
     }
 
     ExceptionHandler* ExceptionHandler::get_default_exception_handler()

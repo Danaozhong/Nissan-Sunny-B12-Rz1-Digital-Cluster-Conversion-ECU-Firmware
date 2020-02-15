@@ -7,7 +7,7 @@
 namespace
 {
     /* Todo move this to configuration file */
-    //static uint32_t _eeprom_emulation_start __attribute__ ((section (".eeprom_emulation"))) __attribute__ ((__used__)) = 0xAABBCCDD; //0xABCDEF;
+    static uint32_t _eeprom_emulation_start __attribute__ ((section (".eeprom_emulation"))) __attribute__ ((__used__)) = 0xAABBCCDD; //0xABCDEF;
 }
 namespace midware
 {
@@ -67,6 +67,27 @@ namespace midware
 
     /** Load all the registered data from nonvolatile memory */
     int32_t NonvolatileDataHandler::load()
+    {
+        int32_t i32_ret_val = try_to_load();
+
+        // TODO check if there
+        if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
+        {
+            // restore empty default configuration
+            uint32_t u32_minimum_buffer_size = cu32_block_information_size + cu32_header_size;
+            m_flash_sections.clear();
+            m_au8_data_shadow.resize(u32_minimum_buffer_size);
+
+        }
+        else
+        {
+            // TODO check if there were sections added or removed from the default ones, and if the sizes do match
+
+        }
+        return i32_ret_val;
+
+    }
+    int32_t NonvolatileDataHandler::try_to_load()
     {
         m_flash_sections.clear();
 

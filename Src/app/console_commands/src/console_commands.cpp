@@ -14,7 +14,7 @@ namespace app
         p_o_io_interface<< "Wrong usage command, or wrong parameters.";
     }
 
-    int32_t CommandSpeed::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandSpeed::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
     {
 
         auto po_speed_sensor_converter = MainApplication::get().get_speed_sensor_converter();
@@ -118,7 +118,8 @@ namespace app
     {
         p_o_io_interface << "Wrong usage command, or wrong parameters.";
     }
-    int32_t CommandFuel::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+
+    int32_t CommandFuel::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
     {
         MainApplication& o_application  = MainApplication::get();
 

@@ -1,7 +1,6 @@
 #ifndef _FUEL_GAUGE_INPUT_HPP_
 #define _FUEL_GAUGE_INPUT_HPP_
 
-#include <memory>
 #include "generic_adc.hpp"
 #include "lookup_table.hpp"
 #include "event_handler.h"
@@ -48,8 +47,8 @@ namespace app
 	class FuelGaugeInputFromADC
 	{
 	public:
-		FuelGaugeInputFromADC(std::shared_ptr<drivers::GenericADC> p_adc,
-				std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> p_fuel_input_characteristic);
+		FuelGaugeInputFromADC(drivers::GenericADC* p_adc,
+				app::CharacteristicCurve<int32_t, int32_t>* p_fuel_input_characteristic);
 
 		~FuelGaugeInputFromADC();
 		/// Signal triggered when a new value from the fuel sensor was retrieved
@@ -65,7 +64,7 @@ namespace app
         std_ex::thread* m_po_data_acquisition_thread;
 #endif
 		/// The ADC used to retrieve data
-		std::shared_ptr<drivers::GenericADC> m_p_adc;
+		drivers::GenericADC* m_p_adc;
 
 		int32_t m_ai32_last_read_fuel_percentages[FUEL_GAUGE_INPUT_AVERAGING_SIZE]; /* in percent * 100 */
 		uint32_t m_u32_buffer_counter;
@@ -74,7 +73,7 @@ namespace app
 		bool m_bo_terminate_thread;
 		uint32_t m_u32_invalid_read_counter;
 
-		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_fuel_input_characteristic;
+		app::CharacteristicCurve<int32_t, int32_t>* m_p_fuel_input_characteristic;
 
         // the voltage divider is supplied by 5V, and has a 220Ohm resistor on top,
         // and a 330Ohm resistor in parallel to the fuel gauge.

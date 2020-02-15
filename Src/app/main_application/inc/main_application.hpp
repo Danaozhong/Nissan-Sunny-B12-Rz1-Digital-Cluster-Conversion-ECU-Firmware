@@ -5,6 +5,8 @@
 #include "fuel_gauge_input.hpp"
 #include "fuel_gauge_output.hpp"
 #include "lookup_table.hpp"
+#include "lookup_table_editor.hpp"
+
 #include "speed_sensor_converter.hpp"
 
 #include "os_console.hpp"
@@ -61,7 +63,7 @@ namespace app
 		/** Singleton accessor */
 		static MainApplication& get();
 
-		std::shared_ptr<SpeedSensorConverter> get_speed_sensor_converter() const;
+		SpeedSensorConverter* get_speed_sensor_converter() const;
 
 #ifdef USE_NVDH
         std::shared_ptr<midware::NonvolatileDataHandler> get_nonvolatile_data_handler() const;
@@ -91,8 +93,8 @@ namespace app
         int32_t init_fuel_level_converter();
         int32_t deinit_fuel_level_converter();
 
-        const std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> get_fuel_input_characterics() const;
-        const std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> get_fuel_output_characterics() const;
+        app::CharacteristicCurve<int32_t, int32_t>* get_fuel_input_characterics() const;
+        app::CharacteristicCurve<int32_t, int32_t>* get_fuel_output_characterics() const;
 
 
         drivers::GenericUART* m_p_uart;
@@ -104,26 +106,26 @@ namespace app
         midware::Trace* m_po_trace;
 #endif
 
-		std::shared_ptr<drivers::GenericADC> m_p_adc;
-		std::shared_ptr<drivers::GenericDAC> m_p_dac;
+		drivers::GenericADC* m_p_adc;
+		drivers::GenericDAC* m_p_dac;
 
 		/// the PWM output used to simulate the JDM speed sensor to the cluster
-		std::shared_ptr<drivers::GenericPWM> m_p_pwm;
+		drivers::GenericPWM* m_p_pwm;
 
 		/// The PWM Input Capture driver to read the PWM from the vehicle's speed sensor
-		std::shared_ptr<drivers::GenericPWM_IC> m_p_pwm_ic;
+		drivers::GenericPWM_IC* m_p_pwm_ic;
 
-		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_input_characteristic;
-		std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> m_p_o_fuel_gauge_output_characteristic;
+		app::CharacteristicCurve<int32_t, int32_t>* m_p_o_fuel_gauge_input_characteristic;
+		app::CharacteristicCurve<int32_t, int32_t>* m_p_o_fuel_gauge_output_characteristic;
 
 		app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
-		std::unique_ptr<app::FuelGaugeOutput> m_p_o_fuel_gauge_output;
+		app::FuelGaugeOutput* m_p_o_fuel_gauge_output;
 
 		FuelGaugeOutputMode m_en_fuel_gauge_output_mode;
 		int32_t m_i32_fuel_sensor_read_value;
 		int32_t m_i32_fuel_gauge_output_manual_value;
 
-		std::shared_ptr<SpeedSensorConverter> m_po_speed_sensor_converter;
+		SpeedSensorConverter* m_po_speed_sensor_converter;
 #ifdef USE_NVDH
 		std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
 #endif /* USE_NVDH */

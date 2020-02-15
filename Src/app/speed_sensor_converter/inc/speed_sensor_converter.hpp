@@ -22,8 +22,8 @@ namespace app
     class SpeedSensorConverter
     {
     public:
-        SpeedSensorConverter(std::shared_ptr<drivers::GenericPWM> p_output_pwm,
-                std::shared_ptr<drivers::GenericPWM_IC> p_output_pwm_input_capture,
+        SpeedSensorConverter(drivers::GenericPWM* p_output_pwm,
+                drivers::GenericPWM_IC* p_output_pwm_input_capture,
                 uint32_t u32_input_pulses_per_kmph_mHz,
                 uint32_t u32_output_pulses_per_kmph_mHz);
 
@@ -57,9 +57,9 @@ namespace app
 
         bool check_if_speed_is_valid(int32_t i32_speed_value_in_kmph);
 
-        std::shared_ptr<drivers::GenericPWM> m_p_output_pwm;
+        drivers::GenericPWM* m_p_output_pwm;
 
-        std::shared_ptr<drivers::GenericPWM_IC> m_p_output_pwm_input_capture;
+        drivers::GenericPWM_IC* m_p_output_pwm_input_capture;
 
         std::atomic<SpeedOutputMode> m_en_current_speed_output_mode;
 

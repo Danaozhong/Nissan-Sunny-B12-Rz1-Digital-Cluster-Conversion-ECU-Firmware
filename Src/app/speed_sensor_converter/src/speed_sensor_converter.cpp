@@ -4,8 +4,8 @@
 
 namespace app
 {
-    SpeedSensorConverter::SpeedSensorConverter(std::shared_ptr<drivers::GenericPWM> p_output_pwm,
-                std::shared_ptr<drivers::GenericPWM_IC> p_output_pwm_input_capture,
+    SpeedSensorConverter::SpeedSensorConverter(drivers::GenericPWM* p_output_pwm,
+                drivers::GenericPWM_IC* p_output_pwm_input_capture,
                 uint32_t u32_input_pulses_per_kmph_mHz,
                 uint32_t u32_output_pulses_per_kmph_mHz)
     : m_p_output_pwm(p_output_pwm), m_p_output_pwm_input_capture(p_output_pwm_input_capture),

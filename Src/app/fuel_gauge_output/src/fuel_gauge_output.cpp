@@ -15,8 +15,8 @@
 
 namespace app
 {
-	FuelGaugeOutput::FuelGaugeOutput(std::shared_ptr<drivers::GenericDAC> p_dac, \
-			std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> p_fuel_output_characteristic, \
+	FuelGaugeOutput::FuelGaugeOutput(drivers::GenericDAC* p_dac, \
+			app::CharacteristicCurve<int32_t, int32_t>* p_fuel_output_characteristic, \
 			int32_t i32_amplifying_factor, int32_t i32_aplifiying_offset)
 	: m_p_dac(p_dac), m_p_fuel_output_characteristic(p_fuel_output_characteristic),
 	  m_i32_amplifying_factor(i32_amplifying_factor), m_i32_aplifiying_offset(i32_aplifiying_offset)

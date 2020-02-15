@@ -10,7 +10,7 @@ namespace midware
         p_o_io_interface << "Wrong parameter.\r\n";
     }
 
-    int32_t CommandListExceptions::execute(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandListExceptions::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface)
     {
         ExceptionHandler* p_exception_handler = ExceptionHandler::get_default_exception_handler();
 

@@ -46,8 +46,8 @@ namespace app
 	}
 
 
-	FuelGaugeInputFromADC::FuelGaugeInputFromADC(std::shared_ptr<drivers::GenericADC> p_adc,
-			std::shared_ptr<app::CharacteristicCurve<int32_t, int32_t>> p_fuel_input_characteristic)
+	FuelGaugeInputFromADC::FuelGaugeInputFromADC(drivers::GenericADC* p_adc,
+			app::CharacteristicCurve<int32_t, int32_t>* p_fuel_input_characteristic)
 	: m_p_adc(p_adc), m_p_fuel_input_characteristic(p_fuel_input_characteristic),
 	  m_u32_buffer_counter(0u), m_bo_initialized(false), m_bo_terminate_thread(false), m_u32_invalid_read_counter(0u),
       m_o_voltage_divider(100, 3000) // 100 Ohm, 3V supply

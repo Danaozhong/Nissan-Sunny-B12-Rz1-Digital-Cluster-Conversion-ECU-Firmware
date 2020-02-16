@@ -12,17 +12,16 @@ namespace app
 	class CharacteristicCurve
 	{
 	public:
-	    CharacteristicCurve() : m_u32_num_of_data_points(0), m_p_lookup_table(nullptr) {}
+	    CharacteristicCurve()  {}
 
 	    /** Paramter constructor */
 		CharacteristicCurve(std::pair<Tx, Ty> data_points[], uint32_t u32_num_of_data_points)
 			//:m_a_lookup_table(data_points)
 		{
-			m_u32_num_of_data_points = u32_num_of_data_points;
-			m_p_lookup_table = new std::pair<Tx, Ty>[m_u32_num_of_data_points];
-			for (uint32_t u32_i = 0u; u32_i < m_u32_num_of_data_points; ++u32_i)
+		    m_p_lookup_table.reserve(u32_num_of_data_points);
+		    for (uint32_t u32_i = 0u; u32_i < u32_num_of_data_points; ++u32_i)
 			{
-				m_p_lookup_table[u32_i] = data_points[u32_i];
+				m_p_lookup_table.push_back(data_points[u32_i]);
 
 			}
 		}
@@ -30,46 +29,30 @@ namespace app
 		/** copy constructor */
 		CharacteristicCurve(const CharacteristicCurve &other)
 		{
-		    m_u32_num_of_data_points = other.m_u32_num_of_data_points;
-		    m_p_lookup_table = new std::pair<Tx, Ty>[m_u32_num_of_data_points];
-            for (uint32_t u32_i = 0u; u32_i < m_u32_num_of_data_points; ++u32_i)
-            {
-                m_p_lookup_table[u32_i] = other.m_p_lookup_table[u32_i];
-            }
+		    m_p_lookup_table = other.m_p_lookup_table;
 		}
 
 		/** Move constructor */
 		CharacteristicCurve(CharacteristicCurve&& other)
 		{
-		    m_u32_num_of_data_points = other.m_u32_num_of_data_points;
-		    m_p_lookup_table = other.m_p_lookup_table;
-		    other.m_p_lookup_table = nullptr;
+		    m_p_lookup_table = std::move(other.m_p_lookup_table);
 		}
 
 		CharacteristicCurve& operator=(const CharacteristicCurve &other)
 		{
-            m_u32_num_of_data_points = other.m_u32_num_of_data_points;
-            m_p_lookup_table = new std::pair<Tx, Ty>[m_u32_num_of_data_points];
-            for (uint32_t u32_i = 0u; u32_i < m_u32_num_of_data_points; ++u32_i)
-            {
-                m_p_lookup_table[u32_i] = other.m_p_lookup_table[u32_i];
-            }
+		    m_p_lookup_table = other.m_p_lookup_table;
 		    return *this;
 		}
 
 		~CharacteristicCurve()
 		{
-		    if (nullptr != m_p_lookup_table)
-		    {
-		        delete[] m_p_lookup_table;
-		    }
 		}
 
 
 		Ty get_y(Tx d_x) const
 		{
 			using namespace std;
-			if (m_u32_num_of_data_points == 0)
+			if (m_p_lookup_table.size() == 0)
 			{
 				return Ty(0);
 			}
@@ -79,7 +62,7 @@ namespace app
 				return get<1>(m_p_lookup_table[0]);
 			}
 
-			for (uint32_t u32_i = 0; u32_i < m_u32_num_of_data_points - 1; ++u32_i)
+			for (uint32_t u32_i = 0; u32_i < m_p_lookup_table.size() - 1; ++u32_i)
 			{
 				Tx current_x = get<0>(m_p_lookup_table[u32_i]);
 				Tx next_x = get<0>(m_p_lookup_table[u32_i + 1]);
@@ -98,19 +81,19 @@ namespace app
 			}
 
 			// we are out too the right of the characteristic. Return the last given value
-			return get<1>(m_p_lookup_table[m_u32_num_of_data_points - 1]);
+			return get<1>(m_p_lookup_table[m_p_lookup_table.size() - 1]);
 		}
 
 
 		Tx get_x(Ty d_y) const
 		{
-			if (m_u32_num_of_data_points == 0)
+			if (m_p_lookup_table.size() == 0)
 			{
 				return Tx(0);
 			}
 
 			// within the valid range of the lookup table, do a linear interpolation
-			for (uint32_t u32_i = 0; u32_i < m_u32_num_of_data_points - 1; ++u32_i)
+			for (uint32_t u32_i = 0; u32_i < m_p_lookup_table.size() - 1; ++u32_i)
 			{
 				Ty current_y = std::get<1>(m_p_lookup_table[u32_i]);
 				Ty next_y = std::get<1>(m_p_lookup_table[u32_i + 1]);
@@ -132,7 +115,7 @@ namespace app
 
 		Tx get_first_x() const
 		{
-            if (m_u32_num_of_data_points == 0)
+            if (m_p_lookup_table.size() == 0)
             {
                 return Tx(0);
             }
@@ -141,16 +124,16 @@ namespace app
 
         Tx get_last_x() const
         {
-            if (m_u32_num_of_data_points == 0)
+            if (m_p_lookup_table.size() == 0)
             {
                 return Tx(0);
             }
-            return std::get<0>(m_p_lookup_table[m_u32_num_of_data_points - 1]);
+            return std::get<0>(m_p_lookup_table[m_p_lookup_table.size() - 1]);
         }
 
         Ty get_max_y() const
         {
-            auto found_element = std::max_element(m_p_lookup_table, m_p_lookup_table + m_u32_num_of_data_points,
+            auto found_element = std::max_element(m_p_lookup_table.begin(), m_p_lookup_table.end(),
                     [](const std::pair<Tx, Ty>& e1, const std::pair<Tx, Ty>& e2) -> bool
             {
                 return std::get<1>(e1) < std::get<1>(e2);
@@ -160,7 +143,7 @@ namespace app
 
         Ty get_min_y() const
         {
-            auto found_element = std::min_element(m_p_lookup_table, m_p_lookup_table + m_u32_num_of_data_points,
+            auto found_element = std::min_element(m_p_lookup_table.begin(), m_p_lookup_table.end(),
                     [](const std::pair<Tx, Ty>& e1, const std::pair<Tx, Ty>& e2) -> bool
             {
                 return std::get<1>(e1) < std::get<1>(e2);
@@ -168,11 +151,18 @@ namespace app
             return std::get<1>(*found_element);
         }
 
+        std::vector<std::pair<Tx, Ty>>& get_data_points()
+        {
+            return m_p_lookup_table;
+        }
+
+        size_t get_num_of_data_points() const
+        {
+            return m_p_lookup_table.size();
+        }
+
 	private:
-		std::pair<Tx, Ty>* m_p_lookup_table;
-		uint32_t m_u32_num_of_data_points;
-
-
+		std::vector<std::pair<Tx, Ty>> m_p_lookup_table;
 	};
 }
 

@@ -9,6 +9,7 @@ namespace app
 
     {
         m_p_o_io_interface = p_o_io_interface;
+        m_bo_program_running = true;
 
         /* Load a lookup table */
         m_loaded_lookup_table = MainApplication::get().get_fuel_input_characterics();
@@ -44,7 +45,55 @@ namespace app
         }
         else if (input == 'e')
         {
-            //const size_t s_num_of_data_points =
+            m_p_o_io_interface << "Enter one letter for the command (a to add a point, d to delete, or e to edit), followed "
+                    "by the number which you would like to edit (0 - " << m_loaded_lookup_table->get_num_of_data_points() << "):\n\r";
+            auto input_line = OSServices::read_input_line(m_p_o_io_interface);
+            if (strlen(input_line.data()) < 2)
+            {
+                m_p_o_io_interface << "Invalid input received.\r\n";
+                return;
+            }
+
+            // get data point
+            size_t data_point = static_cast<size_t>(strtol(input_line.data() + 1, nullptr, 10));
+            if (data_point > m_loaded_lookup_table->get_num_of_data_points())
+            {
+                m_p_o_io_interface << "Please enter a valid number.\r\n";
+                return;
+            }
+
+            if (input_line[0] == 'a')
+            {
+                m_p_o_io_interface << "Enter X value:\n\r";
+                input_line = OSServices::read_input_line(m_p_o_io_interface);
+                int32_t i32_x  = static_cast<int32_t>(strtol(input_line.data(), nullptr, 10));
+
+                m_p_o_io_interface << "Enter Y value:\n\r";
+                input_line = OSServices::read_input_line(m_p_o_io_interface);
+                int32_t i32_y  = static_cast<int32_t>(strtol(input_line.data(), nullptr, 10));
+
+                auto& data_points = m_loaded_lookup_table->get_data_points();
+                if (data_point <= data_points.size())
+                {
+                    data_points.insert(data_points.begin() + data_point, std::pair<int32_t, int32_t>(i32_x, i32_y));
+                }
+            }
+            else if (input_line[0] == 'e')
+            {
+                // request new y value
+                m_p_o_io_interface << "Enter new Y value:\n\r";
+                input_line = OSServices::read_input_line(m_p_o_io_interface);
+                int32_t i32_y  = static_cast<int32_t>(strtol(input_line.data(), nullptr, 10));
+                auto& data_points = m_loaded_lookup_table->get_data_points();
+                data_points[data_point].second = i32_y;
+
+            }
+            else if (input_line[0] == 'd')
+            {
+                auto& data_points = m_loaded_lookup_table->get_data_points();
+                data_points.erase(data_points.begin() + data_point);
+            }
+
         }
         else if (input == 'p')
         {
@@ -62,7 +111,8 @@ namespace app
                s_buffer_offset += s_buffer_size - 1;
                m_p_o_io_interface << ac_buffer;
             }
-            m_p_o_io_interface << ac_buffer;
+            m_p_o_io_interface << ac_buffer << "\n\r\n\r";
+
         }
         else
         {

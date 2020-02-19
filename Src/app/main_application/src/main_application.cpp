@@ -51,27 +51,43 @@ namespace app
 	    m_po_trace->set_as_default_trace();
 #endif
 
+        m_po_exception_handler = new midware::ExceptionHandler();
+        m_po_exception_handler->set_as_default_exception_handler();
+
+
 #ifdef USE_NVDH
         // initialize non-volatile memory (uses 1 block of size 1024) TODO move config to CMake
         m_po_nonvolatile_data_handler = std::make_shared<midware::NonvolatileDataHandler>(1u, 1024u);
+
+        // Configure the default sections for the module
+        std::vector<midware::FlashSection> default_flash_sections =
+                {
+                    midware::FlashSection{"EXCP", 256},
+                    midware::FlashSection{"DATASET", 512}
+                };
+
+        if (OSServices::ERROR_CODE_SUCCESS != m_po_nonvolatile_data_handler->set_default_sections(default_flash_sections))
+        {
+            ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_SETTING_DEFAULT_SECTIONS_FAILED, false, __FILE__, __LINE__, 0u);
+        }
+
+        // afterwards, habe a look what is in memory and read it
         if (OSServices::ERROR_CODE_SUCCESS != m_po_nonvolatile_data_handler->load())
         {
             ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_LOADING_FAILED, false, __FILE__, __LINE__, 0u);
         }
+
+
+
+        m_po_exception_handler->set_nonvolatile_data_handler(m_po_nonvolatile_data_handler, "EXCP");
 #endif /* USE_NVDH */
 
         // Initialize the exception storage module, to be able to log / debug exceptions
-#ifdef USE_NVDH
-        m_po_exception_handler = new midware::ExceptionHandler(m_po_nonvolatile_data_handler);
-#else
-        m_po_exception_handler = new midware::ExceptionHandler();
-#endif
         m_po_exception_handler->init();
-        m_po_exception_handler->set_as_default_exception_handler();
+
 
 	    // register the command to debug the exception handler on the os console
 	    m_po_os_console->register_command(new midware::CommandListExceptions());
-
 
 
 #ifdef USE_CAN

@@ -74,6 +74,16 @@ namespace OSServices
 		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
 	};
 
+    class CommandReset : public Command
+    {
+    public:
+	    CommandReset() : Command("reset") {}
+
+        virtual ~CommandReset() {}
+
+        virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
+    };
+
 	/** Something like a generic IO stream object */
 	class OSConsoleGenericIOInterface
 	{

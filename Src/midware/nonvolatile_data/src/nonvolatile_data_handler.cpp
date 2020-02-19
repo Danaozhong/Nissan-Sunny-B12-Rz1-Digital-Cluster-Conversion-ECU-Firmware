@@ -19,7 +19,7 @@ namespace midware
         //static_assert(cu32_header_size + cu32_block_information_size % 4 == 0);
     }
 
-    int32_t NonvolatileDataHandler::register_data(const char* cac_name, uint32_t u32_size)
+    int32_t NonvolatileDataHandler::add_section(const char* cac_name, uint32_t u32_size)
     {
         // make sure data is 4 - byte aligned
         if (u32_size % 4 != 0)
@@ -34,7 +34,6 @@ namespace midware
             return OSServices::ERROR_CODE_NOT_ENOUGH_MEMORY;
         }
 
-
         // check if it also fits into the section table
         if ((m_flash_sections.size() + 1) * sizeof(FlashSection) > cu32_block_information_size)
         {
@@ -42,9 +41,8 @@ namespace midware
             return OSServices::ERROR_CODE_NOT_ENOUGH_MEMORY;
         }
 
-
         // create the new flash section
-        FlashSection o_new_section = { 0 };
+        FlashSectionInternal o_new_section;
         std::strncpy(o_new_section.m_ac_name, cac_name, 8);
         o_new_section.m_u32_size = u32_size;
         o_new_section.m_u32_position = m_au8_data_shadow.size();
@@ -61,9 +59,73 @@ namespace midware
         // all OK!
         m_au8_data_shadow.resize(m_au8_data_shadow.size() + u32_size);
         m_flash_sections.push_back(o_new_section);
-        return OSServices::ERROR_CODE_SUCCESS;
+        return check_data_integrity();
     }
 
+    int32_t NonvolatileDataHandler::resize_section(const char* ac_name, uint32_t u32_new_size)
+    {
+        // make sure data is 4 - byte aligned
+        if (u32_new_size % 4 != 0)
+        {
+            u32_new_size += (4 - u32_new_size % 4);
+        }
+
+        auto itr = find_section(ac_name);
+        if (itr == m_flash_sections.end())
+        {
+            return OSServices::ERROR_CODE_PARAMETER_WRONG;
+        }
+        if (itr->m_u32_size == u32_new_size)
+        {
+            return OSServices::ERROR_CODE_SUCCESS;
+        }
+        // check if it fits in flash
+        const int32_t i32_size_difference = static_cast<int32_t>(u32_new_size) - static_cast<int32_t>(itr->m_u32_size);
+        if(m_au8_data_shadow.size() + i32_size_difference > m_u32_flash_block_size * m_u16_num_of_flash_blocks)
+        {
+            // resized section will not fit into flash
+            return OSServices::ERROR_CODE_NOT_ENOUGH_MEMORY;
+        }
+
+        if (i32_size_difference > 0)
+        {
+            // insert the new data blocks in the buffer
+            std::vector<uint8_t> new_data(i32_size_difference);
+            m_au8_data_shadow.insert(m_au8_data_shadow.begin() + itr->m_u32_position + itr->m_u32_size, std::begin(new_data), std::end(new_data));
+        }
+        else
+        {
+            // erase the elements from the data block
+            m_au8_data_shadow.erase(m_au8_data_shadow.begin() + itr->m_u32_position + u32_new_size,
+                    m_au8_data_shadow.begin() + itr->m_u32_position + itr->m_u32_size);
+        }
+
+        // update the data tables
+        for (auto section_itr = m_flash_sections.begin(); section_itr != m_flash_sections.end(); ++section_itr)
+        {
+            // everything after the section must be relocated
+            if(section_itr->m_u32_position > itr->m_u32_position)
+            {
+                section_itr->m_u32_position =+ i32_size_difference;
+            }
+        }
+
+        // resize current block
+        itr->m_u32_size = u32_new_size;
+
+        if (u32_new_size == 0)
+        {
+            // was the section entirely removed?
+            m_flash_sections.erase(itr);
+        }
+
+        return check_data_integrity();
+    }
+
+    int32_t NonvolatileDataHandler::delete_section(const char* ac_name)
+    {
+        return resize_section(ac_name, 0);
+    }
 
     /** Load all the registered data from nonvolatile memory */
     int32_t NonvolatileDataHandler::load()
@@ -79,17 +141,28 @@ namespace midware
             m_au8_data_shadow.resize(u32_minimum_buffer_size);
 
         }
-        else
-        {
-            // TODO check if there were sections added or removed from the default ones, and if the sizes do match
 
+        // check if all the standard sections exist and if they have the correct size
+        for (auto default_section : m_ao_flash_default_sections)
+        {
+            auto itr = find_section(default_section.m_ac_name);
+            if (itr == m_flash_sections.end())
+            {
+                add_section(default_section.m_ac_name, default_section.m_u32_size);
+            }
+            else if (itr->m_u32_size != default_section.m_u32_size)
+            {
+                resize_section(default_section.m_ac_name, default_section.m_u32_size);
+
+                // todo must check if the resize is successful.
+            }
         }
         return i32_ret_val;
 
     }
     int32_t NonvolatileDataHandler::try_to_load()
     {
-        m_flash_sections.clear();
+        //m_flash_sections.clear();
 
         m_au8_data_shadow.resize(m_u32_flash_block_size * m_u16_num_of_flash_blocks);
         for (uint16_t u16_block = 0; u16_block < m_u16_num_of_flash_blocks; u16_block++)
@@ -147,10 +220,10 @@ namespace midware
 
         // parse the block information, and make the buffer as small as possible
         uint32_t u32_minimum_buffer_size = cu32_block_information_size + cu32_header_size;
-        std::vector<FlashSection> ao_flash_sections(u32_num_of_sections);
+        std::vector<FlashSectionInternal> ao_flash_sections(u32_num_of_sections);
         for (uint16_t u16_section = 0; u16_section != u32_num_of_sections; ++u16_section)
         {
-            FlashSection o_current_section;
+            FlashSectionInternal o_current_section;
             std::memcpy(&o_current_section,
                     m_au8_data_shadow.data() + cu32_header_size + u16_section*sizeof(FlashSection),
                     sizeof(FlashSection));
@@ -181,6 +254,13 @@ namespace midware
         m_au8_data_shadow.resize(u32_minimum_buffer_size);
         // only now, take over the flash sections
         m_flash_sections = ao_flash_sections;
+
+        // double check data integrity
+        if (OSServices::ERROR_CODE_SUCCESS != check_data_integrity())
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
@@ -292,6 +372,40 @@ namespace midware
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
+    int32_t NonvolatileDataHandler::set_default_sections(const std::vector<FlashSection> &ao_default_sections)
+    {
+        m_ao_flash_default_sections.clear();
+        int32_t i32_ret_val = OSServices::ERROR_CODE_SUCCESS;
+
+        for (auto section : ao_default_sections)
+        {
+            // check is such a section already exists
+            uint32_t u32_total_size = cu32_header_size + cu32_block_information_size;
+            if (std::find_if(std::begin(m_ao_flash_default_sections), std::end(m_ao_flash_default_sections), [&](const auto& cmp)
+            {
+                return strcmp(cmp.m_ac_name, section.m_ac_name) == 0;
+
+            }) != m_ao_flash_default_sections.end())
+            {
+                // section with this name already exists
+                i32_ret_val = OSServices::ERROR_CODE_PARAMETER_WRONG;
+                ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_DUPLICATE_SECTION_NAME, false, __FILE__, __LINE__, 0u);
+                continue;
+            }
+
+            if (section.m_u32_size == 0 || u32_total_size + section.m_u32_size > m_u32_flash_block_size * m_u16_num_of_flash_blocks)
+            {
+                // section is too large
+                i32_ret_val = OSServices::ERROR_CODE_NOT_ENOUGH_MEMORY;
+                ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_SECTION_TOO_LARGE, false, __FILE__, __LINE__, section.m_u32_size);
+                continue;
+            }
+
+            m_ao_flash_default_sections.push_back(section);
+        }
+        return i32_ret_val;
+    }
+
     int32_t NonvolatileDataHandler::read_section(const char *ac_name, std::vector<uint8_t>& au8_output_buffer) const
     {
         auto itr = find_section(ac_name);
@@ -332,7 +446,34 @@ namespace midware
     {
         return (find_section(cac_name) != m_flash_sections.end());
     }
-    std::vector<FlashSection>::const_iterator NonvolatileDataHandler::find_section(const char* ac_name) const
+
+    uint32_t NonvolatileDataHandler::get_section_size(const char*cac_name) const
+    {
+        auto section = find_section(cac_name);
+        if (section == m_flash_sections.end())
+        {
+            return 0;
+        }
+        return section->m_u32_size;
+    }
+
+    std::vector<FlashSectionInternal>::const_iterator NonvolatileDataHandler::find_section(const char* ac_name) const
+    {
+        if (nullptr == ac_name)
+        {
+            return m_flash_sections.end();
+        }
+        for (auto itr = m_flash_sections.begin(); itr != m_flash_sections.end(); ++itr)
+        {
+            if (itr->m_ac_name == ac_name || strcmp(itr->m_ac_name, ac_name) == 0)
+            {
+                return itr;
+            }
+        }
+        return m_flash_sections.end();
+    }
+
+    std::vector<FlashSectionInternal>::iterator NonvolatileDataHandler::find_section(const char* ac_name)
     {
         if (nullptr == ac_name)
         {
@@ -346,5 +487,55 @@ namespace midware
             }
         }
         return m_flash_sections.end();
+    }
+
+    int32_t NonvolatileDataHandler::check_data_integrity() const
+    {
+        int32_t i32_ret_val = OSServices::ERROR_CODE_SUCCESS;
+        uint32_t u32_max_section_size = 0u;
+        for(const auto section : m_flash_sections)
+        {
+            // make sure there are no sections with invalid sizes / position
+            u32_max_section_size = std::max(u32_max_section_size, section.m_u32_position + section.m_u32_size);
+            if (section.m_u32_position + section.m_u32_size > m_au8_data_shadow.size() || section.m_u32_position < cu32_header_size + cu32_block_information_size)
+            {
+                // section sizes don't match
+                ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_INTEGRITY_BUFFER_TOO_SMALL, false, __FILE__, __LINE__, section.m_u32_position);
+                i32_ret_val = OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+            }
+
+            // check that there are no overlapping regions
+            for(const auto other_section : m_flash_sections)
+            {
+                if(strcmp(other_section.m_ac_name, section.m_ac_name) != 0)
+                {
+                    if ((other_section.m_u32_position < section.m_u32_position + section.m_u32_size
+                            && other_section.m_u32_position > section.m_u32_position)
+
+                            || (other_section.m_u32_position + other_section.m_u32_size  < section.m_u32_position + section.m_u32_size
+                            && other_section.m_u32_position + other_section.m_u32_size > section.m_u32_position))
+                    {
+                        // sections are overlapping
+                        ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_INTEGRITY_OVERLAPPING_SECTIONS, false, __FILE__, __LINE__, section.m_u32_position);
+                        i32_ret_val = OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+                    }
+                }
+            }
+
+        }
+
+        // ensure 4 byte alignment
+        while (u32_max_section_size % 4 != 0)
+        {
+            u32_max_section_size++;
+        }
+
+        // make sure the buffer is not larger than it has to be
+        if (u32_max_section_size != m_au8_data_shadow.size())
+        {
+            ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_INTEGRITY_BUFFER_TO_LARGE, false, __FILE__, __LINE__, u32_max_section_size);
+            i32_ret_val = OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        return i32_ret_val;
     }
 }

@@ -12,8 +12,18 @@ namespace app
         m_bo_program_running = true;
 
         /* Load a lookup table */
-        m_loaded_lookup_table = MainApplication::get().get_fuel_input_characterics();
+        m_p_o_io_interface << "Which table would you like to edit? Enter \"fuel_input\" for the input table,"
+                "or \"fuel_output\" for the output table.\n\r";
 
+        auto input_line = OSServices::read_input_line(m_p_o_io_interface);
+        if (strcmp(input_line.data(), "fuel_input") == 0)
+        {
+            m_loaded_lookup_table = MainApplication::get().get_fuel_input_characterics();
+        }
+        else
+        {
+            m_loaded_lookup_table = MainApplication::get().get_fuel_output_characterics();
+        }
 
         while(true == m_bo_program_running)
         {

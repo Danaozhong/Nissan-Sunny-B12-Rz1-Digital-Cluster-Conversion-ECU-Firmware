@@ -159,6 +159,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 add_subdirectory(misc/libs/libfort)
 target_link_libraries(${CMAKE_PROJECT_NAME} fort)
 
+add_subdirectory(misc/libs/libtable)
+target_link_libraries(${CMAKE_PROJECT_NAME} libtable)
+
 if (USE_CAN)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
         -DUSE_CAN

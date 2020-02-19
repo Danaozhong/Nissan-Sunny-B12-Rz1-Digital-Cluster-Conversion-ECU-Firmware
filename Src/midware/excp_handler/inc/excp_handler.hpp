@@ -42,17 +42,16 @@ namespace midware
     class ExceptionHandler
     {
     public:
-#ifdef USE_NVDH
-        ExceptionHandler(std::shared_ptr<midware::NonvolatileDataHandler> po_nonvolatile_data_handler);
-#else
         ExceptionHandler();
-#endif
 
         ~ExceptionHandler() {}
 
         void init();
         void deinit();
 
+#ifdef USE_NVDH
+        void set_nonvolatile_data_handler(std::shared_ptr<midware::NonvolatileDataHandler>, const char* section_name);
+#endif /* USE_NVD */
         void handle_exception(
                 ExceptionModuleID en_module_id,
                 ExceptionTypeID en_exception_id,
@@ -95,9 +94,9 @@ namespace midware
         int32_t read_from_memory_version_100(const uint8_t* pc_memory, size_t u_memory_size);
 
         /// How much memory in data flash is used for storing exceptions
-        size_t m_u_data_flash_buffer_size;
+       // size_t m_u_data_flash_buffer_size;
 #ifdef USE_NVDH
-        const char m_cu8_flash_section_name[8];
+        char m_cu8_flash_section_name[8];
         std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
 #endif /* USE_NVDH */
     };

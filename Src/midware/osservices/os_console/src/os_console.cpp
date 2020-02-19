@@ -1,5 +1,5 @@
 #include "os_console.hpp"
-
+#include "stm32fxxx.h"
 namespace OSServices
 {
 
@@ -191,6 +191,11 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 		return 0;
 	}
 
+    int32_t CommandReset::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    {
+        NVIC_SystemReset();
+        return OSServices::ERROR_CODE_SUCCESS;
+    }
 
     OSConsoleUartIOInterface::OSConsoleUartIOInterface(drivers::GenericUART* po_io_interface)
         : m_po_io_interface(po_io_interface)
@@ -237,6 +242,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 	{
 		this->register_command(new CommandListTasks());
 		this->register_command(new CommandMemory());
+		this->register_command(new CommandReset());
 		print_bootscreen();
 	}
 

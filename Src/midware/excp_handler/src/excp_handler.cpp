@@ -5,7 +5,7 @@
 #include "os_console.hpp"
 #include "util_algorithms.hpp"
 #include "trace_if.h"
-#include "fort.h"
+#include "libtable.h"
 
 
 namespace
@@ -94,15 +94,8 @@ namespace midware
             m_ai8_file);
     }
 
-#ifdef USE_NVDH
-    ExceptionHandler::ExceptionHandler(std::shared_ptr<midware::NonvolatileDataHandler> po_nonvolatile_data_handler)
-    :   m_u_data_flash_buffer_size(256u),
-        m_cu8_flash_section_name("EXCPHDL"),
-        m_po_nonvolatile_data_handler(po_nonvolatile_data_handler)
-#else
     ExceptionHandler::ExceptionHandler()
-    : m_u_data_flash_buffer_size(256u)
-#endif
+     : m_cu8_flash_section_name("INV"), m_po_nonvolatile_data_handler(nullptr)
     {
     }
 
@@ -113,18 +106,9 @@ namespace midware
         {
             if (false == m_po_nonvolatile_data_handler->section_exist(m_cu8_flash_section_name))
             {
-                // section does not yet exist in flash, create one!
-                int32_t i32_err_code = m_po_nonvolatile_data_handler->register_data(m_cu8_flash_section_name, m_u_data_flash_buffer_size);
-                if (OSServices::ERROR_CODE_SUCCESS != i32_err_code)
-                {
-                    ExceptionHandler_handle_exception(
-                            EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
-                            false, __FILE__, __LINE__, static_cast<uint32_t>(i32_err_code));
-                }
-            }
-            else
-            {
-                // TODO get m_u_data_flash_buffer_size from the NVDH
+                ExceptionHandler_handle_exception(
+                        EXCP_MODULE_EXCP_HANDLER, EXCP_TYPE_EXCP_HANDLER_WRITING_DATA_FLASH_FAILED,
+                        false, __FILE__, __LINE__, static_cast<uint32_t>(0u));
             }
         }
 #endif
@@ -151,7 +135,15 @@ namespace midware
         }
 
     }
+#ifdef USE_NVDH
+    void ExceptionHandler::set_nonvolatile_data_handler(std::shared_ptr<midware::NonvolatileDataHandler> o_data_handler, const char* section_name)
+    {
+        m_po_nonvolatile_data_handler = o_data_handler;
+        strncpy(m_cu8_flash_section_name, section_name, 8);
+        m_cu8_flash_section_name[7] = '\0';
 
+    }
+#endif
 
     void ExceptionHandler::handle_exception(
             ExceptionModuleID en_module_id,
@@ -208,10 +200,10 @@ namespace midware
 
     void ExceptionHandler::print(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface) const
     {
-        ft_table_t* table = ft_create_table();
-        ft_set_border_style(table, FT_BASIC_STYLE);
-        ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
-        ft_write_ln(table, "Module ID", "Excp ID", "Misc", "Count", "Timestamp", "Line", "File");
+        tst_lib_table table;
+        i32_lib_table_initialize_table(&table);
+
+        i32_lib_table_add_row(&table, 7, "Module ID", "Excp ID", "Misc", "Count", "Timestamp", "Line", "File");
 
         for (auto itr = m_ao_stored_exceptions.begin(); itr != m_ao_stored_exceptions.end(); ++itr)
         {
@@ -229,10 +221,20 @@ namespace midware
             snprintf(ac_timestamp, 10, "%ul", static_cast<unsigned long>(itr->m_u64_timestamp));
             snprintf(ac_line, 10, "%u", static_cast<unsigned int>(itr->m_u32_line));
 
-            ft_write_ln(table,ac_module_id, ac_excp_id, ac_misc, ac_count, ac_timestamp, ac_line, itr->m_ai8_file);
+            i32_lib_table_add_row(&table, 7, ac_module_id, ac_excp_id, ac_misc, ac_count, ac_timestamp, ac_line, itr->m_ai8_file);
         }
 
-        char buffer[256];
+        char buffer[128];
+        int32_t i32_ret_val = 1;
+        uint32_t u32_offet = 0u;
+        while(1 == i32_ret_val)
+        {
+
+            i32_ret_val = i32_lib_table_draw_table(&table, buffer, 128, u32_offet);
+            u32_offet += 127;
+            p_o_io_interface << buffer;
+        }
+#if 0
         for (size_t i = 0; i != ft_get_number_of_rows_to_print(table); ++i)
         {
             memset(buffer, 0, 128);
@@ -241,10 +243,8 @@ namespace midware
                 p_o_io_interface << buffer;
             }
         }
-        //std::snprintf(pi8_buffer,u_buffer_size, "%s\n\r", ft_to_string(table));
-        ft_destroy_table(table);
 
-#if 0
+
         snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%u\t%u\t%lu\t%s\r\n",
             static_cast<unsigned int>(m_en_module_id),
             static_cast<unsigned int>(m_en_exception_id),
@@ -274,11 +274,18 @@ namespace midware
 
     int32_t ExceptionHandler::store_into_data_flash() const
     {
+#ifdef USE_NVDH
+
+        if (nullptr == m_po_nonvolatile_data_handler)
+        {
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+
         // create a temporary buffer to write the data to it
-        std::vector<uint8_t> au8_buffer(this->m_u_data_flash_buffer_size);
+        std::vector<uint8_t> au8_buffer(m_po_nonvolatile_data_handler->get_section_size(m_cu8_flash_section_name));
         size_t u_buffer_written_size = 0u;
 
-        int32_t i32_ret_val = this->store_into_buffer(au8_buffer.data(), m_u_data_flash_buffer_size, u_buffer_written_size);
+        int32_t i32_ret_val = this->store_into_buffer(au8_buffer.data(), au8_buffer.size(), u_buffer_written_size);
 
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {
@@ -289,10 +296,6 @@ namespace midware
         // write to code flash
         au8_buffer.resize(u_buffer_written_size);
 
-        if (nullptr == m_po_nonvolatile_data_handler)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
         i32_ret_val = m_po_nonvolatile_data_handler->write_section(m_cu8_flash_section_name, 0,au8_buffer);
         /* = EE_Writes(m_u16_data_flash_address, u16_buffer_size_in_words, reinterpret_cast<uint32_t*>(au8_buffer)); */
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
@@ -302,17 +305,18 @@ namespace midware
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
 
-        // TODO: re-read the flash, to double check that everything was written OK
-
         // Otherwise, everything seems to be OK!
         return OSServices::ERROR_CODE_SUCCESS;
+#else
+        return OSServices::ERROR_CODE_NOT_SUPPORTED;
+#endif
     }
 
     int32_t ExceptionHandler::read_from_data_flash()
     {
         int32_t i32_ret_val = OSServices::ERROR_CODE_NOT_SUPPORTED;
 #ifdef USE_NVDH
-        std::vector<uint8_t> au8_buffer(this->m_u_data_flash_buffer_size);
+        std::vector<uint8_t> au8_buffer(m_po_nonvolatile_data_handler->get_section_size(m_cu8_flash_section_name));
         if (nullptr == m_po_nonvolatile_data_handler)
         {
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
@@ -325,7 +329,7 @@ namespace midware
             return i32_ret_val;
         }
         // and parse the stuff we have read from flash.
-        return this->read_from_buffer(au8_buffer.data(), m_u_data_flash_buffer_size);
+        return this->read_from_buffer(au8_buffer.data(), au8_buffer.size());
 #endif
         return i32_ret_val;
     }

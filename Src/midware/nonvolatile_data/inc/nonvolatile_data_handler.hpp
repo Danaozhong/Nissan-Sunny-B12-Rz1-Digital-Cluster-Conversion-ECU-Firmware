@@ -14,8 +14,10 @@ namespace midware
         uint32_t m_u32_size;
     };
 
-    struct FlashSectionInternal : public FlashSection
+    struct FlashSectionInternal
     {
+        char m_ac_name[8];
+        uint32_t m_u32_size;
         uint16_t m_u32_position;
     };
 

@@ -316,12 +316,12 @@ namespace midware
     {
         int32_t i32_ret_val = OSServices::ERROR_CODE_NOT_SUPPORTED;
 #ifdef USE_NVDH
-        std::vector<uint8_t> au8_buffer(m_po_nonvolatile_data_handler->get_section_size(m_cu8_flash_section_name));
         if (nullptr == m_po_nonvolatile_data_handler)
         {
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
 
         }
+        std::vector<uint8_t> au8_buffer(m_po_nonvolatile_data_handler->get_section_size(m_cu8_flash_section_name));
         i32_ret_val = m_po_nonvolatile_data_handler->read_section(m_cu8_flash_section_name, au8_buffer);
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {

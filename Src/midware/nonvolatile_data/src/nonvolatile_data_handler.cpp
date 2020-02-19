@@ -225,10 +225,11 @@ namespace midware
         {
             FlashSectionInternal o_current_section;
             std::memcpy(&o_current_section,
-                    m_au8_data_shadow.data() + cu32_header_size + u16_section*sizeof(FlashSection),
-                    sizeof(FlashSection));
+                    m_au8_data_shadow.data() + cu32_header_size + u16_section*sizeof(FlashSectionInternal),
+                    sizeof(FlashSectionInternal));
             // sanity check for data that might be too large
-            if (o_current_section.m_u32_position + o_current_section.m_u32_size > m_au8_data_shadow.size())
+            if (o_current_section.m_u32_position + o_current_section.m_u32_size > m_au8_data_shadow.size()
+                    || o_current_section.m_u32_position < cu32_block_information_size + cu32_header_size)
             {
                 return OSServices::ERROR_CODE_INTERNAL_ERROR;
             }
@@ -238,7 +239,7 @@ namespace midware
             {
                 continue;
             }
-            ao_flash_sections.push_back(o_current_section);
+            ao_flash_sections[u16_section] = o_current_section;
             // remember the largest block of data.
             u32_minimum_buffer_size = std::max(u32_minimum_buffer_size, o_current_section.m_u32_position + o_current_section.m_u32_size);
 
@@ -298,11 +299,11 @@ namespace midware
         uint32_t u32_buffer_offset = cu32_header_size;
         for (auto&& section : m_flash_sections)
         {
-            std::memcpy(m_au8_data_shadow.data() + u32_buffer_offset, &section, sizeof(FlashSection));
-            u32_buffer_offset += sizeof(FlashSection);
+            std::memcpy(m_au8_data_shadow.data() + u32_buffer_offset, &section, sizeof(FlashSectionInternal));
+            u32_buffer_offset += sizeof(FlashSectionInternal);
 
             // sanity check to make sure we don't overwrite data
-            if (u32_buffer_offset + sizeof(FlashSection) > cu32_header_size + cu32_block_information_size)
+            if (u32_buffer_offset + sizeof(FlashSectionInternal) > cu32_header_size + cu32_block_information_size)
             {
                 /* cu32_block_information_size buffer is not large enough to allocate all
                 sections, increase cu32_block_information_size */

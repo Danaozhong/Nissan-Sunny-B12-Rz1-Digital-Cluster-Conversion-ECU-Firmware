@@ -10,20 +10,6 @@ set_target_properties(libtable
     PROPERTIES VERSION ${libtable_VERSION}
     SOVERSION ${libtable_SOVERSION})
 
-if(NOT FORT_HAVE_WCHAR)
-    target_compile_definitions(fort
-        PRIVATE
-            -DFT_CONGIG_DISABLE_WCHAR
-    )
-endif()
-
-if(NOT FORT_HAVE_UTF8)
-    target_compile_definitions(fort
-        PRIVATE
-            -DFT_CONGIG_DISABLE_UTF8
-    )
-endif()
-
 
 include(GNUInstallDirs)
 install(

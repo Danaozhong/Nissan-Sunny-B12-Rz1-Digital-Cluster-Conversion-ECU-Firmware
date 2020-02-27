@@ -6,8 +6,11 @@
 #include <memory>
 #include <mutex>
 
+//#define EVENT_HANDLER_LOG_ON
+
+
 #define EVENT_HANDLER_LOG(...)
-#ifdef USE_TRACE
+#if defined EVENT_HANDLER_LOG_ON && defined USE_TRACE
 #include "trace_if.h"
 #undef EVENT_HANDLER_LOG
 #define EVENT_HANDLER_LOG(...)   DEBUG_PRINTF(__VA_ARGS__)

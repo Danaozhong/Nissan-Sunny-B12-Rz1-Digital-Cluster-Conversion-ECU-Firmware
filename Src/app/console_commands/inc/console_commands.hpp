@@ -43,6 +43,16 @@ namespace app
 
         virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
     };
+
+    class CommandVersion : public OSServices::Command
+    {
+    public:
+        CommandVersion() : Command("ver") {}
+
+        virtual ~CommandVersion() {};
+
+        virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
+    };
 }
 
 #endif

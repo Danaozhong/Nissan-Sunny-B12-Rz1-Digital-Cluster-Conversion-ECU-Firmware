@@ -139,7 +139,7 @@ namespace OSServices
 
 
 /** Allow comfortable c++ like stream outputs for C strings */
-std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, char* pc_string);
+std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, const char* pc_string);
 
 std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, int32_t i32_value);
 

@@ -118,6 +118,7 @@ namespace app
         this->m_po_os_console->register_command(new app::CommandSpeed());
         this->m_po_os_console->register_command(new app::CommandFuel());
         this->m_po_os_console->register_command(new app::CommandDataset());
+        this->m_po_os_console->register_command(new app::CommandVersion());
 	}
 
 	MainApplication& MainApplication::get()

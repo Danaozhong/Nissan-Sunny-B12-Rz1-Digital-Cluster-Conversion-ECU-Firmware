@@ -341,7 +341,10 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 
 	void OSConsole::print_bootscreen() const
 	{
-		char ai8_bootscreen[] = "FreeRTOS Platform V0.1\n\r(c) 2019 \n\r";
+		char ai8_bootscreen[] = "\n\r\n\r"
+		        "FreeRTOS Platform\n\r"
+		        "(c) 2019 zenon engineering\n\r";
+
 		m_po_io_interface << ai8_bootscreen;
 	}
 
@@ -386,7 +389,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 
 
 //OSConsoleGenericIOInterface* operator<< (OSConsoleGenericIOInterface* po_console_io_interface, char* c_string)
-std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, char* pc_string)
+std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, const char* pc_string)
 {
     if (nullptr != po_console_io_interface)
     {

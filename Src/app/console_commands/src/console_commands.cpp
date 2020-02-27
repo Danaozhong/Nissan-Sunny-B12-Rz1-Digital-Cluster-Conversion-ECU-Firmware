@@ -1,6 +1,7 @@
 #include "console_commands.hpp"
 #include "main_application.hpp"
 #include <cstring>
+#include "version_info.hpp"
 
 #include "ascii_diagram.hpp"
 
@@ -150,7 +151,6 @@ namespace app
             else if (0 == strcmp(params[1], "conversion"))
             {
                 o_application.set_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION);
-                char* pi8_buffer = nullptr;
                 p_o_io_interface << "Fuel signal set to vehicle  data conversion.";
             }
             else
@@ -175,7 +175,7 @@ namespace app
             o_application.set_manual_fuel_gauge_output_value(i32_fuel_value);
 
             char pi8_buffer[128];
-            snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", o_application.m_i32_fuel_gauge_output_manual_value);
+            snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", static_cast<int>(o_application.m_i32_fuel_gauge_output_manual_value));
             p_o_io_interface << pi8_buffer;
         }
         else if (0 == strcmp(params[0], "show"))
@@ -255,22 +255,31 @@ namespace app
 
 
     int32_t CommandDataset::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+   {
+       MainApplication& o_application  = MainApplication::get();
+
+       if (u32_num_of_params == 0)
        {
-           MainApplication& o_application  = MainApplication::get();
-
-           if (u32_num_of_params == 0)
-           {
-               // parameter error, no parameter provided
-               return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
-           }
-
-           if (0 == strcmp(params[0], "write_flash"))
-           {
-               o_application.get_dataset().write_dataset(*o_application.get_nonvolatile_data_handler());
-               return OSServices::ERROR_CODE_SUCCESS;
-           }
-           // if no early return, the command was executed successfully.
-           return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+           // parameter error, no parameter provided
+           return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
        }
+
+       if (0 == strcmp(params[0], "write_flash"))
+       {
+           o_application.get_dataset().write_dataset(*o_application.get_nonvolatile_data_handler());
+           return OSServices::ERROR_CODE_SUCCESS;
+       }
+       // if no early return, the command was executed successfully.
+       return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+   }
+
+    int32_t CommandVersion::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+   {
+        p_o_io_interface << "\n\r\n\r";
+        p_o_io_interface << app::get_app_name() << "\n\r\n\r";
+        p_o_io_interface << app::get_version_info() << "\n\r\n\r";
+       // if no early return, the command was executed successfully.
+       return OSServices::ERROR_CODE_SUCCESS;
+   }
 }
 

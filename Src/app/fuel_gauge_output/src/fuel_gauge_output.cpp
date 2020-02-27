@@ -1,6 +1,6 @@
 
 #include "fuel_gauge_output.hpp"
-
+#include "os_console.hpp"
 // Ugly macros to allow debug logging
 #define FUEL_GAUGE_OUTPUT_LOG(...)
 
@@ -16,9 +16,9 @@
 namespace app
 {
 	FuelGaugeOutput::FuelGaugeOutput(drivers::GenericDAC* p_dac, \
-			app::CharacteristicCurve<int32_t, int32_t>* p_fuel_output_characteristic, \
+			const app::CharacteristicCurve<int32_t, int32_t> &o_fuel_output_characteristic, \
 			int32_t i32_amplifying_factor, int32_t i32_aplifiying_offset)
-	: m_p_dac(p_dac), m_p_fuel_output_characteristic(p_fuel_output_characteristic),
+	: m_p_dac(p_dac), m_o_fuel_output_characteristic(o_fuel_output_characteristic),
 	  m_i32_amplifying_factor(i32_amplifying_factor), m_i32_aplifiying_offset(i32_aplifiying_offset)
 	{}
 
@@ -29,10 +29,7 @@ namespace app
 		//{
 		//	return -1;
 		//}
-
-		//m_d_set_voltage = d_fuel_level;
-		// Calculate the desired final voltage
-		m_i32_set_voltage_output = m_p_fuel_output_characteristic->get_y(i32_fuel_level);
+		m_i32_set_voltage_output = m_o_fuel_output_characteristic.get_y(i32_fuel_level);
 
 		FUEL_GAUGE_OUTPUT_LOG("Setting output to voltage %i\r\n", static_cast<int>(i32_final_voltage));
 

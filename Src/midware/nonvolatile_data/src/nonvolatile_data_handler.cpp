@@ -46,6 +46,7 @@ namespace midware
         std::strncpy(o_new_section.m_ac_name, cac_name, 8);
         o_new_section.m_u32_size = u32_size;
         o_new_section.m_u32_position = m_au8_data_shadow.size();
+        o_new_section.m_bo_is_valid = false;
 
         // check if the name already exists
         for (auto&& section : m_flash_sections)
@@ -86,6 +87,9 @@ namespace midware
             // resized section will not fit into flash
             return OSServices::ERROR_CODE_NOT_ENOUGH_MEMORY;
         }
+
+        // mark the section as invalid
+        itr->m_bo_is_valid = false;
 
         if (i32_size_difference > 0)
         {
@@ -239,6 +243,7 @@ namespace midware
             {
                 continue;
             }
+            o_current_section.m_bo_is_valid = true;
             ao_flash_sections[u16_section] = o_current_section;
             // remember the largest block of data.
             u32_minimum_buffer_size = std::max(u32_minimum_buffer_size, o_current_section.m_u32_position + o_current_section.m_u32_size);
@@ -446,6 +451,16 @@ namespace midware
     bool NonvolatileDataHandler::section_exist(const char *cac_name) const
     {
         return (find_section(cac_name) != m_flash_sections.end());
+    }
+
+    bool NonvolatileDataHandler::section_data_valid(const char *cac_name) const
+    {
+        auto section = find_section(cac_name);
+        if (section == m_flash_sections.end())
+        {
+            return false;
+        }
+        return section->m_bo_is_valid;
     }
 
     uint32_t NonvolatileDataHandler::get_section_size(const char*cac_name) const

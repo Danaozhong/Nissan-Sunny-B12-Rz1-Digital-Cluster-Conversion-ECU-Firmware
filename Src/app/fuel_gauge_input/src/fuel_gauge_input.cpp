@@ -1,6 +1,7 @@
 
 
 #include "fuel_gauge_input.hpp"
+#include "excp_handler_if.h"
 #include <functional> // for std::bind
 
 
@@ -47,8 +48,8 @@ namespace app
 
 
 	FuelGaugeInputFromADC::FuelGaugeInputFromADC(drivers::GenericADC* p_adc,
-			app::CharacteristicCurve<int32_t, int32_t>* p_fuel_input_characteristic)
-	: m_p_adc(p_adc), m_p_fuel_input_characteristic(p_fuel_input_characteristic),
+			const app::CharacteristicCurve<int32_t, int32_t>& o_fuel_input_characteristic)
+	: m_p_adc(p_adc), m_o_fuel_input_characteristic(o_fuel_input_characteristic),
 	  m_u32_buffer_counter(0u), m_bo_initialized(false), m_bo_terminate_thread(false), m_u32_invalid_read_counter(0u),
       m_o_voltage_divider(100, 3000) // 100 Ohm, 3V supply
 	{
@@ -87,50 +88,50 @@ namespace app
         FUEL_GAUGE_LOG("Current calculated resistor value: %i mOhm\r\n", i32_last_read_resistor_value);
 
         // find the percentage
-        if (nullptr != m_p_fuel_input_characteristic)
+        int32_t i32_read_fuel_percentage = m_o_fuel_input_characteristic.get_x(i32_last_read_resistor_value);
+
+        /* On the first read, initialize the buffer with the read values */
+        if (false == m_bo_initialized)
         {
-
-            int32_t i32_read_fuel_percentage = m_p_fuel_input_characteristic->get_x(i32_last_read_resistor_value);
-
-            /* On the first read, initialize the buffer with the read values */
-            if (false == m_bo_initialized)
+            m_bo_initialized = true;
+            for (uint32_t u32i = 0; u32i < FUEL_GAUGE_INPUT_AVERAGING_SIZE; ++u32i)
             {
-                m_bo_initialized = true;
-                for (uint32_t u32i = 0; u32i < FUEL_GAUGE_INPUT_AVERAGING_SIZE; ++u32i)
-                {
-                    m_ai32_last_read_fuel_percentages[u32i] = i32_read_fuel_percentage;
-                }
+                m_ai32_last_read_fuel_percentages[u32i] = i32_read_fuel_percentage;
+            }
+        }
+
+        /* Check if the deviation is more than 10% */
+        if (std::abs(get_average_fuel_percentage() - i32_read_fuel_percentage) < 1000)
+        {
+            /* only take the value into account if it differs less than 10% */
+            m_ai32_last_read_fuel_percentages[m_u32_buffer_counter] = i32_read_fuel_percentage;
+            m_u32_buffer_counter++;
+            if (m_u32_buffer_counter >= FUEL_GAUGE_INPUT_AVERAGING_SIZE)
+            {
+                m_u32_buffer_counter = 0;
             }
 
-            /* Check if the deviation is more than 10% */
-            if (std::abs(get_average_fuel_percentage() - i32_read_fuel_percentage) < 1000)
+            // Send a signal that the fuel level has changed
+            const int32_t i32_read_fuel_percentage = get_average_fuel_percentage();
+            FUEL_GAUGE_LOG("Current calculated fuel input level: %i\r\n", i32_read_fuel_percentage);
+            this->m_sig_fuel_level_changed(i32_read_fuel_percentage);
+
+            // since we have read a valid value, reset the invalid data counter
+            m_u32_invalid_read_counter = 0;
+        }
+        else
+        {
+            m_u32_invalid_read_counter++;
+
+            /* If we keep reading nonsense, throw everything away and start again */
+            if (m_u32_invalid_read_counter > 10)
             {
-                /* only take the value into account if it differs less than 10% */
-                m_ai32_last_read_fuel_percentages[m_u32_buffer_counter] = i32_read_fuel_percentage;
-                m_u32_buffer_counter++;
-                if (m_u32_buffer_counter >= FUEL_GAUGE_INPUT_AVERAGING_SIZE)
-                {
-                    m_u32_buffer_counter = 0;
-                }
+                FUEL_GAUGE_LOG("Read fuel input data did not make sense, starting again.\r\n");
+                ExceptionHandler_handle_exception(EXCP_MODULE_FUEL_SIGNAL_CONVERTER,
+                        EXCP_TYPE_FUEL_SIGNAL_CONVERTER_RESTARTED_CONVERSION,
+                        false, __FILE__, __LINE__, static_cast<uint32_t>(i32_read_fuel_percentage));
 
-                // Send a signal that the fuel level has changed
-                const int32_t i32_read_fuel_percentage = get_average_fuel_percentage();
-                FUEL_GAUGE_LOG("Current calculated fuel input level: %i\r\n", i32_read_fuel_percentage);
-                this->m_sig_fuel_level_changed(i32_read_fuel_percentage);
-
-                // since we have read a valid value, reset the invalid data counter
-                m_u32_invalid_read_counter = 0;
-            }
-            else
-            {
-                m_u32_invalid_read_counter++;
-
-                /* If we keep reading nonsense, throw everything away and start again */
-                if (m_u32_invalid_read_counter > 10)
-                {
-                    FUEL_GAUGE_LOG("Read fuel input data did not make sense, starting again.\r\n");
-                    m_bo_initialized = false;
-                }
+                m_bo_initialized = false;
             }
         }
 	}

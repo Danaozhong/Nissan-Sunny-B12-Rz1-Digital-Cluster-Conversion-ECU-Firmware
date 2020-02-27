@@ -16,7 +16,7 @@ namespace app
 	{
 	public:
 		FuelGaugeOutput(drivers::GenericDAC* p_dac, \
-				app::CharacteristicCurve<int32_t, int32_t>* p_fuel_output_characteristic, \
+				const app::CharacteristicCurve<int32_t, int32_t>& o_fuel_output_characteristic, \
 				int32_t i32_amplifying_factor, int32_t i32_aplifiying_offset);
 
 		int32_t set_fuel_level(int32_t i32_fuel_level);
@@ -43,7 +43,7 @@ namespace app
 		const int32_t m_i32_aplifiying_offset;
 
 		/* This map maps fuel levels to voltages */
-		app::CharacteristicCurve<int32_t, int32_t>* m_p_fuel_output_characteristic;
+		const app::CharacteristicCurve<int32_t, int32_t>& m_o_fuel_output_characteristic;
 	};
 }
 

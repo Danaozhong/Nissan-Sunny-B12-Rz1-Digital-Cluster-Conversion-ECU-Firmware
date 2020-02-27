@@ -33,6 +33,16 @@ namespace app
 
         virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
     };
+
+    class CommandDataset : public OSServices::Command
+    {
+    public:
+        CommandDataset() : Command("dataset") {}
+
+        virtual ~CommandDataset() {};
+
+        virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
+    };
 }
 
 #endif

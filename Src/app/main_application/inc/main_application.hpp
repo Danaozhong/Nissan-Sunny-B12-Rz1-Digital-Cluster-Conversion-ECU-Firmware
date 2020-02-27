@@ -25,6 +25,7 @@
 #endif /* USE_NVDH */
 #include "os_console.hpp"
 #include "ex_thread.hpp"
+#include "dataset.hpp"
 #ifdef USE_TRACE
 #include "trace.hpp"
 #endif
@@ -82,6 +83,8 @@ namespace app
          */
         void set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value);
 
+        const app::Dataset& get_dataset() const;
+        app::Dataset& get_dataset();
     //private:
         // prevent copying
         MainApplication(MainApplication &other) = delete;
@@ -92,10 +95,6 @@ namespace app
 
         int32_t init_fuel_level_converter();
         int32_t deinit_fuel_level_converter();
-
-        app::CharacteristicCurve<int32_t, int32_t>* get_fuel_input_characterics() const;
-        app::CharacteristicCurve<int32_t, int32_t>* get_fuel_output_characterics() const;
-
 
         drivers::GenericUART* m_p_uart;
         OSServices::OSConsole* m_po_os_console;
@@ -115,17 +114,16 @@ namespace app
 		/// The PWM Input Capture driver to read the PWM from the vehicle's speed sensor
 		drivers::GenericPWM_IC* m_p_pwm_ic;
 
-		app::CharacteristicCurve<int32_t, int32_t>* m_p_o_fuel_gauge_input_characteristic;
-		app::CharacteristicCurve<int32_t, int32_t>* m_p_o_fuel_gauge_output_characteristic;
-
 		app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
 		app::FuelGaugeOutput* m_p_o_fuel_gauge_output;
 
 		FuelGaugeOutputMode m_en_fuel_gauge_output_mode;
-		int32_t m_i32_fuel_sensor_read_value;
-		int32_t m_i32_fuel_gauge_output_manual_value;
-
 		SpeedSensorConverter* m_po_speed_sensor_converter;
+
+		app::Dataset m_o_dataset;
+
+	    int32_t m_i32_fuel_sensor_read_value;
+	    int32_t m_i32_fuel_gauge_output_manual_value;
 #ifdef USE_NVDH
 		std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
 #endif /* USE_NVDH */

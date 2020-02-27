@@ -19,6 +19,7 @@ namespace midware
         char m_ac_name[8];
         uint32_t m_u32_size;
         uint16_t m_u32_position;
+        bool m_bo_is_valid;
     };
 
     class NonvolatileDataHandler

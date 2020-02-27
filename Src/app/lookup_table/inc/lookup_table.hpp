@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <cstring>
 
 namespace app
 {
@@ -25,6 +26,12 @@ namespace app
 
 			}
 		}
+
+        CharacteristicCurve(const std::vector<std::pair<Tx, Ty>> &data_points)
+            //:m_a_lookup_table(data_points)
+        {
+            m_p_lookup_table = data_points;
+        }
 
 		/** copy constructor */
 		CharacteristicCurve(const CharacteristicCurve &other)
@@ -156,6 +163,11 @@ namespace app
             return m_p_lookup_table;
         }
 
+        const std::vector<std::pair<Tx, Ty>>& get_data_points() const
+        {
+            return m_p_lookup_table;
+        }
+
         size_t get_num_of_data_points() const
         {
             return m_p_lookup_table.size();
@@ -164,6 +176,63 @@ namespace app
 	private:
 		std::vector<std::pair<Tx, Ty>> m_p_lookup_table;
 	};
-}
 
+	namespace CharacteristicCurveHelper
+	{
+	    template<typename Tx, typename Ty>
+	    std::vector<uint8_t> to_bytes(const CharacteristicCurve<Tx, Ty> &o_characteristic)
+	    {
+	        auto data_points = o_characteristic.get_data_points();
+
+	        // 4 bytes for the size, the rest is the table data
+	        std::vector<uint8_t> ai8_result(4 + data_points.size() * (sizeof(Tx) + sizeof(Ty)));
+	        const uint32_t u32_num_of_elements = static_cast<uint32_t>(data_points.size());
+	        std::memcpy(ai8_result.data(), &u32_num_of_elements, 4);
+
+	        uint8_t* write_pointer = ai8_result.data() + 4;
+	        for (uint32_t u32_i = 0u; u32_i < u32_num_of_elements; ++u32_i)
+	        {
+	            std::memcpy(write_pointer, &std::get<0>(data_points[u32_i]), sizeof(Tx));
+	            write_pointer += sizeof(Tx);
+                std::memcpy(write_pointer, &std::get<1>(data_points[u32_i]), sizeof(Ty));
+                write_pointer += sizeof(Ty);
+	        }
+	        return ai8_result;
+	    }
+
+	    template<typename Tx, typename Ty>
+	    CharacteristicCurve<Tx, Ty> from_bytes(
+	            const std::vector<uint8_t>::const_iterator &begin_itr,
+	            const std::vector<uint8_t>::const_iterator &end_itr)
+        {
+	        size_t s_buffer_length = end_itr - begin_itr;
+	        CharacteristicCurve<Tx, Ty> o_ret_val;
+
+	        if (s_buffer_length >= 2)
+	        {
+	            uint32_t u32_num_of_elements = 0u;
+	            std::memcpy(&u32_num_of_elements, &(*begin_itr), sizeof(uint32_t));
+
+	            if (u32_num_of_elements * (sizeof(Tx) + sizeof(Ty)) + sizeof(uint32_t) <= s_buffer_length)
+	            {
+	                std::vector<std::pair<Tx, Ty>> ao_data(u32_num_of_elements);
+	                const uint8_t* read_pointer= &(*begin_itr) + sizeof(uint32_t);
+	                for (uint32_t u32_i = 0u; u32_i < u32_num_of_elements; ++u32_i)
+	                {
+	                    Tx o_x;
+	                    Ty o_y;
+	                    std::memcpy(&o_x, read_pointer, sizeof(Tx));
+	                    read_pointer += sizeof(Tx);
+	                    std::memcpy(&o_y, read_pointer, sizeof(Ty));
+	                    read_pointer += sizeof(Ty);
+	                    auto o_new_pair = std::pair<Tx, Ty>(o_x, o_y);
+	                    ao_data[u32_i] = o_new_pair;
+	                }
+	                o_ret_val = CharacteristicCurve<Tx, Ty>(ao_data);
+	            }
+	        }
+	        return o_ret_val;
+        }
+	}
+}
 #endif

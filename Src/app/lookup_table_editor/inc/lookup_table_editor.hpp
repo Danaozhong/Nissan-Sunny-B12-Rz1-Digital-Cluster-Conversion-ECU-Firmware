@@ -30,7 +30,7 @@ namespace app
 
        std::shared_ptr<OSServices::OSConsoleGenericIOInterface> m_p_o_io_interface;
 
-       app::CharacteristicCurve<int32_t, int32_t>* m_loaded_lookup_table;
+       app::CharacteristicCurve<int32_t, int32_t> m_loaded_lookup_table;
 
        bool m_bo_program_running;
     };

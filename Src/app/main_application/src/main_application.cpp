@@ -85,10 +85,23 @@ namespace app
         // Initialize the exception storage module, to be able to log / debug exceptions
         m_po_exception_handler->init();
 
-
 	    // register the command to debug the exception handler on the os console
 	    m_po_os_console->register_command(new midware::CommandListExceptions());
 
+
+#ifdef USE_NVDH
+	    // read the dataset
+	    if (OSServices::ERROR_CODE_SUCCESS != m_o_dataset.load_dataset(*m_po_nonvolatile_data_handler))
+	    {
+	        ExceptionHandler_handle_exception(EXCP_MODULE_DATASET, EXCP_TYPE_DATASET_LOADING_FAILED, false, __FILE__, __LINE__, 0u);
+	        // load default dataset
+	        m_o_dataset.load_default_dataset();
+	    }
+
+#else
+	    // load default dataset
+        m_o_dataset.load_default_dataset();
+#endif
 
 #ifdef USE_CAN
 	    /* Init the CAN interface (AUTOSAR conform) */
@@ -104,6 +117,7 @@ namespace app
         this->m_po_os_console->register_command(new app::LookupTableEditor());
         this->m_po_os_console->register_command(new app::CommandSpeed());
         this->m_po_os_console->register_command(new app::CommandFuel());
+        this->m_po_os_console->register_command(new app::CommandDataset());
 	}
 
 	MainApplication& MainApplication::get()
@@ -142,6 +156,17 @@ namespace app
         update_fuel_sensor_output();
     }
 
+    const app::Dataset& MainApplication::get_dataset() const
+    {
+        return m_o_dataset;
+    }
+
+    app::Dataset& MainApplication::get_dataset()
+    {
+        return m_o_dataset;
+    }
+
+
 	void MainApplication::fuel_sensor_input_received(int32_t i32_value)
 	{
 	    m_i32_fuel_sensor_read_value = i32_value;
@@ -179,7 +204,14 @@ namespace app
                     false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
         }
 
-        m_po_speed_sensor_converter = new SpeedSensorConverter(m_p_pwm, m_p_pwm_ic, 700u, 4200u);
+
+
+
+        m_po_speed_sensor_converter = new SpeedSensorConverter(m_p_pwm, m_p_pwm_ic,
+                get_dataset().get_input_pulses_per_kmph_mHz(),
+                get_dataset().get_output_pulses_per_kmph_mHz());
+
+
 
         return OSServices::ERROR_CODE_SUCCESS;
     }
@@ -198,46 +230,16 @@ namespace app
 #else
         m_p_dac = new drivers::STM32DAC(DAC1, GPIOA, GPIO_PIN_4);
 #endif
-        /* Characteristics of the Nissan Sunny EUDM fuel sensor. 0% = 100Ohm (empty), 100% = 10Ohm (full). See
-         * http://texelography.com/2019/06/21/nissan-rz1-digital-cluster-conversion/ for the full dataset */
-        std::pair<int32_t, int32_t> a_input_lut[] =
-        {
-                /* Fuel level (% * 100)  Resistor value in mOhm */
-                std::make_pair(-1000, 120000),
-                std::make_pair(-100, 87000),
-                std::make_pair(500, 80600),
-                std::make_pair(2500, 61800),
-                std::make_pair(4800, 35700),
-                std::make_pair(7700, 21000),
-                std::make_pair(10000, 11800),
-                std::make_pair(11000, 2400),
-                std::make_pair(11500, 0000),
-        };
-
-        m_p_o_fuel_gauge_input_characteristic = new app::CharacteristicCurve<int32_t, int32_t>(a_input_lut, sizeof(a_input_lut) / sizeof(a_input_lut[0]));
-
-        /* Characteristics of the digital cluster fuel gauge */
-        std::pair<int32_t, int32_t> a_output_lut[] =
-        {
-                std::make_pair(-1000, 5000),
-                std::make_pair(0, 5000),
-                std::make_pair(100, 4900),
-                //std::make_pair(0, 4700),
-                std::make_pair(714, 4340),
-                std::make_pair(2143, 4040),
-                std::make_pair(4286, 3300),
-                std::make_pair(6429, 2240),
-                std::make_pair(9286, 1100),
-                std::make_pair(10000, 700),
-                std::make_pair(11000, 700)
-        };
-
-        m_p_o_fuel_gauge_output_characteristic = new app::CharacteristicCurve<int32_t, int32_t>(a_output_lut, sizeof(a_output_lut) / sizeof(a_output_lut[0]));
 
         // start the data output thread
-        m_p_o_fuel_gauge_output = new app::FuelGaugeOutput(m_p_dac, m_p_o_fuel_gauge_output_characteristic, 1500, 0);
+
+        m_p_o_fuel_gauge_output = new app::FuelGaugeOutput(m_p_dac,
+                get_dataset().get_fuel_output_lookup_table(),
+                get_dataset().get_dac_out_amplifying_factor(),
+                0);
         // start the data acquisition thread
-        m_p_o_fuel_gauge_input = new app::FuelGaugeInputFromADC(m_p_adc, m_p_o_fuel_gauge_input_characteristic);
+        m_p_o_fuel_gauge_input = new app::FuelGaugeInputFromADC(m_p_adc,
+                get_dataset().get_fuel_input_lookup_table());
 
         // attach to the signal of the fuel sensor input
         auto event_handler = std::bind(&MainApplication::fuel_sensor_input_received, this, std::placeholders::_1);
@@ -255,12 +257,6 @@ namespace app
         delete m_p_o_fuel_gauge_output;
         m_p_o_fuel_gauge_output = nullptr;
 
-        delete m_p_o_fuel_gauge_output_characteristic;
-        m_p_o_fuel_gauge_output_characteristic = nullptr;
-
-        delete m_p_o_fuel_gauge_input_characteristic;
-        m_p_o_fuel_gauge_input_characteristic = nullptr;
-
         delete m_p_adc;
         m_p_adc = nullptr;
 
@@ -269,16 +265,4 @@ namespace app
 
         return OSServices::ERROR_CODE_SUCCESS;
     }
-
-    app::CharacteristicCurve<int32_t, int32_t>* MainApplication::get_fuel_input_characterics() const
-    {
-        return m_p_o_fuel_gauge_input_characteristic;
-    }
-    app::CharacteristicCurve<int32_t, int32_t>* MainApplication::get_fuel_output_characterics() const
-    {
-        return m_p_o_fuel_gauge_output_characteristic;
-    }
-
-
-
 }

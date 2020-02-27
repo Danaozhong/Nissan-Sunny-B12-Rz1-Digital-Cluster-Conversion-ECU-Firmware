@@ -143,7 +143,6 @@ namespace app
             {
                 o_application.set_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_MANUAL);
                 //char pi8_buffer[128];
-                //snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", o_application.m_i32_fuel_gauge_output_manual_value);
                 p_o_io_interface << "Fuel signal set to manual conversion, fuel value is"
                         << o_application.m_i32_fuel_gauge_output_manual_value
                         << ".";
@@ -186,21 +185,24 @@ namespace app
             int i32_manually_set_fuel_level = o_application.m_i32_fuel_gauge_output_manual_value;
             int i32_voltage_cluster = o_application.m_p_o_fuel_gauge_output->get_voltage_output();
             int i32_voltage_dac = o_application.m_p_o_fuel_gauge_output->get_voltage_dac();
+            int i32_dac_amplifier = static_cast<int>(o_application.get_dataset().get_dac_out_amplifying_factor());
+            char pi8_buffer[512] = "";
 
-            char pi8_buffer[256] = "";
-
-            snprintf(pi8_buffer, 256, "Fuel Level Conversion Characteristics:\n\r"
+            snprintf(pi8_buffer, 500, "Fuel Level Conversion Characteristics:\n\r"
                     "\n\r"
                     "  Input fuel sensor level:  %i%%\n\r"
                     "  Manually set fuel sensor level: %i%%\n\r"
                     "  Simulated sensor voltage: %i.%iV\n\r"
-                    "  Output voltage DAC: %i.%iV\n\r",
+                    "  Output voltage DAC: %i.%iV\n\r"
+                    "  DAC amplify factor: %i.%i\n\r",
                     i32_average_fuel_level_sensor / 100,
                     i32_manually_set_fuel_level / 100,
                     i32_voltage_cluster / 1000,
                     (i32_voltage_cluster % 1000) / 10,
                     i32_voltage_dac / 1000,
-                    (i32_voltage_dac % 1000) / 10
+                    (i32_voltage_dac % 1000) / 10,
+                    i32_dac_amplifier / 1000,
+                    (i32_dac_amplifier % 1000) / 10
                     );
             p_o_io_interface << pi8_buffer;
         }
@@ -215,7 +217,7 @@ namespace app
             const size_t s_buffer_size = 128u;
             char ac_buffer[s_buffer_size];
             size_t s_buffer_offset = 0u;
-            while (0 != o_ascii_diagram.draw(*o_application.get_fuel_input_characterics(),
+            while (0 != o_ascii_diagram.draw(o_application.get_dataset().get_fuel_input_lookup_table(),
                     ac_buffer,
                     s_buffer_size,
                     s_buffer_offset))
@@ -236,7 +238,7 @@ namespace app
             const size_t s_buffer_size = 512u;
             char ac_buffer[s_buffer_size];
             size_t s_buffer_offset = 0u;
-            while (0 != o_ascii_diagram.draw(*o_application.get_fuel_output_characterics(),
+            while (0 != o_ascii_diagram.draw(o_application.get_dataset().get_fuel_output_lookup_table(),
                     ac_buffer,
                     s_buffer_size,
                     s_buffer_offset))
@@ -250,5 +252,25 @@ namespace app
         // if no early return, the command was executed successfully.
         return OSServices::ERROR_CODE_SUCCESS;
     }
+
+
+    int32_t CommandDataset::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+       {
+           MainApplication& o_application  = MainApplication::get();
+
+           if (u32_num_of_params == 0)
+           {
+               // parameter error, no parameter provided
+               return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
+           }
+
+           if (0 == strcmp(params[0], "write_flash"))
+           {
+               o_application.get_dataset().write_dataset(*o_application.get_nonvolatile_data_handler());
+               return OSServices::ERROR_CODE_SUCCESS;
+           }
+           // if no early return, the command was executed successfully.
+           return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+       }
 }
 

@@ -48,7 +48,7 @@ namespace app
 	{
 	public:
 		FuelGaugeInputFromADC(drivers::GenericADC* p_adc,
-				app::CharacteristicCurve<int32_t, int32_t>* p_fuel_input_characteristic);
+				const app::CharacteristicCurve<int32_t, int32_t>& o_fuel_input_characteristic);
 
 		~FuelGaugeInputFromADC();
 		/// Signal triggered when a new value from the fuel sensor was retrieved
@@ -73,7 +73,7 @@ namespace app
 		bool m_bo_terminate_thread;
 		uint32_t m_u32_invalid_read_counter;
 
-		app::CharacteristicCurve<int32_t, int32_t>* m_p_fuel_input_characteristic;
+		const app::CharacteristicCurve<int32_t, int32_t>& m_o_fuel_input_characteristic;
 
         // the voltage divider is supplied by 5V, and has a 220Ohm resistor on top,
         // and a 330Ohm resistor in parallel to the fuel gauge.

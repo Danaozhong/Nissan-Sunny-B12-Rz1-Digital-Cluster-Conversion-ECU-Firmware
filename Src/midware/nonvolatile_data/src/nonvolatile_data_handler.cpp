@@ -210,6 +210,8 @@ namespace midware
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
 
+        m_au8_data_shadow.resize(u32_data_size);
+
         // make a checksum test
         uint32_t u32_total_checksum_from_buffer = 0u;
         std::memcpy(&u32_total_checksum_from_buffer, m_au8_data_shadow.data() + 4, 4);

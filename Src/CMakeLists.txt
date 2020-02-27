@@ -48,6 +48,7 @@ SET(PROJECT_SOURCES
     app/speed_sensor_converter/src/speed_sensor_converter.cpp
     app/replay_curve/src/replay_curve.cpp
     app/dataset/src/dataset.cpp
+    app/version_info/src/version_info.cpp
     
     drivers/adc/src/stm32_adc.cpp
     drivers/dac/src/generic_dac.cpp
@@ -131,6 +132,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/app/speed_sensor_converter/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/replay_curve/inc
     app/dataset/inc
+    app/version_info/inc
         
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/adc/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/dac/inc

@@ -71,7 +71,7 @@ namespace app
             ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_SETTING_DEFAULT_SECTIONS_FAILED, false, __FILE__, __LINE__, 0u);
         }
 
-        // afterwards, habe a look what is in memory and read it
+        // afterwards, have a look what is in memory and read it
         if (OSServices::ERROR_CODE_SUCCESS != m_po_nonvolatile_data_handler->load())
         {
             ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_LOADING_FAILED, false, __FILE__, __LINE__, 0u);

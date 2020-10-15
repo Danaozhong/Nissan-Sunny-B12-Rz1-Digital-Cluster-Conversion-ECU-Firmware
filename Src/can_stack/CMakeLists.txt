@@ -19,16 +19,21 @@ target_include_directories(can_stack PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMSIS_INCLUDE_DIRS}
     ${STM32HAL_INCLUDE_DIR}
+    ../../Inc # needed for HW depending stuff, TODO find a better solution for this include
 )
 
+#target_include_directories(can_stack PUBLIC
+#    
+#
+#)
 target_include_directories(can_stack PUBLIC
-    ../../Inc # TODO find a better solution for this include
     Can
     CanIf
     config
     Det
     EcuM
-    PduR
-    SchM
-    shared
+    ${CMAKE_CURRENT_SOURCE_DIR}/PduR
+    ${CMAKE_CURRENT_SOURCE_DIR}/SchM
+    ${CMAKE_CURRENT_SOURCE_DIR}/shared
 )
+          

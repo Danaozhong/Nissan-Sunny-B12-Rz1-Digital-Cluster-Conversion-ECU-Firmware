@@ -39,6 +39,13 @@ namespace app
 	    m_po_os_io_interface = std::make_shared<OSServices::OSConsoleUartIOInterface>(m_p_uart);
 	    m_po_os_console = new OSServices::OSConsole(m_po_os_io_interface);
 
+#ifdef USE_CAN
+        /* Init the CAN interface (AUTOSAR conform) */
+        Can_Init(&CanConfigData);
+        CanIf_Init(&CanIf_Config);
+#endif
+
+
 #ifdef USE_TRACE
 	    // Initialize the trace module
 	    m_po_trace = new midware::Trace();
@@ -103,11 +110,6 @@ namespace app
         m_o_dataset.load_default_dataset();
 #endif
 
-#ifdef USE_CAN
-	    /* Init the CAN interface (AUTOSAR conform) */
-	    Can_Init(&CanConfigData);
-	    CanIf_Init(&CanIf_Config);
-#endif
 
 	    // initialization below is for the application
         init_fuel_level_converter();

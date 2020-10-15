@@ -204,7 +204,7 @@ void MAIN_Cycle_100ms(void)
 }
 
 
-void MAIN_startup_thread(void)
+void MAIN_startup_thread(void*)
 {
 	// This is the initial thread running after bootup.
 	/* Configure the system clock to 64 MHz */
@@ -262,18 +262,19 @@ int main(void)
 	 */
 	HAL_Init();
 
-	TaskHandle_t xHandle = NULL;
+
 
 	// first thread still needs to be created with xTaskCreate, only after the scheduler has started, std::thread can be used.
 
-	std_ex::thread* startup_thread = new std_ex::thread(&MAIN_startup_thread, "Startup_Thread", 3u, 0x800);
+	//std_ex::thread* startup_thread = new std_ex::thread(&MAIN_startup_thread, "Startup_Thread", 3u, 0x800);
 
-#if 0
+#if 1
+	TaskHandle_t xHandle = NULL;
     xTaskCreate( MAIN_startup_thread,
                  "MAIN_startup_thread",
-                 0x1800,
+                 0x800,
                  NULL,
-                 2,
+                 3u,
                  &xHandle );
 #endif
 

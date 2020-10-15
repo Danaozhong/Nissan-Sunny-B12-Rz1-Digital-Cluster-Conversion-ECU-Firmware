@@ -678,6 +678,8 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
   //CAN_HandleTypeDef CanHandle;
   //CAN_StructInit(&CAN_InitStructure);
 
+  canUnit->CanHandle.Instance = canHw; /* which CAN unit to use on this controller */
+
   canUnit->CanHandle.Init.TimeTriggeredMode = DISABLE;
   canUnit->CanHandle.Init.AutoBusOff = DISABLE;
   canUnit->CanHandle.Init.AutoWakeUp = DISABLE;

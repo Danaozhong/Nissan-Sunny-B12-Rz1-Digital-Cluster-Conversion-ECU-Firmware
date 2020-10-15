@@ -159,15 +159,26 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 )
 
 add_subdirectory(misc/libs/libtable)
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC libtable)
+list(APPEND EXTRA_LIBS libtable)
+
 
 if (USE_CAN)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
         -DUSE_CAN
         -DHAL_CAN_MODULE_ENABLED
     )
+    add_subdirectory(can_Stack)
+    list(APPEND EXTRA_LIBS can_stack)
     
-    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC can_stack)
+   #list(APPEND EXTRA_INCLUDES 
+   #     ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/Can
+   #     ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/CanIf
+   #     ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/config
+  #      ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/Det
+  #      ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/shared
+  #  )
+    
+    
 endif()
 
 if (USE_TRACE)
@@ -188,5 +199,8 @@ if (USE_NVDH)
     )
 endif()
     
+    
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${EXTRA_LIBS})
+
 STM32_SET_TARGET_PROPERTIES(${CMAKE_PROJECT_NAME})
 STM32_ADD_HEX_BIN_TARGETS(${CMAKE_PROJECT_NAME})

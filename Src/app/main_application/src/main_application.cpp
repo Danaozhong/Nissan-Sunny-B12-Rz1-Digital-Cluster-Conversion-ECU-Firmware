@@ -246,6 +246,7 @@ namespace app
         auto event_handler = std::bind(&MainApplication::fuel_sensor_input_received, this, std::placeholders::_1);
         m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
 
+
         return OSServices::ERROR_CODE_SUCCESS;
     }
 

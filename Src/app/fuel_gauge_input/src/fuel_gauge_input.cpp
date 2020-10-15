@@ -3,6 +3,7 @@
 #include "fuel_gauge_input.hpp"
 #include "excp_handler_if.h"
 #include <functional> // for std::bind
+#include "os_console.hpp"
 
 
 #define FUEL_GAUGE_LOG(...)
@@ -25,7 +26,7 @@ namespace app
 	uint32_t VoltageDivider::get_resistor_2_value(int32_t i32_resistor_2_voltage) const
 	{
 		// R2 = R1/(U - U2) / U - R1
-		return m_u32_resistor_1 / (m_i32_supply_voltage - i32_resistor_2_voltage ) / m_i32_supply_voltage - m_u32_resistor_1;
+		return (m_u32_resistor_1 * m_i32_supply_voltage) / (m_i32_supply_voltage - i32_resistor_2_voltage ) - m_u32_resistor_1;
 	}
 
 	int32_t VoltageDivider::get_resistor_2_voltage(uint32_t u32_resistor_2_value) const
@@ -51,7 +52,7 @@ namespace app
 			const app::CharacteristicCurve<int32_t, int32_t>& o_fuel_input_characteristic)
 	: m_p_adc(p_adc), m_o_fuel_input_characteristic(o_fuel_input_characteristic),
 	  m_u32_buffer_counter(0u), m_bo_initialized(false), m_bo_terminate_thread(false), m_u32_invalid_read_counter(0u),
-      m_o_voltage_divider(100, 3000) // 100 Ohm, 3V supply
+      m_o_voltage_divider(100000, 3000) // 100 Ohm (value representation is in mOhm), 3V supply
 	{
 #ifdef FUEL_GAUGE_INPUT_USE_OWN_TASK
 		// start the data acquisition thread
@@ -82,6 +83,7 @@ namespace app
 
         // covert to voltage
         int32_t i32_adc_pin_voltage = (3300 * u32_adc_value) / m_p_adc->get_adc_max_value();
+        FUEL_GAUGE_LOG("Current ADC voltage: %i.%iV\r\n", i32_adc_pin_voltage / 1000, i32_adc_pin_voltage % 1000);
 
         // convert to resistor value of the fuel sensor (in mOhm)
         int32_t i32_last_read_resistor_value = m_o_voltage_divider.get_resistor_2_value(i32_adc_pin_voltage);

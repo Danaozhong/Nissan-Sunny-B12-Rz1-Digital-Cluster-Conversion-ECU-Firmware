@@ -10,6 +10,8 @@
 /* Enable this if you want to have additional log output for the fuel sensor acquisition module */
 //#define FUEL_GAUGE_INPUT_ENABLE_LOGGING
 
+//#define FUEL_GAUGE_INPUT_USE_OWN_TASK
+
 
 #define FUEL_GAUGE_INPUT_AVERAGING_SIZE   (7u)
 
@@ -41,8 +43,6 @@ namespace app
 		uint32_t m_u32_resistor_2_parallel;
 		int32_t m_i32_supply_voltage;
 	};
-
-//#define FUEL_GAUGE_INPUT_USE_OWN_TASK
 
 	class FuelGaugeInputFromADC
 	{

@@ -103,7 +103,6 @@ if (USE_NVDH)
     )
 endif()
 
-add_subdirectory(can_stack/autosar)
 add_subdirectory(midware/trace)
 
 add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})
@@ -160,7 +159,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 )
 
 add_subdirectory(misc/libs/libtable)
-target_link_libraries(${CMAKE_PROJECT_NAME} libtable)
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC libtable)
 
 if (USE_CAN)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
@@ -168,7 +167,7 @@ if (USE_CAN)
         -DHAL_CAN_MODULE_ENABLED
     )
     
-    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC LIB_CAN)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC can_stack)
 endif()
 
 if (USE_TRACE)

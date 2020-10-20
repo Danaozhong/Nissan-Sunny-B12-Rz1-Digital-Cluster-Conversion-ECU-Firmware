@@ -11,43 +11,29 @@
 #include "ComStack_Types.h"
 #include "Can_GeneralTypes.h"
 
-/** Status of the PDU channel group. Current mode of the channel defines its
- *  transmit or receive activity. Communication direction (transmission and/or
- *  reception) of the channel can be controlled separately or together by upper
- *  layers. */
-// value is bitcoded: bit 0 = rx online, bit 1 = tx online, bit 2 = tx notification online, byte 1 is mask for affected bits
+/** SWS_CANIF_00137 */
 typedef enum {
 	/** Channel shall be set to the offline mode
 	 *  => no transmission and reception */
-	CANIF_SET_OFFLINE = 0x700,
+	CANIF_OFFLINE = 0x00,
 
-	/** Receive path of the corresponding channel
-	 *  shall be disabled */
-	CANIF_SET_RX_OFFLINE = 0x100,
-
-	/** Receive path of the corresponding channel
-	 *  shall be enabled */
-	CANIF_SET_RX_ONLINE = 0x101,
 
 	/** Transmit path of the corresponding channel
 	 *  shall be disabled */
-	CANIF_SET_TX_OFFLINE = 0x600,
-
-	/** Transmit path of the corresponding channel
-	 *  shall be enabled */
-	CANIF_SET_TX_ONLINE = 0x606,
-
-	/** Channel shall be set to online mode
-	 *  => full operation mode */
-	CANIF_SET_ONLINE = 0x707,
-
+	CANIF_TX_OFFLINE = 0x01,
+    
 	/** Transmit path of the corresponding channel
 	 *  shall be set to the offline active mode
 	 *  => notifications are processed but transmit
 	 *  requests are blocked. */
-	CANIF_SET_TX_OFFLINE_ACTIVE = 0x604
-} CanIf_PduSetModeType;
+	CANIF_TX_OFFLINE_ACTIVE = 0x02,
 
+	/** Channel shall be set to online mode
+	 *  => full operation mode */
+	CANIF_ONLINE = 0x03,
+} CanIf_PduModeType;
+
+#if 0
 // value is bitcoded: bit 0 = rx online, bit 1 = tx online, bit 2 = tx notification online
 typedef enum {
 	/** Channel is in the offline mode ==> no transmission or reception */
@@ -70,7 +56,7 @@ typedef enum {
   CANIF_GET_OFFLINE_ACTIVE_RX_ONLINE = 0x5
 
 } CanIf_PduGetModeType;
-
+#endif
 typedef enum {
 	/** No transmit or receive event occurred for
 	 *  the requested L-PDU. */
@@ -98,36 +84,49 @@ typedef struct {
 #endif
 
 typedef struct {
-  /// upper layer confirmation function, set to null if no confirmation
-	void(*user_TxConfirmation)(PduIdType txPduId);
-  /// can id used for transmission, msb indicates extended id
-  Can_IdType id;
-  /// upper layer pdu id passed to callout function
-	PduIdType ulPduId;
-	///todo what should the dlc be used for in tx lpdu object? transmit length? If so, what to do with non filled bytes? Error code?
-  uint8 dlc;
-	/// can driver controller id to be used for transmission
-  uint8 controller;
-  /// can driver hth id to be used for transmission
-	Can_HwHandleType hth;
-  ///todo add driverUnitId
-} CanIf_TxLPduConfigType;
+    /// can id used for transmission, msb indicates extended id
+    Can_IdType id;
+
+    /// data length (DLC)
+    uint8 dlc;
+
+    /// can driver controller id to be used for transmission
+    uint8 controller;
+
+    /// can driver hth id to be used for transmission
+    Can_HwHandleType hth;
+
+    /// upper layer confirmation function, set to null if no confirmation
+    void(*user_TxConfirmation)(PduIdType txPduId);
+
+    /// upper layer pdu id passed to callout function
+    PduIdType ulPduId;
+} CanIf_TxPduConfigType;
+
 
 typedef struct {
-  /// upper layer indication function, set to null if no rx indication
-	void(*user_RxIndication)(PduIdType rxPduId, const PduInfoType* pduInfoPtr);
-  /// can id used for reception filtering
-  ///todo add support for range reception
-  Can_IdType id;
-  /// upper layer pdu id passed to callout function
-	PduIdType ulPduId;
-  /// min dlc and dlc reported to upper layers. Set to -1 to disable dlc check
-	uint8 dlc;
-	/// can driver controller id from where to receive lpdu
-  ///todo is this correct? Can an lpdu only be received from 1 controller?
-	uint8 controller;
+    /// can id used for reception filtering
+    ///todo add support for range reception
+    Can_IdType id;
+
+    /// min dlc and dlc reported to upper layers. Set to -1 to disable dlc check
+    uint8 dlc;
+
+    /// can driver controller id from where to receive lpdu
+    uint8 controller;
+
+    /** SWS_CANIF_00012
+     upper layer indication function, set to null if no rx indication */
+    void(*user_RxIndication)(PduIdType RxPduId, const PduInfoType* PduInfoPtr);
+
+    /// upper layer pdu id passed to callout function
+    PduIdType ulPduId;
 } CanIf_RxLPduConfigType;
 
+
+
+
+/* rewrite Clemens end */
 #if 0
 typedef struct {
   union {
@@ -181,7 +180,7 @@ typedef struct
 
 typedef struct {
 	/* Everything in this structure is implementation specific */
-	CanIf_TxLPduConfigType TxLpduCfg[CANIF_NUM_TX_LPDU_ID];
+    CanIf_TxPduConfigType TxPduCfg[CANIF_NUM_TX_PDU_ID];
 	CanIf_RxLPduConfigType RxLpduCfg[CANIF_NUM_RX_LPDU_ID];
 
     const CanIf_ControllerConfigType* ControllerConfig;

@@ -3,6 +3,8 @@
 #ifdef USE_CAN
 #include "Can.h"
 #include "CanIf.h"
+
+#include "can_diagnostics.hpp"
 #endif
 
 #include "excp_handler.hpp"
@@ -43,6 +45,13 @@ namespace app
         /* Init the CAN interface (AUTOSAR conform) */
         Can_Init(&CanConfigData);
         CanIf_Init(&CanIf_Config);
+
+        CanIf_SetControllerMode(0, CAN_CS_STARTED);
+        CanIf_PduModeType x;
+        CanIf_SetPduMode(0, CANIF_ONLINE);
+
+        /* Register CAN diagnostics commands on the UART */
+        m_po_os_console->register_command(new app::CommandCAN());
 #endif
 
 

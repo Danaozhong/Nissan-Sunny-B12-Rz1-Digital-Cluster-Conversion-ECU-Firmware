@@ -37,7 +37,9 @@
 extern const Can_ControllerConfigType CanControllerConfigData[];
 extern const Can_ConfigSetType CanConfigSetData;
 
-
+/* Application callbacks */
+//void IMACanControllerModeIndication(uint8 controllerId, CanIf_ControllerModeType controllerMode);
+void IMACanRxIndication(PduIdType RxPduId, const PduInfoType* PduInfoPtr);
 
 
 // Contains the mapping from CanIf-specific Channels to Can Controllers
@@ -78,13 +80,12 @@ const CanIf_DispatchConfigType CanIfDispatchConfig =
 };
 
 #if 0
-
 // Data for init configuration CanIfInitConfiguration
 
 const CanIf_HthConfigType CanIfHthConfigData_Hoh[] =
 {
-		
-  { 
+
+  {
     .CanIfHthType = CAN_ARC_HANDLE_TYPE_BASIC,
     .CanIfCanControllerIdRef = CANIF_Controller_A,
     .CanIfHthIdSymRef = HWObj_2,
@@ -92,17 +93,22 @@ const CanIf_HthConfigType CanIfHthConfigData_Hoh[] =
   },
 };
 
-const CanIf_HrhConfigType CanIfHrhConfigData_Hoh[] =
+#endif
+const CanIf_TxPduConfigType CanIfTxPduConfigData[] =
 {
-		
   {
-    .CanIfHrhType = CAN_ARC_HANDLE_TYPE_BASIC,
-    .CanIfSoftwareFilterHrh = TRUE,
-    .CanIfCanControllerHrhIdRef = CANIF_Controller_A,
-    .CanIfHrhIdSymRef = HWObj_1,
-    .CanIf_Arc_EOL = 1,
-  },
+
+    .id = 512,
+    .dlc = 8,
+    .controller = 0,
+    .hth = 0, //&CanIfHthConfigData_Hoh[0],
+    .user_TxConfirmation = NULL,
+    .ulPduId = 0
+  }
 };
+
+
+#if 0
 
 
 const CanIf_InitHohConfigType CanIfHohConfigData[] = { 
@@ -121,21 +127,6 @@ const CanIf_InitHohConfigType CanIfHohConfigData[] = {
 
 #define PduR_CanIfTxConfirmation NULL
 
-const CanIf_TxPduConfigType CanIfTxPduConfigData[] = {	
-  {
-    .CanIfTxPduId = PDUR_REVERSE_PDU_ID_CanDB_Message_2,
-    .CanIfCanTxPduIdCanId = 512,
-    .CanIfCanTxPduIdDlc = 8,
-    .CanIfCanTxPduType = CANIF_PDU_TYPE_STATIC,
-#if ( CANIF_READTXPDU_NOTIFY_STATUS_API == STD_ON )
-    .CanIfReadTxPduNotifyStatus = false, 
-#endif
-    .CanIfTxPduIdCanIdType = CANIF_CAN_ID_TYPE_11,
-    .CanIfUserTxConfirmation = PduR_CanIfTxConfirmation,
-    .CanIfCanTxPduHthRef = &CanIfHthConfigData_Hoh[0],
-    .PduIdRef = NULL,
-  },  
-};
 
 const CanIf_RxPduConfigType CanIfRxPduConfigData[] = {		
   {
@@ -175,12 +166,39 @@ const CanIf_InitConfigType CanIfInitConfig =
 #endif
 
 
+const CanIf_HrHConfigType CanIfHrhConfigData_Hoh[] =
+{
+
+  {
+    .pduInfo.lpduId = 0,
+    .arrayLen = 0,
+  },
+};
+
+
+CanIf_RxLPduConfigType CanIfRxPduConfigData[] =
+{
+    {
+
+        .id = 512,
+        .dlc = 8,
+        .controller = 0,
+        .user_RxIndication = &IMACanRxIndication,
+        .ulPduId = 0
+    }
+};
+
+
+
 	// This container includes all necessary configuration sub-containers
 // according the CAN Interface configuration structure.
 const CanIf_ConfigType CanIf_Config =
 {
   .ControllerConfig = CanIfControllerConfig,
   .DispatchConfig = &CanIfDispatchConfig,
+  .TxPduCfg = &CanIfTxPduConfigData,
+  .RxLpduCfg = &CanIfRxPduConfigData,
+  .canIfHrhCfg = &CanIfHrhConfigData_Hoh,
   //.InitConfig = &CanIfInitConfig,
   //.TransceiverConfig = NULL, // Not used
   //.Arc_ChannelToControllerMap = CanIf_Arc_ChannelToControllerMap,

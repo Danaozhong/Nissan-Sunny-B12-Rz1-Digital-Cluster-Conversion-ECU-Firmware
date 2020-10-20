@@ -22,7 +22,6 @@
 
 /* Own header */
 #include "trace.hpp"
-#include "excp_handler_if.h"
 #include "os_console.hpp"
 
 

@@ -4,7 +4,7 @@ PROJECT(SunnyRz1FuelGaugeConverter  VERSION 1.0 DESCRIPTION "Test")
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
 # some options
-option(USE_CAN "Enable / disable the CAN subsystem" OFF)
+option(USE_CAN "Enable / disable the CAN subsystem" ON)
 option(USE_TRACE "Enable / disable the tracing" ON)
 option(USE_NVDH "Enable / disable non-volatile data handler" ON)
 
@@ -50,6 +50,8 @@ SET(PROJECT_SOURCES
     app/dataset/src/dataset.cpp
     app/version_info/src/version_info.cpp
     
+    app/can_diagnostics/src/can_diagnostics.cpp
+    
     drivers/adc/src/stm32_adc.cpp
     drivers/dac/src/generic_dac.cpp
     drivers/dac/src/stm32_dac.cpp
@@ -60,50 +62,29 @@ SET(PROJECT_SOURCES
     drivers/uart/src/stm32_uart.cpp
     drivers/uc_ports/src/uc_ports.cpp
     
-    midware/cppstdlib/condition_variable.cpp
-    midware/cppstdlib/freertos_time.cpp
-    midware/cppstdlib/future.cc
-    midware/cppstdlib/gthr_key.cpp
-    midware/cppstdlib/mutex.cc
-    midware/cppstdlib/thread.cpp
+
     
     midware/events/event_handler.cpp
     midware/excp_handler/src/excp_handler.cpp
     midware/excp_handler/src/excp_handler_console_commands.cpp
     
-    midware/osservices/os_console/src/os_console.cpp
+
     midware/std_ex/ex_threads/ex_thread.cpp
 
     midware/util_algorithms/src/util_algorithms.cpp
     
-    midware/FreeRTOS/adapt/CMSIS_RTOS/cmsis_os.c
-    midware/FreeRTOS/src/croutine.c
-    midware/FreeRTOS/src/event_groups.c
-    midware/FreeRTOS/src/list.c
-    midware/FreeRTOS/src/queue.c
-    midware/FreeRTOS/src/stream_buffer.c
-    midware/FreeRTOS/src/tasks.c
-    midware/FreeRTOS/src/timers.c
 
-    midware/FreeRTOS/src/portable/GCC/ARM_CM4F/port.c
-    midware/FreeRTOS/src/portable/MemMang/heap_4.c
     
     misc/ascii_arts/src/ascii_diagram.cpp
 )
 
-if (USE_TRACE)
-    list(APPEND PROJECT_SOURCES
-        midware/trace/src/trace.cpp
-    )
-endif()
+
 
 if (USE_NVDH)
     list(APPEND PROJECT_SOURCES
         midware/nonvolatile_data/src/nonvolatile_data_handler.cpp
     )
 endif()
-
-add_subdirectory(midware/trace)
 
 add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})
 
@@ -118,6 +99,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMSIS_INCLUDE_DIRS}
     ${STM32HAL_INCLUDE_DIR}
+
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
@@ -130,6 +112,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/app/main_application/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/speed_sensor_converter/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/replay_curve/inc
+    
+    app/can_diagnostics/inc
+    
     app/dataset/inc
     app/version_info/inc
         
@@ -147,28 +132,50 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/osservices/os_console/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/std_ex/ex_threads
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/util_algorithms/inc
-    
-    
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/adapt/CMSIS_RTOS
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/freertos
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/FreeRTOS/src/portable/GCC/ARM_CM4F
-    
+
     misc/ascii_arts/inc
 )
+
+
+add_subdirectory(midware/FreeRTOS)
+list(APPEND EXTRA_LIBS freertos)
+
+add_subdirectory(midware/cppstdlib)
+list(APPEND EXTRA_LIBS stdcpp)
+
+add_subdirectory(midware/std_ex)
+list(APPEND EXTRA_LIBS stdcppex)
+
+add_subdirectory(midware/osservices)
+list(APPEND EXTRA_LIBS osservices)
 
 add_subdirectory(misc/libs/libtable)
 list(APPEND EXTRA_LIBS libtable)
 
+add_subdirectory(drivers/uart)
+list(APPEND EXTRA_LIBS uart)
+
+
+
+if (USE_TRACE)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
+        -DUSE_TRACE
+    )
+    add_subdirectory(midware/trace)
+    list(APPEND EXTRA_LIBS trace)
+endif()
 
 if (USE_CAN)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
         -DUSE_CAN
         -DHAL_CAN_MODULE_ENABLED
     )
-    add_subdirectory(can_Stack)
+    add_subdirectory(can_stack)
     list(APPEND EXTRA_LIBS can_stack)
+    
+    
+    add_subdirectory(app/ima_data_provider)
+    list(APPEND EXTRA_LIBS ima_data_provider)
     
    #list(APPEND EXTRA_INCLUDES 
    #     ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/Can
@@ -179,15 +186,6 @@ if (USE_CAN)
   #  )
     
     
-endif()
-
-if (USE_TRACE)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
-        -DUSE_TRACE
-    )
-    target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-        midware/trace/inc
-    )
 endif()
 
 if (USE_NVDH)

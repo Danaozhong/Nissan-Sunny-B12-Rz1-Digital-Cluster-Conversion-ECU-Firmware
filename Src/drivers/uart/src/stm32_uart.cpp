@@ -7,7 +7,6 @@
 
 #include <cstring>
 #include <thread>
-#include "trace_if.h"
 #include "ex_thread.hpp"
 #include "stm32_uart.hpp"
 #include <functional>
@@ -388,7 +387,7 @@ namespace drivers
 		    // load balancing
 		    std_ex::sleep_for(std::chrono::milliseconds(100));
 		}
-		DEBUG_PRINTF("UART thread will terminate now.");
+		//DEBUG_PRINTF("UART thread will terminate now.");
 	}
 #endif
 

@@ -87,20 +87,22 @@ void CanIf_Deinit(void);
 //Can_ControllerStateType
 
 /** SWS_CANIF_00003 */
-Std_ReturnType CanIf_SetControllerMode(uint8 ControllerId,
-		Can_ControllerStateType ControllerMode);
+Std_ReturnType CanIf_SetControllerMode(uint8 ControllerId, Can_ControllerStateType ControllerMode);
 
 /** SWS_CANIF_00229 */
-Std_ReturnType CanIf_GetControllerMode(uint8 ControllerId,
-		Can_ControllerStateType* ControllerModePtr);
+Std_ReturnType CanIf_GetControllerMode(uint8 ControllerId, Can_ControllerStateType* ControllerModePtr);
 
 /** SWS_CANIF_91001 */
-Std_ReturnType CanIf_GetControllerErrorState(uint8 ControllerId,
-		Can_ErrorStateType* ErrorStatePtr);
+Std_ReturnType CanIf_GetControllerErrorState(uint8 ControllerId, Can_ErrorStateType* ErrorStatePtr);
 
 /** SWS_CANIF_00005 */
-Std_ReturnType CanIf_Transmit(PduIdType TxPduId,
-		const PduInfoType* PduInfoPtr);
+Std_ReturnType CanIf_Transmit(PduIdType TxPduId, const PduInfoType* PduInfoPtr);
+        
+/** SWS_CANIF_00008 */
+Std_ReturnType CanIf_SetPduMode(uint8 ControllerId, CanIf_PduModeType PduModeRequest);
+
+/** SWS_CANIF_00009 */
+Std_ReturnType CanIf_GetPduMode(uint8 ControllerId, CanIf_PduModeType* PduModePtr);
 
 /** Internal helper function for the Rx Indication */
 void CanIf_Arc_RxIndication(Can_HwHandleType hrh, Can_IdType canId, uint8 canDlc, const uint8* canSduPtr, uint8 driverUnit);
@@ -118,8 +120,7 @@ CanIf_NotifStatusType CanIf_ReadTxNotifStatus(PduIdType CanTxPduId);
 CanIf_NotifStatusType CanIf_ReadRxNotifStatus(PduIdType CanRxPduId);
 #endif
 
-//Std_ReturnType CanIf_SetPduMode( uint8 Controller, CanIf_ChannelSetModeType PduModeRequest );
-//Std_ReturnType CanIf_GetPduMode( uint8 Controller, CanIf_ChannelGetModeType *PduModePtr );
+
 
 #if ( CANIF_ARC_RUNTIME_PDU_CONFIGURATION == STD_ON )
 void CanIf_SetDynamicTxId( PduIdType CanTxPduId, Can_IdType CanId );

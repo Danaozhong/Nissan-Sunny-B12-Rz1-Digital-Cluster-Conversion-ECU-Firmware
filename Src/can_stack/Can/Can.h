@@ -309,15 +309,25 @@ void Can_DeInit(void);
 
 Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID);
 
+
+
+/** SWS_Can_91004 */
+Std_ReturnType Can_GetControllerErrorState(uint8 ControllerId, Can_ErrorStateType* ErrorStatePtr);
+
+/** SWS_Can_91014 */
+Std_ReturnType Can_GetControllerMode(uint8 controller, Can_ControllerStateType* ControllerModePtr);
+
 /** SWS_Can_00230 */
-Std_ReturnType Can_SetControllerMode( uint8 controller, Can_ControllerStateType transition );
+Std_ReturnType Can_SetControllerMode( uint8 controller, Can_ControllerStateType transition);
+
 
 void Can_DisableControllerInterrupts( uint8 controller );
 void Can_EnableControllerInterrupts( uint8 controller );
 // Hth - for Flexcan, the hardware message box number... .We don't care
 
 
-Can_ReturnType Can_Write( Can_Arc_HTHType hth, Can_PduType *pduInfo );
+/** SWS_Can_00233 */
+Can_ReturnType Can_Write(Can_HwHandleType Hth, Can_PduType *PduInfo);
 
 void Can_Cbk_CheckWakeup( uint8 controller );
 void Can_MainFunction_Write( void );

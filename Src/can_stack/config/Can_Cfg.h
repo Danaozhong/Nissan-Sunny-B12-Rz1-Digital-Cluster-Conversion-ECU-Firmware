@@ -74,6 +74,9 @@ typedef struct {
 	void (*ControllerBusOff)(uint8);
 	void (*TxConfirmation)(PduIdType);
 	void (*SetWakeupEvent)(uint8);
+	void (*ControllerModeIndication)(uint8, Can_ControllerStateType);
+
+
 	//void (*Arc_Error)(uint8,Can_Arc_ErrorType);
 } Can_CallbackType;
 

@@ -53,6 +53,7 @@ typedef enum {
 
 
 
+/** SWS_Can_00429 */
 // uint16: if more than 255 hw handles
 // uint8: else
 #ifdef CAN_USE_EXTENDED_HW_HANDLE
@@ -60,6 +61,15 @@ typedef uint16 Can_HwHandleType;
 #else
 typedef uint8 Can_HwHandleType;
 #endif
+
+/** SWS_CAN_00496 */
+typedef struct
+{
+    Can_IdType CanId; /* CAN ID of the CAN L-PDU */
+    Can_HwHandleType Hoh; /* ID of the corresponding hardware Object Range */
+    uint8 ControllerId; /* Cntrollre provided by Canif clearly identify the corresponding controller */
+
+} Can_HwType;
 
 
 typedef enum {

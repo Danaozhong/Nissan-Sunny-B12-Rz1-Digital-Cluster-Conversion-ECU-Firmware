@@ -21,7 +21,7 @@
 
 Can_FilterMaskType Can_FilterMaskConfigData_Controller_1_Mask_1 = 0x0;
 
-
+/** List of HOH */
 const Can_HardwareObjectType CanHardwareObjectConfig_Controller_1[] = {
 	{
 		.CanObjectId =		HWObj_1,
@@ -45,6 +45,16 @@ const Can_HardwareObjectType CanHardwareObjectConfig_Controller_1[] = {
 	},
 };
 
+#if 0
+const Can_HwType CanHardwareData[] =
+{
+    {
+        .CanId = 0,
+        .Hoh = 0, /* CanHardwareObjectConfig_Controller_1 */
+        .ControllerId = 0 /* refers to an entry in the list Can_ControllerConfigType */
+    }
+};
+#endif
 
 const Can_ControllerConfigType CanControllerConfigData[] =
 {
@@ -61,7 +71,7 @@ const Can_ControllerConfigType CanControllerConfigData[] =
     .CanWakeupProcessing =		CAN_ARC_PROCESS_TYPE_INTERRUPT,
 	.CanCpuClockRef =			0,
     .Can_Arc_Hoh =				&CanHardwareObjectConfig_Controller_1[0],
-    .Can_Arc_Loopback =			FALSE,
+    .Can_Arc_Loopback =			TRUE,
     .Can_Arc_Fifo =				0,
   },
 };
@@ -72,7 +82,7 @@ const Can_CallbackType CanCallbackConfigData = {
     CanIf_ControllerBusOff,
     CanIf_TxConfirmation,
     CanIf_SetWakeupEvent,
-    //CanIf_Arc_Error,
+    CanIf_ControllerModeIndication
 };
 
 const Can_ConfigSetType CanConfigSetData =

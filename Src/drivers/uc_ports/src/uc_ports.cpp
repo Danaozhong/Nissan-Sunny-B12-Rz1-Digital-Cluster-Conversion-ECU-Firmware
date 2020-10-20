@@ -5,22 +5,22 @@
 
 #define CANx                           CAN
 #define CANx_CLK_ENABLE()              __HAL_RCC_CAN1_CLK_ENABLE()
-#define CANx_GPIO_CLK_ENABLE()         __HAL_RCC_GPIOD_CLK_ENABLE()
+#define CANx_GPIO_CLK_ENABLE()         __HAL_RCC_GPIOA_CLK_ENABLE()
 
 #define CANx_FORCE_RESET()             __HAL_RCC_CAN1_FORCE_RESET()
 #define CANx_RELEASE_RESET()           __HAL_RCC_CAN1_RELEASE_RESET()
 
 /* Definition for CANx Pins */
-#define CANx_TX_PIN                    GPIO_PIN_1
-#define CANx_TX_GPIO_PORT              GPIOD
-#define CANx_RX_PIN                    GPIO_PIN_0
-#define CANx_RX_GPIO_PORT              GPIOD
+#define CANx_TX_PIN                    GPIO_PIN_12 /* valid for STM32F303xC */
+#define CANx_TX_GPIO_PORT              GPIOA /* valid for STM32F303xC */
+#define CANx_RX_PIN                    GPIO_PIN_11 /* valid for STM32F303xC */
+#define CANx_RX_GPIO_PORT              GPIOA /* valid for STM32F303xC */
 
 
 /* Definition for CAN's NVIC */
 #ifdef STM32_FAMILY_F3
-#define CANx_TX_AF                     GPIO_AF7_CAN
-#define CANx_RX_AF                     GPIO_AF7_CAN
+#define CANx_TX_AF                     GPIO_AF9_CAN
+#define CANx_RX_AF                     GPIO_AF9_CAN
 #define CANx_RX_IRQn                   USB_LP_CAN_RX0_IRQn
 #define CANx_RX_IRQHandler             USB_LP_CAN_RX0_IRQHandler
 #elif defined STM32_FAMILY_F4
@@ -258,7 +258,4 @@ extern "C"
             po_port_configuration->deinit_ports_tim();
         }
     }
-
-
-
 }

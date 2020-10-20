@@ -35,8 +35,13 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
+#ifdef USE_CAN
+#include "CanIf.h"
+#endif
 
-
+#if 1
+#include "trace_if.h"
+#endif
 
 /* OS headers */
 #include "FreeRTOS.h"
@@ -182,7 +187,8 @@ void MAIN_Cycle_100ms(void)
 
         if (nullptr != o_application.m_po_speed_sensor_converter)
         {
-            o_application.m_po_speed_sensor_converter->cycle();
+            // disabled for testing CAN
+            //o_application.m_po_speed_sensor_converter->cycle();
         }
 
         // TODO temporarly check this here
@@ -200,6 +206,24 @@ void MAIN_Cycle_100ms(void)
         }
 
         std_ex::sleep_for(std::chrono::milliseconds(100));
+
+#ifdef USE_CAN
+        PduInfoType pdu_buffer;
+        char buffer[8] = "testda0";
+        pdu_buffer.SduDataPtr = reinterpret_cast<uint8*>(buffer);
+        pdu_buffer.SduLength = 8;
+
+        /* Test code for the CAN bus transmission */
+        if (E_OK != CanIf_Transmit(0, &pdu_buffer))
+        {
+            DEBUG_PRINTF("Can sending failed!\n\r");
+        }
+        else
+        {
+
+        }
+
+#endif
     }
 }
 
@@ -231,7 +255,6 @@ void MAIN_startup_thread(void*)
 	// start the cyclic thread(s)
     std_ex::thread* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
 
-    std::vector<uint32_t> a_freqs = { 1, 3, 5, 8, 220 };
 	while (true)
 	{
 		// Check for data on the UART

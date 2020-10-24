@@ -10,6 +10,6 @@ extern "C"
 #endif
     void IMACanRxIndication(PduIdType RxPduId, const PduInfoType* PduInfoPtr)
     {
-        DEBUG_PRINTF("CAN message received!\n\r");
+        DEBUG_PRINTF("CAN message received, PDU ID: %u!\n\r", static_cast<unsigned int>(RxPduId));
     }
 }

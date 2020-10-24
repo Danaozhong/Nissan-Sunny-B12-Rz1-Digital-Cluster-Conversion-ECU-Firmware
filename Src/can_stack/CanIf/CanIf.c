@@ -606,25 +606,31 @@ static void RxLPduReceived(PduIdType lpdu, Can_IdType canId, uint8 canDlc, const
 
 // called by CanIf_RxIndication with info about correct hrhConfig set for CanDriverUnit
 // service id 20
-void CanIf_Arc_RxIndication(Can_HwHandleType hrh, Can_IdType canId, uint8 canDlc, const uint8* canSduPtr, uint8 driverUnit) {
+//void CanIf_Arc_RxIndication(Can_HwHandleType hrh, Can_IdType canId, uint8 canDlc, const uint8* canSduPtr, uint8 driverUnit)
+void CanIf_Internal_RxIndication(const Can_HwType* MailBox, const PduInfoType* PduInfoPtr)
+{
+    VALIDATE_NO_RV(PduInfoPtr != NULL && MailBox != NULL, 20, CANIF_E_PARAM_POINTER); /* SWS_CANIF_00419 */
     VALIDATE_NO_RV(CanIf_ConfigPtr != 0, 20, CANIF_E_UNINIT);
-    VALIDATE_NO_RV(hrh < NUM_OF_HRHS, 20, CANIF_E_PARAM_HRH);
-    VALIDATE_NO_RV(canId & 0x80000000 && canId < 0xA0000000 || canId < 0x800, 20, CANIF_E_PARAM_CANID);
-    VALIDATE_NO_RV(canDlc <= 8, 20, CANIF_E_PARAM_DLC);
-    VALIDATE_NO_RV(canSduPtr != 0, 20, CANIF_E_PARAM_POINTER);
+    VALIDATE_NO_RV(MailBox->Hoh < NUM_OF_HRHS, 20, CANIF_E_PARAM_HRH); /* SWS_CANIF_00416 */
+    VALIDATE_NO_RV(MailBox->CanId & 0x80000000 && MailBox->CanId < 0xA0000000 || MailBox->CanId < 0x800, 20, CANIF_E_PARAM_CANID); /* SWS_CANIF_00417 */
+    VALIDATE_NO_RV(PduInfoPtr->SduLength <= 8, 20, CANIF_E_PARAM_DLC);
+    VALIDATE_NO_RV(PduInfoPtr->SduDataPtr != NULL, 20, CANIF_E_PARAM_POINTER);
 
-    int numPdus = CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].arrayLen;
+    /* TODO SWS_CANIF_00421 check if initialized */
+
+    int numPdus = CanIf_ConfigPtr->canIfHrhCfg[MailBox->ControllerId][MailBox->Hoh].arrayLen;
     if(numPdus == 0)
     {
         // no filtering, lpdu id found
-        RxLPduReceived(CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].pduInfo.lpduId, canId, canDlc, canSduPtr);
+        RxLPduReceived(CanIf_ConfigPtr->canIfHrhCfg[MailBox->ControllerId][MailBox->Hoh].pduInfo.lpduId,
+                MailBox->CanId, PduInfoPtr->SduLength, PduInfoPtr->SduDataPtr);
     }
     else
     {
-        PduIdType *firstPduId = CanIf_ConfigPtr->canIfHrhCfg[driverUnit][hrh].pduInfo.array;
+        PduIdType *firstPduId = CanIf_ConfigPtr->canIfHrhCfg[MailBox->ControllerId][MailBox->Hoh].pduInfo.array;
         while(numPdus > 1)
         {
-            if(CanIf_ConfigPtr->RxLpduCfg[firstPduId[numPdus / 2]].id >= canId)
+            if(CanIf_ConfigPtr->RxLpduCfg[firstPduId[numPdus / 2]].id >= MailBox->CanId)
             {
                 firstPduId += numPdus / 2;
                 numPdus = numPdus / 2 + numPdus % 2;
@@ -634,10 +640,10 @@ void CanIf_Arc_RxIndication(Can_HwHandleType hrh, Can_IdType canId, uint8 canDlc
                 numPdus = numPdus / 2;
             }
         }
-        if(CanIf_ConfigPtr->RxLpduCfg[*firstPduId].id == canId)
+        if(CanIf_ConfigPtr->RxLpduCfg[*firstPduId].id == MailBox->CanId)
         {
             // lpdu id found handle message
-            RxLPduReceived(*firstPduId, canId, canDlc, canSduPtr);
+            RxLPduReceived(*firstPduId, MailBox->CanId, PduInfoPtr->SduLength, PduInfoPtr->SduDataPtr);
         }
     }
 }

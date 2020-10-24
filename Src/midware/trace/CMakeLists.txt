@@ -8,12 +8,10 @@ add_library(trace STATIC ${MODULE_SOURCES})
 
 target_link_libraries(trace uart)
 
-#target_include_directories(can_stack PUBLIC
-#    ${CMAKE_CURRENT_SOURCE_DIR}
-#    ${CMSIS_INCLUDE_DIRS}
-#    ${STM32HAL_INCLUDE_DIR}
-#    ../../Inc # needed for HW depending stuff, TODO find a better solution for this include
-#)
+target_compile_definitions(trace PUBLIC
+    -DUSE_TRACE
+)
+
 add_definitions(
     -D_BSD_SOURCE
     -D_GCC_MULTITHREAD_FREERTOS_ENABLE

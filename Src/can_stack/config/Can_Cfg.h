@@ -69,8 +69,7 @@ typedef enum {
 
 
 typedef struct {
-	void (*CancelTxConfirmation)( const Can_PduType *);
-	void (*RxIndication)( uint8 ,Can_IdType ,uint8 , const uint8 * );
+	void (*RxIndication)(const Can_HwType*, const PduInfoType*);
 	void (*ControllerBusOff)(uint8);
 	void (*TxConfirmation)(PduIdType);
 	void (*SetWakeupEvent)(uint8);

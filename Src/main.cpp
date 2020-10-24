@@ -212,9 +212,10 @@ void MAIN_Cycle_100ms(void)
         char buffer[8] = "testda0";
         pdu_buffer.SduDataPtr = reinterpret_cast<uint8*>(buffer);
         pdu_buffer.SduLength = 8;
+        const uint32_t u32_num_of_tx_pdus = 2;
 
         /* Test code for the CAN bus transmission */
-        if (E_OK != CanIf_Transmit(0, &pdu_buffer))
+        if (E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
         {
             DEBUG_PRINTF("Can sending failed!\n\r");
         }

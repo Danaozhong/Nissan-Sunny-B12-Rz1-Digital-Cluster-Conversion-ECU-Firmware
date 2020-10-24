@@ -94,25 +94,13 @@ const CanIf_HthConfigType CanIfHthConfigData_Hoh[] =
 };
 
 #endif
-const CanIf_TxPduConfigType CanIfTxPduConfigData[] =
-{
-  {
 
-    .id = 512,
-    .dlc = 8,
-    .controller = 0,
-    .hth = 0, //&CanIfHthConfigData_Hoh[0],
-    .user_TxConfirmation = NULL,
-    .ulPduId = 0
-  }
-};
 
 
 #if 0
 
 
 const CanIf_InitHohConfigType CanIfHohConfigData[] = { 
-		
 	{
 		.CanConfigSet = &CanConfigSetData,
 		.CanIfHrhConfig = CanIfHrhConfigData_Hoh,
@@ -165,27 +153,68 @@ const CanIf_InitConfigType CanIfInitConfig =
 };
 #endif
 
-
-const CanIf_HrHConfigType CanIfHrhConfigData_Hoh[] =
+/* List of PDUs that will be processed by controller 0 */
+PduIdType LPDU_Controller0[] =
 {
+    CANIF_PDU_ID_PDU_RX0,
+    CANIF_PDU_ID_PDU_functionalRX,
 
-  {
-    .pduInfo.lpduId = 0,
-    .arrayLen = 0,
-  },
 };
 
-
-CanIf_RxLPduConfigType CanIfRxPduConfigData[] =
+const CanIf_HrHConfigType CanIfHrhConfigData_HohController0[] =
 {
     {
 
+        .pduInfo.array = LPDU_Controller0,
+        .arrayLen = 2,
+    },
+};
+
+
+
+const CanIf_HrHConfigType* CanIfHrhConfigData_Hoh[] =
+{
+    CanIfHrhConfigData_HohController0,
+};
+
+const CanIf_TxPduConfigType CanIfTxPduConfigData[CANIF_NUM_TX_PDU_ID] =
+{
+  {
+
+    .id = 512,
+    .dlc = 8,
+    .controller = 0,
+    .hth = 0, //&CanIfHthConfigData_Hoh[0],
+    .user_TxConfirmation = NULL,
+    .ulPduId = 0
+  },
+  {
+      .id = 0x13F, /* throttle position parameters */
+      .dlc = 8,
+      .controller = 0,
+      .hth = 0,
+      .user_TxConfirmation = NULL,
+      .ulPduId = 1
+  },
+};
+
+const CanIf_RxLPduConfigType CanIfRxPduConfigData[CANIF_NUM_RX_LPDU_ID] =
+{
+    {
         .id = 512,
         .dlc = 8,
         .controller = 0,
         .user_RxIndication = &IMACanRxIndication,
         .ulPduId = 0
-    }
+    },
+    {
+        .id = 0x13F, /* throttle position parameters */
+        .dlc = 8,
+        .controller = 0,
+        .user_RxIndication = &IMACanRxIndication,
+        .ulPduId = 1
+    },
+
 };
 
 
@@ -196,9 +225,9 @@ const CanIf_ConfigType CanIf_Config =
 {
   .ControllerConfig = CanIfControllerConfig,
   .DispatchConfig = &CanIfDispatchConfig,
-  .TxPduCfg = &CanIfTxPduConfigData,
-  .RxLpduCfg = &CanIfRxPduConfigData,
-  .canIfHrhCfg = &CanIfHrhConfigData_Hoh,
+  .TxPduCfg = CanIfTxPduConfigData,
+  .RxLpduCfg = CanIfRxPduConfigData,
+  .canIfHrhCfg = CanIfHrhConfigData_Hoh,
   //.InitConfig = &CanIfInitConfig,
   //.TransceiverConfig = NULL, // Not used
   //.Arc_ChannelToControllerMap = CanIf_Arc_ChannelToControllerMap,

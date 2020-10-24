@@ -65,14 +65,14 @@
 typedef CAN_TypeDef CAN_HW_t;
 //-------------------------------------------------------------------
 
-#define GET_CONTROLLER_CONFIG(_controller)	\
-        					&Can_Global.config->CanConfigSet->CanController[(_controller)]
+#define GET_CONTROLLER_CONFIG(_controller)    \
+                            &Can_Global.config->CanConfigSet->CanController[(_controller)]
 
 #define GET_CALLBACKS() \
-							(Can_Global.config->CanConfigSet->CanCallbacks)
+                            (Can_Global.config->CanConfigSet->CanCallbacks)
 
 #define GET_PRIVATE_DATA(_controller) \
-									&CanUnit[_controller]
+                                    &CanUnit[_controller]
 
 #define GET_CONTROLLER_CNT() (CAN_CONTROLLER_CNT)
 
@@ -120,7 +120,7 @@ typedef enum
 // Mapping between HRH and Controller//HOH
 typedef struct Can_Arc_ObjectHOHMapStruct
 {
-	CanControllerIdType CanControllerRef;    // Reference to controller
+    CanControllerIdType CanControllerRef;    // Reference to controller
   const Can_HardwareObjectType* CanHOHRef;       // Reference to HOH.
 } Can_Arc_ObjectHOHMapType;
 
@@ -159,17 +159,17 @@ Can_GlobalType Can_Global =
 
 /* Type for holding information about each controller */
 typedef struct {
-	Can_ControllerStateType state;
-	uint32		lock_cnt;
+    Can_ControllerStateType state;
+    uint32        lock_cnt;
 
-	// The handle of the controller
-	CAN_HandleTypeDef CanHandle;
+    // The handle of the controller
+    CAN_HandleTypeDef CanHandle;
 
-	// Statistics
-	Can_Arc_StatisticsType stats;
+    // Statistics
+    Can_Arc_StatisticsType stats;
 
-	// Data stored for Txconfirmation callbacks to CanIf
-	PduIdType swPduHandle; //
+    // Data stored for Txconfirmation callbacks to CanIf
+    PduIdType swPduHandle; //
 } Can_UnitType;
 
 
@@ -186,11 +186,11 @@ Can_UnitType CanUnit[CAN_CONTROLLER_CNT] =
 static CAN_HW_t * GetController(int unit)
 {
 #ifdef STM32F3
-	/* STM32F3 only has one CAN controller */
-	return (CAN_HW_t *)CAN_BASE;
+    /* STM32F3 only has one CAN controller */
+    return (CAN_HW_t *)CAN_BASE;
 #else
-	// Controllers that have more than 1 CAN interface
-	return ((CAN_HW_t *)(CAN1_BASE + unit*0x400));
+    // Controllers that have more than 1 CAN interface
+    return ((CAN_HW_t *)(CAN1_BASE + unit*0x400));
 #endif
 }
 
@@ -258,27 +258,27 @@ static void Can_RxIsr( int ControllerId );
 static void Can_TxIsr( int ControllerId );
 static void Can_ErrIsr( int unit );
 
-//void Can_1_RxIsr( void  ) {	Can_RxIsr(CAN_CTRL_1); }
+//void Can_1_RxIsr( void  ) {    Can_RxIsr(CAN_CTRL_1); }
 
-//void Can_2_RxIsr( void  ) {	Can_RxIsr(CAN_CTRL_2); }
+//void Can_2_RxIsr( void  ) {    Can_RxIsr(CAN_CTRL_2); }
 
-//void Can_1_TxIsr( void  ) {	Can_TxIsr(CAN_CTRL_1); }
-//void Can_2_TxIsr( void  ) {	Can_TxIsr(CAN_CTRL_2); }
+//void Can_1_TxIsr( void  ) {    Can_TxIsr(CAN_CTRL_1); }
+//void Can_2_TxIsr( void  ) {    Can_TxIsr(CAN_CTRL_2); }
 
-//void Can_1_ErrIsr( void  ) {	Can_ErrIsr(CAN_CTRL_1); }
-//void Can_2_ErrIsr( void  ) {	Can_ErrIsr(CAN_CTRL_2); }
+//void Can_1_ErrIsr( void  ) {    Can_ErrIsr(CAN_CTRL_1); }
+//void Can_2_ErrIsr( void  ) {    Can_ErrIsr(CAN_CTRL_2); }
 
 
 //-------------------------------------------------------------------
 // Uses 25.4.5.1 Transmission Abort Mechanism
 static void Can_AbortTx( CAN_HW_t *canHw, Can_UnitType *canUnit ) {
-	// Disable Transmit irq
+    // Disable Transmit irq
 
-	// check if mb's empty
+    // check if mb's empty
 
-	// Abort all pending mb's
+    // Abort all pending mb's
 
-	// Wait for mb's being emptied
+    // Wait for mb's being emptied
 }
 
 /**
@@ -384,23 +384,23 @@ static void Can_ErrIsr( int unit )
   /* Bus off detected */
   if(canUnit->CanHandle.ErrorCode & CAN_IT_BUSOFF) // Need to check peripheral if more than 1
   {
-	canUnit->stats.boffCnt++;
-	// SWS_Can_00020
-	Can_SetControllerMode(unit, CAN_CS_STOPPED); // CANIF272
+    canUnit->stats.boffCnt++;
+    // SWS_Can_00020
+    Can_SetControllerMode(unit, CAN_CS_STOPPED); // CANIF272
 
-	// Notify CanIf about the bus off event (SRS_Can_01055)
-	/* SWS_Can_00234 */
+    // Notify CanIf about the bus off event (SRS_Can_01055)
+    /* SWS_Can_00234 */
     if (GET_CALLBACKS()->ControllerBusOff != NULL)
     {
         GET_CALLBACKS()->ControllerBusOff(unit);
     }
 
     // SRS_Can_01060: Abort all pending messages
-	Can_AbortTx( canHw, canUnit ); // CANIF273
+    Can_AbortTx( canHw, canUnit ); // CANIF273
 
-	// Clear int
+    // Clear int
 #if 0 // TODO no idea how this works in HAL
-	CAN_ClearITPendingBit(canHw, CAN_IT_BOF);
+    CAN_ClearITPendingBit(canHw, CAN_IT_BOF);
 #endif
   }
   else
@@ -456,31 +456,40 @@ static void Can_RxIsr(int ControllerId)
   // Loop over all the Hoh's
   hohObj= canHwConfig->Can_Arc_Hoh;
   --hohObj;
+
   do {
-	++hohObj;
+    ++hohObj;
 
-	if (hohObj->CanObjectType == CAN_OBJECT_TYPE_RECEIVE)
-	{
-	    Can_IdType id=0;
+    if (hohObj->CanObjectType == CAN_OBJECT_TYPE_RECEIVE)
+    {
+        Can_IdType id=0;
 
-	    // According to autosar MSB shuould be set if extended
-		if (RxMessageHeader.IDE != CAN_ID_STD) {
-		  id = RxMessageHeader.ExtId;
-		  id |= 0x80000000;
-		} else {
-		  id = RxMessageHeader.StdId;
-		}
+        // According to autosar MSB shuould be set if extended
+        if (RxMessageHeader.IDE != CAN_ID_STD) {
+          id = RxMessageHeader.ExtId;
+          id |= 0x80000000;
+        } else {
+          id = RxMessageHeader.StdId;
+        }
+        /* SWS_Can_00279: Notify the upper layer about received PDU */
+        if (GET_CALLBACKS()->RxIndication != NULL)
+        {
+            Can_HwType hwTypeObj = { 0 };
+            PduInfoType pduInfoObj = { 0 };
 
-		if (GET_CALLBACKS()->RxIndication != NULL)
-		{
-		  GET_CALLBACKS()->RxIndication(hohObj->CanObjectId,
-										id,
-										RxMessageHeader.DLC,
-										(uint8 *)&au8Data[0] ); // Next layer will copy
-		}
-		// Increment statistics
-		canUnit->stats.rxSuccessCnt++;
-	}
+            hwTypeObj.CanId = id;
+            hwTypeObj.ControllerId = ControllerId;
+            hwTypeObj.Hoh = hohObj->CanObjectId;
+
+            pduInfoObj.SduDataPtr = (uint8*)au8Data;
+            pduInfoObj.SduLength = RxMessageHeader.DLC;
+
+            GET_CALLBACKS()->RxIndication(&hwTypeObj, &pduInfoObj);
+        }
+        // Increment statistics
+        canUnit->stats.rxSuccessCnt++;
+    }
+
   } while ( !hohObj->Can_Arc_EOL);
 
   // TODO probably must be processed as well HAL_CAN_IRQHandler(&CanHandle);
@@ -505,24 +514,24 @@ static void Can_TxIsr(int unit)
       {
           ++hohObj;
 
-	if (hohObj->CanObjectType == CAN_OBJECT_TYPE_TRANSMIT)
-	{
-		if (GET_CALLBACKS()->TxConfirmation != NULL)
-		{
-		  GET_CALLBACKS()->TxConfirmation(canUnit->swPduHandle);
-		}
-		canUnit->swPduHandle = 0;  // Is this really necessary ??
+    if (hohObj->CanObjectType == CAN_OBJECT_TYPE_TRANSMIT)
+    {
+        if (GET_CALLBACKS()->TxConfirmation != NULL)
+        {
+          GET_CALLBACKS()->TxConfirmation(canUnit->swPduHandle);
+        }
+        canUnit->swPduHandle = 0;  // Is this really necessary ??
 
 #if 0
-		// Clear Tx interrupts
-		CAN->TSR &= !(CAN_TSR_RQCP0 | CAN_TSR_RQCP1 | CAN_TSR_RQCP2);
+        // Clear Tx interrupts
+        CAN->TSR &= !(CAN_TSR_RQCP0 | CAN_TSR_RQCP1 | CAN_TSR_RQCP2);
 
-		// Todo transmit interrupt no idea so far
+        // Todo transmit interrupt no idea so far
         CAN_ClearITPendingBit(canHw,CAN_IT_RQCP0);
         CAN_ClearITPendingBit(canHw,CAN_IT_RQCP1);
         CAN_ClearITPendingBit(canHw,CAN_IT_RQCP2);
 #endif
-	}
+    }
   } while ( !hohObj->Can_Arc_EOL);
 }
 
@@ -691,10 +700,10 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
    hohObj = canHwConfig->Can_Arc_Hoh;
    --hohObj;
    do {
-	 ++hohObj;
+     ++hohObj;
      if (hohObj->CanObjectType == CAN_OBJECT_TYPE_RECEIVE)
      {
-    	 // TODO Hw filtering
+         // TODO Hw filtering
      }
    }while( !hohObj->Can_Arc_EOL );
 
@@ -765,7 +774,7 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
 
   if (HAL_CAN_ConfigFilter(&canUnit->CanHandle, &sFilterConfig) != HAL_OK)
   {
-	return E_NOT_OK;
+    return E_NOT_OK;
   }
 
   canUnit->state = CAN_CS_STOPPED;
@@ -843,7 +852,7 @@ Std_ReturnType Can_SetControllerMode( uint8 controller, Can_ControllerStateType 
     /* Notify CanIf about the state change in the driver */
     GET_CALLBACKS()->ControllerModeIndication(controller, CAN_CS_SLEEP);
 
-	break;
+    break;
   case CAN_CS_STOPPED:
         VALIDATE(canUnit->state == CAN_CS_STARTED || canUnit->state == CAN_CS_SLEEP, 0x3, CAN_E_TRANSITION);
         if (canUnit->state == CAN_CS_STARTED)
@@ -951,16 +960,16 @@ void Can_EnableControllerInterrupts( uint8 controller ) {
   }
   if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
   {
-	/* Turn on the tx interrupt mailboxes */
+    /* Turn on the tx interrupt mailboxes */
 #if 1
-  	//CAN_ITConfig(canHw, CAN_IT_TME, ENABLE);
+      //CAN_ITConfig(canHw, CAN_IT_TME, ENABLE);
       HAL_CAN_ActivateNotification (&canUnit->CanHandle, CAN_IT_TX_MAILBOX_EMPTY);
 #endif
   }
 
   // BusOff here represents all errors and warnings
   if( canHwConfig->CanBusOffProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT ) {
-	/* Turn on the bus off/tx warning/rx warning and error and rx  */
+    /* Turn on the bus off/tx warning/rx warning and error and rx  */
 #if 1
       HAL_CAN_ActivateNotification(&canUnit->CanHandle, CAN_IT_BUSOFF | CAN_IT_ERROR | CAN_IT_WAKEUP);
       //CAN_ITConfig(canHw, CAN_IT_BOF | CAN_IT_ERR | CAN_IT_WKU, ENABLE);
@@ -1004,11 +1013,11 @@ Can_ReturnType Can_Write( Can_HwHandleType Hth, Can_PduType *PduInfo ) {
   memcpy(TxData, PduInfo->sdu, PduInfo->length);
 
   if (hohObj->CanIdType == CAN_ID_TYPE_EXTENDED) {
-	  TxMessageHeader.IDE=CAN_ID_EXT;
-	  TxMessageHeader.ExtId=PduInfo->id;
+      TxMessageHeader.IDE=CAN_ID_EXT;
+      TxMessageHeader.ExtId=PduInfo->id;
   } else {
-	  TxMessageHeader.IDE=CAN_ID_STD;
-	  TxMessageHeader.StdId=PduInfo->id;
+      TxMessageHeader.IDE=CAN_ID_STD;
+      TxMessageHeader.StdId=PduInfo->id;
   }
 
   // check for any free box
@@ -1018,13 +1027,13 @@ Can_ReturnType Can_Write( Can_HwHandleType Hth, Can_PduType *PduInfo ) {
 
     if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
     {
-  	  /* Turn on the tx interrupt mailboxes */
-    	//CAN_ITConfig(canHw,CAN_IT_TME, ENABLE);
+        /* Turn on the tx interrupt mailboxes */
+        //CAN_ITConfig(canHw,CAN_IT_TME, ENABLE);
         __HAL_CAN_ENABLE_IT(&canUnit->CanHandle, CAN_IT_TX_MAILBOX_EMPTY);
     }
 
-	// Increment statistics
-	canUnit->stats.txSuccessCnt++;
+    // Increment statistics
+    canUnit->stats.txSuccessCnt++;
 
     // Store pdu handle in unit to be used by TxConfirmation
     canUnit->swPduHandle = PduInfo->swPduHandle;
@@ -1038,19 +1047,19 @@ Can_ReturnType Can_Write( Can_HwHandleType Hth, Can_PduType *PduInfo ) {
 
 void Can_MainFunction_Read( void ) {
 
-	/* NOT SUPPORTED */
+    /* NOT SUPPORTED */
 }
 
 void Can_MainFunction_BusOff( void ) {
   /* Bus-off polling events */
 
-	/* NOT SUPPORTED */
+    /* NOT SUPPORTED */
 }
 
 void Can_MainFunction_Wakeup( void ) {
   /* Wakeup polling events */
 
-	/* NOT SUPPORTED */
+    /* NOT SUPPORTED */
 }
 
 

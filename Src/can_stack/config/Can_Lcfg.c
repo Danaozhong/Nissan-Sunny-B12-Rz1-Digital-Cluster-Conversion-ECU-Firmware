@@ -77,12 +77,11 @@ const Can_ControllerConfigType CanControllerConfigData[] =
 };
 
 const Can_CallbackType CanCallbackConfigData = {
-    NULL, //CanIf_CancelTxConfirmation,
-    CanIf_RxIndication,
-    CanIf_ControllerBusOff,
-    CanIf_TxConfirmation,
-    CanIf_SetWakeupEvent,
-    CanIf_ControllerModeIndication
+    .RxIndication = CanIf_RxIndication,
+    .ControllerBusOff = CanIf_ControllerBusOff,
+    .TxConfirmation = CanIf_TxConfirmation,
+    .SetWakeupEvent = CanIf_SetWakeupEvent,
+    .ControllerModeIndication = CanIf_ControllerModeIndication
 };
 
 const Can_ConfigSetType CanConfigSetData =

@@ -68,10 +68,8 @@ typedef enum {
 	CANIF_NUM_RX_LPDU_ID
 } CanIf_RxLPduIdType;
 
-typedef enum {
-	CANIF_TX_LPDU_ID_CanDB_Message_1,
-	CANIF_TX_LPDU_ID_CanDB_Message_2,
-	CANIF_TX_LPDU_ID_CanDB_Message_3,
+typedef enum
+{
 	CANIF_NUMBER_OF_DYNAMIC_CANTXPDUIDS
 } CanIf_DynamicTxLPduIdType;
 

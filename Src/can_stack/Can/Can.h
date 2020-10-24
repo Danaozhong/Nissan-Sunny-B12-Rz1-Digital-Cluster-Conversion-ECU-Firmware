@@ -163,9 +163,8 @@ typedef union {
 
 
  typedef struct Can_Callback {
-     void (*CancelTxConfirmation)( const Can_PduType *);
-     void (*RxIndication)( uint8 ,Can_IdType ,uint8 , const uint8 * );
-     void (*ControllerBusOff)(uint8);
+     void (*RxIndication)(const Can_HwType*, const PduInfoType*);
+     void (*ControllerBusOff)(uint8); /** SWS_CANIF_00218 */
      void (*TxConfirmation)(PduIdType);
      void (*ControllerWakeup)(uint8);
      void (*Arc_Error)(uint8,Can_Arc_ErrorType);

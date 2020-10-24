@@ -70,7 +70,7 @@ typedef enum {
 #if CANIF_PUBLIC_MULTIPLE_DRV_SUPPORT
 typedef struct {
   void (*CanIf_TxConfirmation)(PduIdType CanTxPduId); // L-PDU id
-  void (*CanIf_RxIndication)(Can_HwHandleType Hrh, Can_IdType CanId, uint8 CanDlc, const uint8* CanSduPtr);
+  void (*CanIf_RxIndication)(const Can_HwType* MailBox, const PduInfoType* PduInfoPtr);
 #if CANIF_CTRLDRV_TX_CANCELLATION
   void (*CanIf_CancelTxConfirmation)(const Can_PduType* PduInfoPtr);
 #endif
@@ -180,12 +180,12 @@ typedef struct
 
 typedef struct {
 	/* Everything in this structure is implementation specific */
-    CanIf_TxPduConfigType TxPduCfg[CANIF_NUM_TX_PDU_ID];
-	CanIf_RxLPduConfigType RxLpduCfg[CANIF_NUM_RX_LPDU_ID];
+    const CanIf_TxPduConfigType* TxPduCfg;
+	const CanIf_RxLPduConfigType* RxLpduCfg;
 
     const CanIf_ControllerConfigType* ControllerConfig;
     const CanIf_DispatchConfigType* DispatchConfig;
-    const CanIf_HrHConfigType* canIfHrhCfg[1];  // TODO Why we need an array here?
+    const CanIf_HrHConfigType** canIfHrhCfg;  // This is an array of Hrh objects, for each controller ID
 } CanIf_ConfigType;
 
 

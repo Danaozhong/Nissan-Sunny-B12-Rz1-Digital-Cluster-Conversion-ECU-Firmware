@@ -63,8 +63,8 @@ const Can_ControllerConfigType CanControllerConfigData[] =
     .CanControllerBaudRate =	125,
     .CanControllerId =			CAN_CTRL_1,
     .CanControllerPropSeg =		0,
-    .CanControllerSeg1 =		12,
-    .CanControllerSeg2 =		1,
+    .CanControllerSeg1 =		13,
+    .CanControllerSeg2 =		2,
     .CanBusOffProcessing =		CAN_ARC_PROCESS_TYPE_INTERRUPT,
     .CanRxProcessing =			CAN_ARC_PROCESS_TYPE_INTERRUPT,
     .CanTxProcessing =			CAN_ARC_PROCESS_TYPE_INTERRUPT,
@@ -94,3 +94,7 @@ const Can_ConfigType CanConfigData = {
   .CanConfigSet =	&CanConfigSetData,
 };
 
+uint32 McuE_GetSystemClock()
+{
+    return 64000000; // 64 MHz
+}

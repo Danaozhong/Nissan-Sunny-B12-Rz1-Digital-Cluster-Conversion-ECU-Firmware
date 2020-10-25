@@ -640,6 +640,74 @@ void Can_DeInit(void)
       return;
 }
 
+uint32_t ToCanBtrTs1(uint32 timeSeq1)
+{
+    switch(timeSeq1)
+    {
+    case 1:
+        return CAN_BS1_1TQ;
+    case 2:
+        return CAN_BS1_2TQ;
+    case 3:
+        return CAN_BS1_3TQ;
+    case 4:
+        return CAN_BS1_4TQ;
+    case 5:
+        return CAN_BS1_5TQ;
+    case 6:
+        return CAN_BS1_6TQ;
+    case 7:
+        return CAN_BS1_7TQ;
+    case 8:
+        return CAN_BS1_8TQ;
+    case 9:
+        return CAN_BS1_9TQ;
+    case 10:
+        return CAN_BS1_10TQ;
+    case 11:
+        return CAN_BS1_11TQ;
+    case 12:
+        return CAN_BS1_12TQ;
+    case 13:
+        return CAN_BS1_13TQ;
+    case 14:
+        return CAN_BS1_14TQ;
+    case 15:
+        return CAN_BS1_15TQ;
+    case 16:
+        return CAN_BS1_16TQ;
+    default:
+        return CAN_BS1_1TQ;
+
+    }
+}
+
+uint32_t ToCanBtrTs2(uint32 timeSeq2)
+{
+    switch(timeSeq2)
+    {
+    case 1:
+        return CAN_BS2_1TQ;
+    case 2:
+        return CAN_BS2_2TQ;
+    case 3:
+        return CAN_BS2_3TQ;
+    case 4:
+        return CAN_BS2_4TQ;
+    case 5:
+        return CAN_BS2_5TQ;
+    case 6:
+        return CAN_BS2_6TQ;
+    case 7:
+        return CAN_BS2_7TQ;
+    case 8:
+        return CAN_BS2_8TQ;
+    default:
+        return CAN_BS2_1TQ;
+
+    }
+}
+
 
 Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
 {
@@ -717,11 +785,11 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
   // -->
   // TQ = 1/Ftq = (PRESDIV+1)/Fcanclk --> PRESDIV = (TQ * Fcanclk - 1 )
   // TQ is between 8 and 25
-  clock = 64000000 / 2; // McuE_GetSystemClock()/2; //64 MHz on the STM32F303
+  clock = McuE_GetSystemClock()/2;
 
-  tqSync = canHwConfig->CanControllerPropSeg + 1;
-  tq1 = canHwConfig->CanControllerSeg1 + 1;
-  tq2 = canHwConfig->CanControllerSeg2 + 1;
+  tqSync = canHwConfig->CanControllerPropSeg + 1; // synchronization jump width
+  tq1 = canHwConfig->CanControllerSeg1 + 1; // TSEG 1
+  tq2 = canHwConfig->CanControllerSeg2 + 1; // TSEG 2
   tq = tqSync + tq1 + tq2;
 
 
@@ -735,12 +803,11 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
   canUnit->CanHandle.Init.TransmitFifoPriority = DISABLE;
 
   canUnit->CanHandle.Init.SyncJumpWidth = CAN_SJW_4TQ; //hard coded to value 1 since no configuration is available
-  canUnit->CanHandle.Init.TimeSeg1 = CAN_BS1_8TQ;
-  canUnit->CanHandle.Init.TimeSeg2 = CAN_BS2_8TQ;
-  canUnit->CanHandle.Init.Prescaler = 48; //24; //clock / (canHwConfig->CanControllerBaudRate*1000*tq); // 2
+  canUnit->CanHandle.Init.TimeSeg1 = ToCanBtrTs1(canHwConfig->CanControllerSeg1);
+  canUnit->CanHandle.Init.TimeSeg2 = ToCanBtrTs2(canHwConfig->CanControllerSeg2);
+  canUnit->CanHandle.Init.Prescaler = clock / (canHwConfig->CanControllerBaudRate*1000*tq);
 
 
-  //48000000 / (125000*16)
   if(canHwConfig->Can_Arc_Loopback)
   {
       canUnit->CanHandle.Init.Mode = CAN_MODE_LOOPBACK;

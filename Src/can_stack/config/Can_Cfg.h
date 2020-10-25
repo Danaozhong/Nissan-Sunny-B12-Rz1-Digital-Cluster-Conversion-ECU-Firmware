@@ -194,6 +194,10 @@ typedef struct {
 
 	// Set this to use the fifo
 	boolean Can_Arc_Fifo;
+
+    // the main clock of the uC, used for calculating the baud rate.
+	uint32 SystemClock;
+
 } Can_ControllerConfigType;
 
 
@@ -219,5 +223,9 @@ typedef struct {
 extern const Can_ConfigType CanConfigData;
 extern const Can_ControllerConfigType CanControllerConfigData[];
 extern const Can_ConfigSetType Can_ConfigSet;
+
+
+uint32 McuE_GetSystemClock();
+
 
 #endif /*CAN_CFG_H_*/

@@ -20,7 +20,6 @@ namespace drivers
 		  m_u16_gpio_pin(u16_gpio_pin), m_pt_gpio_block(pt_gpio_block)
 	{
 		GPIO_InitTypeDef          GPIO_InitStruct;
-		static DMA_HandleTypeDef  DmaHandle;
 		RCC_PeriphCLKInitTypeDef  RCC_PeriphCLKInitStruct;
 
 		/*##-1- Enable peripherals and GPIO Clocks #################################*/

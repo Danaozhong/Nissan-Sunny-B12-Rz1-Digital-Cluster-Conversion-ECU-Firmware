@@ -77,6 +77,8 @@ namespace drivers
         /* NVIC configuration for CAN1 Reception complete interrupt */
         HAL_NVIC_SetPriority(CANx_RX_IRQn, 1, 0);
         HAL_NVIC_EnableIRQ(CANx_RX_IRQn);
+
+        return 0;
     }
 
     int32_t STM32F303CCT6UcPorts::deinit_ports_can()
@@ -93,6 +95,8 @@ namespace drivers
 
         /*##-4- Disable the NVIC for CAN reception #################################*/
         HAL_NVIC_DisableIRQ(CANx_RX_IRQn);
+
+        return 0;
     }
 
 
@@ -147,7 +151,7 @@ namespace drivers
       /* USER CODE BEGIN TIM2_MspInit 1 */
 
       /* USER CODE END TIM2_MspInit 1 */
-
+        return 0;
       }
 
     }
@@ -161,11 +165,9 @@ namespace drivers
     //void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
     int32_t STM32F303CCT6UcPorts::deinit_ports_tim()
     {
-      //if(htim_base->Instance==TIM2)
-      {
-      /* USER CODE BEGIN TIM2_MspDeInit 0 */
+        /* USER CODE BEGIN TIM2_MspDeInit 0 */
 
-      /* USER CODE END TIM2_MspDeInit 0 */
+        /* USER CODE END TIM2_MspDeInit 0 */
         /* Peripheral clock disable */
         __HAL_RCC_TIM4_CLK_DISABLE();
 
@@ -177,10 +179,10 @@ namespace drivers
 
         /* TIM2 interrupt DeInit */
         HAL_NVIC_DisableIRQ(TIM4_IRQn);
-      /* USER CODE BEGIN TIM2_MspDeInit 1 */
+        /* USER CODE BEGIN TIM2_MspDeInit 1 */
 
-      /* USER CODE END TIM2_MspDeInit 1 */
-      }
+        /* USER CODE END TIM2_MspDeInit 1 */
+        return 0;
     }
 
     int32_t STM32F303CCT6UcPorts::init_ports_adc()

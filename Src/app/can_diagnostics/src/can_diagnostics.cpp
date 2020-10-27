@@ -79,26 +79,26 @@ namespace app
         /* display status of the CAN transceiver(s) */
         for (int32_t i32_configId=0; i32_configId < CAN_ARC_CTRL_CONFIG_CNT; i32_configId++)
         {
-            p_o_io_interface << "CAN CONTROLLER #" << i32_configId << " STATUS\n";
+            p_o_io_interface << "CAN CONTROLLER #" << i32_configId << " STATUS\n\r";
             Can_ControllerStateType ControllerModePtr;
             if (E_OK == CanIf_GetControllerMode(i32_configId, &ControllerModePtr))
             {
-                p_o_io_interface << "   Controller mode: " << CanControllerModeToString(ControllerModePtr) << "\n";
+                p_o_io_interface << "   Controller mode: " << CanControllerModeToString(ControllerModePtr) << "\n\r";
             }
             else
             {
-                p_o_io_interface << "   Error reading controller mode." << "\n";
+                p_o_io_interface << "   Error reading controller mode." << "\n\r";
             }
 
 
             Can_ErrorStateType ErrorStatePtr;
             if (E_OK == CanIf_GetControllerErrorState(i32_configId, &ErrorStatePtr))
             {
-                p_o_io_interface << "   Controller error state: " << CanErrorStatePtrToString(ErrorStatePtr) << "\n";
+                p_o_io_interface << "   Controller error state: " << CanErrorStatePtrToString(ErrorStatePtr) << "\n\r";
             }
             else
             {
-                p_o_io_interface << "   Error reading controller error state." << "\n";
+                p_o_io_interface << "   Error reading controller error state." << "\n\r";
             }
         }
     }

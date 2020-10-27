@@ -68,10 +68,15 @@ __IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
+#ifdef USE_STM32F3_DISCO
 static void SystemClock_Config_STM32_F3_DISCOVERY(void);
+#elif defined USE_STM32F3XX_NUCLEO_32
 static void SystemClock_Config_STM32F303_NUCLEO_32(void);
+#elif defined STM32F303xC
 static void SystemClock_Config_STM32F303xC(void);
+#elif define STM32F429xx
 void SystemClock_Config_STM32F429xx(void);
+#endif
 
 static void Error_Handler(void);
 //static void ADC_Config(void);
@@ -215,7 +220,7 @@ void MAIN_Cycle_100ms(void)
         const uint32_t u32_num_of_tx_pdus = 2;
 
         /* Test code for the CAN bus transmission */
-        if (E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
+        if (0) //(E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
         {
             DEBUG_PRINTF("Can sending failed!\n\r");
         }
@@ -255,6 +260,7 @@ void MAIN_startup_thread(void*)
 
 	// start the cyclic thread(s)
     std_ex::thread* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
+    cycle_100ms_thread->detach();
 
 	while (true)
 	{
@@ -379,6 +385,8 @@ static void SystemClock_Config_STM32_F3_DISCOVERY(void)
   }
 }
 #endif
+
+#ifdef USE_STM32F3XX_NUCLEO_32
 /**
   * @brief  System Clock Configuration
   *         The system Clock is configured as follow :
@@ -422,8 +430,9 @@ void SystemClock_Config_STM32F303_NUCLEO_32(void)
     while(1);
   }
 }
+#endif
 
-
+#ifdef STM32F303xC
 /**
   * @brief  System Clock Configuration
   *         The system Clock is configured as follow :
@@ -468,6 +477,7 @@ void SystemClock_Config_STM32F303xC(void)
 
   }
 }
+#endif /* STM32F303xC */
 #endif
 
 #ifdef STM32_FAMILY_F4

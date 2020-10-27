@@ -47,7 +47,6 @@ namespace app
         CanIf_Init(&CanIf_Config);
 
         CanIf_SetControllerMode(0, CAN_CS_STARTED);
-        CanIf_PduModeType x;
         CanIf_SetPduMode(0, CANIF_ONLINE);
 
         /* Register CAN diagnostics commands on the UART */

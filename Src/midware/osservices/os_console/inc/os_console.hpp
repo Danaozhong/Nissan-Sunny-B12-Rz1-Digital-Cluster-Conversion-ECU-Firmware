@@ -15,7 +15,7 @@
 
 #define COMMAND_MAXIMUM_LENGTH (30u)
 #define LINE_LENGTH  (100u)
-#define OS_CONSOLE_MAX_NUM_OF_COMMANDS   (10u)
+#define OS_CONSOLE_MAX_NUM_OF_COMMANDS   (20u)
 namespace OSServices
 {
     const int32_t ERROR_CODE_SUCCESS = 0;

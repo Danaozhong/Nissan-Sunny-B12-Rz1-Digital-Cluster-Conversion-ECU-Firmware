@@ -1,2 +1,0 @@
-D:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.0.0.201904181610/tools/bin/arm-none-eabi-ar.exe qc libuart.a  CMakeFiles/uart.dir/src/generic_uart.cpp.obj CMakeFiles/uart.dir/src/stm32_uart.cpp.obj
-D:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.0.0.201904181610/tools/bin/arm-none-eabi-ranlib.exe libuart.a

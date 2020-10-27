@@ -277,7 +277,8 @@ namespace app
    {
         p_o_io_interface << "\n\r\n\r";
         p_o_io_interface << app::get_app_name() << "\n\r\n\r";
-        p_o_io_interface << app::get_version_info() << "\n\r\n\r";
+        p_o_io_interface << app::get_version_info() << "\n\r";
+        p_o_io_interface << "Build on commit #" << app::get_git_commit() << "\n\r\n\r";
        // if no early return, the command was executed successfully.
        return OSServices::ERROR_CODE_SUCCESS;
    }

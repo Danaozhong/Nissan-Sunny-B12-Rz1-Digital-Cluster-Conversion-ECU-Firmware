@@ -1,3 +1,6 @@
+#define GIT_SHA1 "@GIT_SHA1@"
+#define GIT_LOCAL_CHANGES "@GIT_LOCAL_CHANGES@" // is either CLEAN or DIRTY
+
 namespace app
 {
     const char* get_app_name()
@@ -10,4 +13,8 @@ namespace app
         return "v00.00.pre 2020_10_15";
     }
     
+    const char* get_git_commit()
+    {
+        return GIT_SHA1 "_" GIT_LOCAL_CHANGES;
+    }
 }

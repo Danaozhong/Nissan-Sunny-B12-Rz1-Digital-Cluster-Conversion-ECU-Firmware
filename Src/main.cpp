@@ -220,7 +220,7 @@ void MAIN_Cycle_100ms(void)
         const uint32_t u32_num_of_tx_pdus = 2;
 
         /* Test code for the CAN bus transmission */
-        if (0) //(E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
+        if (E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
         {
             DEBUG_PRINTF("Can sending failed!\n\r");
         }

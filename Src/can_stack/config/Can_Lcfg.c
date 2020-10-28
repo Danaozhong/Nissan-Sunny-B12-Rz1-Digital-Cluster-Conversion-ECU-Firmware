@@ -60,7 +60,7 @@ const Can_ControllerConfigType CanControllerConfigData[] =
 {
   {
     .CanControllerActivation =	TRUE,
-    .CanControllerBaudRate =	125,
+    .CanControllerBaudRate =	500,
     .CanControllerId =			CAN_CTRL_1,
     .CanControllerPropSeg =		0,
     .CanControllerSeg1 =		13,
@@ -71,7 +71,7 @@ const Can_ControllerConfigType CanControllerConfigData[] =
     .CanWakeupProcessing =		CAN_ARC_PROCESS_TYPE_INTERRUPT,
 	.CanCpuClockRef =			0,
     .Can_Arc_Hoh =				&CanHardwareObjectConfig_Controller_1[0],
-    .Can_Arc_Loopback =			TRUE,
+    .Can_Arc_Loopback =			FALSE,
     .Can_Arc_Fifo =				0,
   },
 };

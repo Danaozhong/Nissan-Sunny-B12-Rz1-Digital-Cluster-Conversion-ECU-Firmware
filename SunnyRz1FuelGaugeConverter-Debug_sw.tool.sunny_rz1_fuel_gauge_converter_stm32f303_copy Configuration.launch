@@ -48,7 +48,7 @@
 <booleanAttribute key="org.eclipse.cdt.dsf.gdb.UPDATE_THREADLIST_ON_SUSPEND" value="true"/>
 <intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="2"/>
 <stringAttribute key="org.eclipse.cdt.launch.COREFILE_PATH" value=""/>
-<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="SunnyRz1FuelGaugeConverter.elf"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="bin_Debug\SunnyRz1FuelGaugeConverter.elf"/>
 <stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="SunnyRz1FuelGaugeConverter-Debug@sw.tool.sunny_rz1_fuel_gauge_converter_stm32f303_copy"/>
 <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>
 <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="org.eclipse.cdt.core.default.config.1"/>
@@ -61,6 +61,6 @@
 <listAttribute key="org.eclipse.debug.ui.favoriteGroups">
 <listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
 </listAttribute>
-<stringAttribute key="org.eclipse.dsf.launch.MEMORY_BLOCKS" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#13;&#10;&lt;memoryBlockExpressionList context=&quot;Context string&quot;&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;134243272&quot; label=&quot;0x080063C8&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;134475776&quot; label=&quot;0x0803F000&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;134478848&quot; label=&quot;0x0803FC00&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;536879192&quot; label=&quot;0x20002058&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;1073757184&quot; label=&quot;0x40003C00&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;1073888256&quot; label=&quot;0x40023C00&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;536879328&quot; label=&quot;0x200020e0&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;536888304&quot; label=&quot;0x200043f0&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;536888304&quot; label=&quot;0x200043f0&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;536888576&quot; label=&quot;0x20004500&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;3758104576&quot; label=&quot;0xE0002000&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;1207964217&quot; label=&quot;0x48001239&quot;/&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;88001249&quot; label=&quot;88001249&quot;/&gt;&#13;&#10;&lt;/memoryBlockExpressionList&gt;&#13;&#10;"/>
+<stringAttribute key="org.eclipse.dsf.launch.MEMORY_BLOCKS" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#13;&#10;&lt;memoryBlockExpressionList context=&quot;Context string&quot;&gt;&#13;&#10;&lt;memoryBlockExpression address=&quot;536891360&quot; label=&quot;0x20004fe0&quot;/&gt;&#13;&#10;&lt;/memoryBlockExpressionList&gt;&#13;&#10;"/>
 <stringAttribute key="process_factory_id" value="org.eclipse.cdt.dsf.gdb.GdbProcessFactory"/>
 </launchConfiguration>

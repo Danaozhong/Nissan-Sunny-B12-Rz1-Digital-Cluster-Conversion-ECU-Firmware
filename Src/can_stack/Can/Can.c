@@ -770,21 +770,25 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
      }
    }while( !hohObj->Can_Arc_EOL );
 
-  // Clock calculation
-  // -------------------------------------------------------------------
-  //
-  // * 1 TQ = Sclk period( also called SCK )
-  // * Ftq = Fcanclk / ( PRESDIV + 1 ) = Sclk
-  //   ( Fcanclk can come from crystal or from the peripheral dividers )
-  //
-  // -->
-  // TQ = 1/Ftq = (PRESDIV+1)/Fcanclk --> PRESDIV = (TQ * Fcanclk - 1 )
-  // TQ is between 8 and 25
-  clock = McuE_GetSystemClock()/2; // usually APB1 frequency
+  /* CLOCK CALCULATION
+  baud rate = system clock / (  2 (APB1 divider) * Prescaler  *  (SyncQ + TSEG1 + TSEG2 )  )
+  If you have problems setting the correct clock, please make sure:
 
-  tqSync = canHwConfig->CanControllerPropSeg + 1; // synchronization jump width
-  tq1 = canHwConfig->CanControllerSeg1 + 1; // TSEG 1
-  tq2 = canHwConfig->CanControllerSeg2 + 1; // TSEG 2
+  a) are you passing the correct system clock in McuE_GetSystemClock()? You need to provide the system clock, before
+     the divider.
+  b) Are the Time segments set correctly? Please type in the values calculated from http://www.bittiming.can-wiki.info/
+     in your CAN configuration.
+
+  Based on the clock frequency and your configured time segments, the clock divider is calculated automatically.
+  Possible issues:
+  - Your CAN clock is not System Clock / 2. This is currently hard coded.
+  - You are using > 1 sync jump time quanta. This is currently also hard coded.
+  */
+  clock = McuE_GetSystemClock(); // usually APB1 frequency
+
+  tqSync = canHwConfig->CanControllerPropSeg; // synchronization jump quanta, starting from 1
+  tq1 = canHwConfig->CanControllerSeg1; // TSEG 1 quanta, starting from 1
+  tq2 = canHwConfig->CanControllerSeg2; // TSEG 2 quanta, starting from 1
   tq = tqSync + tq1 + tq2;
 
 
@@ -797,11 +801,10 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
   canUnit->CanHandle.Init.ReceiveFifoLocked = DISABLE;
   canUnit->CanHandle.Init.TransmitFifoPriority = DISABLE;
 
-  canUnit->CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ; //hard coded to value 1 since no configuration is available
-  canUnit->CanHandle.Init.TimeSeg1 = CAN_BS1_13TQ; //ToCanBtrTs1(canHwConfig->CanControllerSeg1);
-  canUnit->CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ; //ToCanBtrTs2(canHwConfig->CanControllerSeg2);
-  canUnit->CanHandle.Init.Prescaler = 4; //clock / (canHwConfig->CanControllerBaudRate*1000*tq);
-
+  canUnit->CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ; //hard coded to value 1. Just patch if you need something different to 1
+  canUnit->CanHandle.Init.TimeSeg1 = ToCanBtrTs1(canHwConfig->CanControllerSeg1);
+  canUnit->CanHandle.Init.TimeSeg2 = ToCanBtrTs2(canHwConfig->CanControllerSeg2);
+  canUnit->CanHandle.Init.Prescaler = (clock / canHwConfig->CanControllerBaudRate) / (2 * tq * 1000);
 
   if(canHwConfig->Can_Arc_Loopback)
   {

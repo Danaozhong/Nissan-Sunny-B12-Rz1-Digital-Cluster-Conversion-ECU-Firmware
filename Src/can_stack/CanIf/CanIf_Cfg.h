@@ -46,26 +46,19 @@
 
 // Identifiers for the elements in CanIfControllerConfig[]
 // This is the ConfigurationIndex in CanIf_InitController()
-typedef enum {
+typedef enum
+{
 	CANIF_Controller_A_CONFIG_0,
 	CANIF_CHANNEL_CONFIGURATION_CNT
 } CanIf_Arc_ConfigurationIndexType;
 
-typedef enum {
-  CANIF_PDU_ID_PDU_RX0,
-  CANIF_PDU_ID_PDU_functionalRX,
-  CANIF_PDU_ID_PDU_UDSphysicalRX,
-  CANIF_PDU_ID_PDU_InstrumentCtrl1,
-  CANIF_PDU_ID_PDU_InstrumentCtrl2,
-  CANIF_PDU_ID_PDU_SERVO1_PDO1_TX,
-  CANIF_PDU_ID_PDU_SERVO1_PDO2_TX,
-  CANIF_PDU_ID_PDU_InstrumentCtrl3,
-  CANIF_PDU_ID_PDU_SERVO1_SDO_TX,
-  CANIF_PDU_ID_PDU_SERVO1_BOOT_TX,
-  CANIF_PDU_ID_PDU_IMU_GYRO,
-  CANIF_PDU_ID_PDU_IMU_ACCELEROMETER,
-  CANIF_PDU_ID_PDU_IMU_ANGLES,
-	CANIF_NUM_RX_LPDU_ID
+typedef enum
+{
+    CANIF_PDU_ID_PDU_IMA_ID111,
+    CANIF_PDU_ID_PDU_IMA_ID169,
+    CANIF_PDU_ID_PDU_IMA_ID231,
+    CANIF_PDU_ID_PDU_IMA_ID318,
+    CANIF_NUM_RX_LPDU_ID
 } CanIf_RxLPduIdType;
 
 typedef enum

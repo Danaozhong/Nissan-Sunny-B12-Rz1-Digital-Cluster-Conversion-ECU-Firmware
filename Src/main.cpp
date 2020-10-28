@@ -49,6 +49,8 @@
 #include "main_application.hpp"
 #include "uc_ports.hpp"
 
+#include "ima_data_provider.hpp"
+
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -222,12 +224,14 @@ void MAIN_Cycle_100ms(void)
         /* Test code for the CAN bus transmission */
         if (E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
         {
-            DEBUG_PRINTF("Can sending failed!\n\r");
+            //DEBUG_PRINTF("Can sending failed!\n\r");
         }
         else
         {
 
         }
+
+        app::get_ima_data_provider().print_ima_data();
 
 #endif
     }

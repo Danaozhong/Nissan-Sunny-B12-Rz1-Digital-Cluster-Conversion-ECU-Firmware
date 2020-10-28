@@ -42,6 +42,7 @@ extern const Can_ConfigSetType CanConfigSetData;
 void IMACanRxIndication(PduIdType RxPduId, const PduInfoType* PduInfoPtr);
 
 
+
 // Contains the mapping from CanIf-specific Channels to Can Controllers
 const CanControllerIdType CanIf_Arc_ChannelToControllerMap[CANIF_CHANNEL_CNT] = {
 	CAN_CTRL_1, // Controller_A
@@ -156,17 +157,18 @@ const CanIf_InitConfigType CanIfInitConfig =
 /* List of PDUs that will be processed by controller 0 */
 PduIdType LPDU_Controller0[] =
 {
-    CANIF_PDU_ID_PDU_RX0,
-    CANIF_PDU_ID_PDU_functionalRX,
+    CANIF_PDU_ID_PDU_IMA_ID111,
+    CANIF_PDU_ID_PDU_IMA_ID169,
+    CANIF_PDU_ID_PDU_IMA_ID231,
+    CANIF_PDU_ID_PDU_IMA_ID318,
 
 };
 
 const CanIf_HrHConfigType CanIfHrhConfigData_HohController0[] =
 {
     {
-
         .pduInfo.array = LPDU_Controller0,
-        .arrayLen = 2,
+        .arrayLen = 4,
     },
 };
 
@@ -199,21 +201,37 @@ const CanIf_TxPduConfigType CanIfTxPduConfigData[CANIF_NUM_TX_PDU_ID] =
 };
 
 const CanIf_RxLPduConfigType CanIfRxPduConfigData[CANIF_NUM_RX_LPDU_ID] =
-{
-    {
-        .id = 512,
+{ /* CAN ID must be sorted from high to low! */
+    { /* Contains throttle body position sensor, and some temperature values */
+        .id = 0x318,
         .dlc = 8,
         .controller = 0,
         .user_RxIndication = &IMACanRxIndication,
         .ulPduId = 0
     },
-    {
-        .id = 0x13F, /* throttle position parameters */
-        .dlc = 8,
+    { /* contains the SOC */
+        .id = 0x231,
+        .dlc = 7,
         .controller = 0,
         .user_RxIndication = &IMACanRxIndication,
         .ulPduId = 1
     },
+    { /* contains the motor current */
+        .id = 0x169,
+        .dlc = 8,
+        .controller = 0,
+        .user_RxIndication = &IMACanRxIndication,
+        .ulPduId = 2
+    },
+    {
+        .id = 0x111, /* contains engine RPM, and battery voltage */
+        .dlc = 7,
+        .controller = 0,
+        .user_RxIndication = &IMACanRxIndication,
+        .ulPduId = 3
+    },
+
+
 
 };
 

@@ -132,51 +132,51 @@ extern "C"
 
 void vApplicationMallocFailedHook( void )
 {
-	/* vApplicationMallocFailedHook() will only be called if
-	configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h.  It is a hook
-	function that will get called if a call to pvPortMalloc() fails.
-	pvPortMalloc() is called internally by the kernel whenever a task, queue,
-	timer or semaphore is created.  It is also called by various parts of the
-	demo application.  If heap_1.c or heap_2.c are used, then the size of the
-	heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
-	FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
-	to query the size of free heap space that remains (although it does not
-	provide information on how the remaining heap might be fragmented). */
-	taskDISABLE_INTERRUPTS();
-	for( ;; );
+    /* vApplicationMallocFailedHook() will only be called if
+    configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h.  It is a hook
+    function that will get called if a call to pvPortMalloc() fails.
+    pvPortMalloc() is called internally by the kernel whenever a task, queue,
+    timer or semaphore is created.  It is also called by various parts of the
+    demo application.  If heap_1.c or heap_2.c are used, then the size of the
+    heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
+    FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
+    to query the size of free heap space that remains (although it does not
+    provide information on how the remaining heap might be fragmented). */
+    taskDISABLE_INTERRUPTS();
+    for( ;; );
 }
 
-	void vApplicationIdleHook( void )
-	{
-		/* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
-		to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
-		task.  It is essential that code added to this hook function never attempts
-		to block in any way (for example, call xQueueReceive() with a block time
-		specified, or call vTaskDelay()).  If the application makes use of the
-		vTaskDelete() API function (as this demo application does) then it is also
-		important that vApplicationIdleHook() is permitted to return to its calling
-		function, because it is the responsibility of the idle task to clean up
-		memory allocated by the kernel to any task that has since been deleted. */
-	}
+    void vApplicationIdleHook( void )
+    {
+        /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
+        to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
+        task.  It is essential that code added to this hook function never attempts
+        to block in any way (for example, call xQueueReceive() with a block time
+        specified, or call vTaskDelay()).  If the application makes use of the
+        vTaskDelete() API function (as this demo application does) then it is also
+        important that vApplicationIdleHook() is permitted to return to its calling
+        function, because it is the responsibility of the idle task to clean up
+        memory allocated by the kernel to any task that has since been deleted. */
+    }
 
-	/** see https://www.cnblogs.com/shangdawei/p/4684798.html */
-	void vApplicationTickHook(void)
-	{
-	  HAL_IncTick();
-	}
+    /** see https://www.cnblogs.com/shangdawei/p/4684798.html */
+    void vApplicationTickHook(void)
+    {
+      HAL_IncTick();
+    }
 
 
-	void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
-	{
-		( void ) pcTaskName;
-		( void ) pxTask;
+    void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
+    {
+        ( void ) pcTaskName;
+        ( void ) pxTask;
 
-		/* Run time stack overflow checking is performed if
-		configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
-		function is called if a stack overflow is detected. */
-		taskDISABLE_INTERRUPTS();
-		for( ;; );
-	}
+        /* Run time stack overflow checking is performed if
+        configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
+        function is called if a stack overflow is detected. */
+        taskDISABLE_INTERRUPTS();
+        for( ;; );
+    }
 }
 
 void MAIN_Cycle_100ms(void)
@@ -213,78 +213,53 @@ void MAIN_Cycle_100ms(void)
         }
 
         std_ex::sleep_for(std::chrono::milliseconds(100));
-
-#ifdef USE_CAN
-        for (int32_t k = 0; k < 30; ++k)
-        {
-            PduInfoType pdu_buffer;
-            char buffer[8] = "testda0";
-            pdu_buffer.SduDataPtr = reinterpret_cast<uint8*>(buffer);
-            pdu_buffer.SduLength = 8;
-            const uint32_t u32_num_of_tx_pdus = 2;
-
-            /* Test code for the CAN bus transmission */
-            if (E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
-            {
-                asm("nop");
-            }
-            else
-            {
-
-            }
-            std_ex::sleep_for(std::chrono::milliseconds(1));
-        }
-
-        app::get_ima_data_provider().print_ima_data();
-
-#endif
     }
 }
 
 
 void MAIN_startup_thread(void*)
 {
-	// This is the initial thread running after bootup.
-	/* Configure the system clock to 64 MHz */
-	SystemClock_Config();
+    // This is the initial thread running after bootup.
+    /* Configure the system clock to 64 MHz */
+    SystemClock_Config();
 
 
-	/* Configure LEDs */
+    /* Configure LEDs */
 #ifdef USE_STM32_F3_DISCO
-	BSP_LED_Init(LED_RED);
-	BSP_LED_Init(LED_GREEN);
-	BSP_LED_Init(LED_BLUE);
+    BSP_LED_Init(LED_RED);
+    BSP_LED_Init(LED_GREEN);
+    BSP_LED_Init(LED_BLUE);
 #elif defined USE_STM32F3XX_NUCLEO_32
-	BSP_LED_Init(LED_GREEN);
+    BSP_LED_Init(LED_GREEN);
 #endif
 
 
-	// wait for the scheduler to be ready.
-	std_ex::sleep_for(std::chrono::milliseconds(400));
+    // wait for the scheduler to be ready.
+    std_ex::sleep_for(std::chrono::milliseconds(400));
 
-	// and create our main application.
-	app::MainApplication& o_application = app::MainApplication::get();
-	o_application.startup_from_reset();
+    // and create our main application.
+    app::MainApplication& o_application = app::MainApplication::get();
+    o_application.startup_from_reset();
 
-	// start the cyclic thread(s)
+    // start the cyclic thread(s)
     std_ex::thread* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
     cycle_100ms_thread->detach();
 
-	while (true)
-	{
-		// Check for data on the UART
-		drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
-		if (nullptr != po_uart)
-		{
-		    po_uart->uart_process_cycle();
-		}
+    while (true)
+    {
+        // Check for data on the UART
+        drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
+        if (nullptr != po_uart)
+        {
+            po_uart->uart_process_cycle();
+        }
 
         // load balancing
         std_ex::sleep_for(std::chrono::milliseconds(10));
-		// check for debug input
-		o_application.get_os_console()->run();
-	}
-	vTaskDelete(NULL);
+        // check for debug input
+        o_application.get_os_console()->run();
+    }
+    vTaskDelete(NULL);
 }
 
 
@@ -293,40 +268,35 @@ int main(void)
     // create the port configuration object
     drivers::UcPorts* po_uc_port_configuration = new drivers::STM32F303CCT6UcPorts();
 
-	/* STM32F3xx HAL library initialization:
-	   - Configure the Flash prefetch
-	   - Configure the Systick to generate an interrupt each 1 msec
-	   - Set NVIC Group Priority to 4
-	   - Low Level Initialization
-	 */
-	HAL_Init();
+    /* STM32F3xx HAL library initialization:
+       - Configure the Flash prefetch
+       - Configure the Systick to generate an interrupt each 1 msec
+       - Set NVIC Group Priority to 4
+       - Low Level Initialization
+     */
+    HAL_Init();
 
 
 
-	// first thread still needs to be created with xTaskCreate, only after the scheduler has started, std::thread can be used.
-
-	//std_ex::thread* startup_thread = new std_ex::thread(&MAIN_startup_thread, "Startup_Thread", 3u, 0x800);
-
-#if 1
-	TaskHandle_t xHandle = NULL;
+    // first thread still needs to be created with xTaskCreate, only after the scheduler has started, std::thread can be used.
+    TaskHandle_t xHandle = NULL;
     xTaskCreate( MAIN_startup_thread,
                  "MAIN_startup_thread",
                  0x800,
                  NULL,
                  3u,
                  &xHandle );
-#endif
 
-	/* Start the scheduler. */
-	vTaskStartScheduler();
+    /* Start the scheduler. */
+    vTaskStartScheduler();
 
-	/* If all is well, the scheduler will now be running, and the following line
-	will never be reached.  If the following line does execute, then there was
-	insufficient FreeRTOS heap memory available for the idle and/or timer tasks
-	to be created.  See the memory management section on the FreeRTOS web site
-	for more details. */
+    /* If all is well, the scheduler will now be running, and the following line
+    will never be reached.  If the following line does execute, then there was
+    insufficient FreeRTOS heap memory available for the idle and/or timer tasks
+    to be created.  See the memory management section on the FreeRTOS web site
+    for more details. */
 
-	for( ;; );
+    for( ;; );
 }
 
 
@@ -334,13 +304,13 @@ static void SystemClock_Config(void)
 {
 
 #ifdef USE_STM32F3_DISCO
-	SystemClock_Config_STM32_F3_DISCOVERY();
+    SystemClock_Config_STM32_F3_DISCOVERY();
 #elif defined USE_STM32F3XX_NUCLEO_32
-	SystemClock_Config_STM32F303_NUCLEO_32();
+    SystemClock_Config_STM32F303_NUCLEO_32();
 #elif defined STM32F303xC
-	SystemClock_Config_STM32F303xC();
+    SystemClock_Config_STM32F303xC();
 #elif defined STM32F429xx
-	SystemClock_Config_STM32F429xx();
+    SystemClock_Config_STM32F429xx();
 #else
 #error "Please specify the system clock configuration for your target board."
 #endif
@@ -617,16 +587,16 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
   */
 static void Error_Handler(void)
 {
-	/* User may add here some code to deal with this error */
-	while(1)
-	{
+    /* User may add here some code to deal with this error */
+    while(1)
+    {
 #ifdef USE_STM32_F3_DISCO
-		BSP_LED_Toggle(LED_RED);
+        BSP_LED_Toggle(LED_RED);
 #elif defined USE_STM32F3XX_NUCLEO_32
-		BSP_LED_Toggle(LED_GREEN);
+        BSP_LED_Toggle(LED_GREEN);
 #endif
-		HAL_Delay(1000);
-	}
+        HAL_Delay(1000);
+    }
 }
 
 #ifdef  USE_FULL_ASSERT

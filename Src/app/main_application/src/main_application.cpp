@@ -118,9 +118,9 @@ namespace app
 #endif
 
 
-	    // initialization below is for the application
-        //init_fuel_level_converter();
-        //init_speed_converter();
+        // initialization below is for the application
+        init_fuel_level_converter();
+        init_speed_converter();
 
         // register the debug commands in the os console, so that debugging of the speed signals is possible.
         this->m_po_os_console->register_command(new app::LookupTableEditor());

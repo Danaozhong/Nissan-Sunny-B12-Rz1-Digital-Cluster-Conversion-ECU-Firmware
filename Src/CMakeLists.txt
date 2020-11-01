@@ -1,10 +1,10 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
 
-PROJECT(SunnyRz1FuelGaugeConverter VERSION 1.0 DESCRIPTION "Test" LANGUAGES C CXX)
+PROJECT(SunnyRz1FuelGaugeConverter VERSION 1.0 DESCRIPTION "The firmware of an ECU to convert a Nissan Rz1 to digital cluster" LANGUAGES C CXX)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
 # some options
-option(USE_CAN "Enable / disable the CAN subsystem" ON)
+option(USE_CAN "Enable / disable the CAN subsystem" OFF)
 option(USE_TRACE "Enable / disable the tracing" ON)
 option(USE_NVDH "Enable / disable non-volatile data handler" ON)
 

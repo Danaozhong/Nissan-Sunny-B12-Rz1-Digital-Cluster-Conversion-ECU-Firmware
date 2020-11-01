@@ -7,6 +7,7 @@ SET(MODULE_SOURCES
 add_library(trace STATIC ${MODULE_SOURCES})
 
 target_link_libraries(trace uart)
+target_link_libraries(trace osservices)  # Requires information about the status of the OS console (outputting is enabled / disabled )
 
 target_compile_definitions(trace PUBLIC
     -DUSE_TRACE
@@ -31,7 +32,6 @@ target_include_directories(trace PUBLIC
     ../FreeRTOS/src/freertos
     ../FreeRTOS/src
     ../FreeRTOS/src/portable/GCC/ARM_CM4F
-    ../osservices/os_console/inc # Todo this is ugly, move in separate cmake file
 )
 
 target_include_directories(trace PUBLIC

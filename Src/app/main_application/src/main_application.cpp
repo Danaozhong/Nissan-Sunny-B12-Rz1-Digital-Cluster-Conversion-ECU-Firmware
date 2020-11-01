@@ -39,7 +39,7 @@ namespace app
 
 	    // Create the debug console
 	    m_po_os_io_interface = std::make_shared<OSServices::OSConsoleUartIOInterface>(m_p_uart);
-	    m_po_os_console = new OSServices::OSConsole(m_po_os_io_interface);
+	    m_po_os_console = std::make_shared<OSServices::OSConsole>(m_po_os_io_interface);
 
 #ifdef USE_CAN
         /* Init the CAN interface (AUTOSAR conform) */
@@ -58,9 +58,8 @@ namespace app
 	    // Initialize the trace module
 	    m_po_trace = new midware::Trace();
         m_po_trace->init();
-	    // Enable trace logging via UART
-	    auto po_trace_io_interface = std::make_shared<midware::UARTTraceIOInterface>(m_p_uart);
-	    m_po_trace->add_trace_io_interface(po_trace_io_interface);
+	    // Enable trace logging via the OS console
+	    m_po_trace->add_trace_io_interface(m_po_os_console);
 
 	    // and set the trace module as the default system tracer
 	    m_po_trace->set_as_default_trace();
@@ -150,7 +149,7 @@ namespace app
         }
 #endif
 
-	OSServices::OSConsole* MainApplication::get_os_console()
+    std::shared_ptr<OSServices::OSConsole> MainApplication::get_os_console()
 	{
 	    return this->m_po_os_console;
 	}

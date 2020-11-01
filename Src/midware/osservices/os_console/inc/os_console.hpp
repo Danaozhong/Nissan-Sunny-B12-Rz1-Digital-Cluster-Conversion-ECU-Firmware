@@ -119,7 +119,16 @@ namespace OSServices
 
 		void run();
 
+		/** Adds a new command to the console. */
 		int32_t register_command(Command* p_command);
+
+		/** This will indicate to other users if the console is currently blocked (e.g. by entering a command).
+		 * While this is true, other applications are not supposed to write anything on the UART, and instead
+		 * should buffer their output. */
+		bool console_blocked() const;
+
+		/* returns the IO object */
+		std::shared_ptr<OSConsoleGenericIOInterface> get_io_interface() const;
 	private:
 		void print_bootscreen() const;
 
@@ -132,6 +141,9 @@ namespace OSServices
 		/// the executable commands that can be run in this console context
 		Command* m_apo_commands[OS_CONSOLE_MAX_NUM_OF_COMMANDS];
 		uint32_t m_u32_num_of_registered_commands;
+
+		/// Flag to indicate whether the OS console currently requests full control over the UART
+		bool m_bo_blocked;
 	};
 
 	std::vector<char> read_input_line(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface);

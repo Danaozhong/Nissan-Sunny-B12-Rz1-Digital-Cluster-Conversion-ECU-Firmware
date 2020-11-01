@@ -30,35 +30,8 @@ namespace
     midware::Trace* m_p_system_default_trace = nullptr;
 }
 
-
 namespace midware
 {
-
-    TraceIOInterface::~TraceIOInterface() {}
-
-    UARTTraceIOInterface::UARTTraceIOInterface(drivers::GenericUART* po_uart_interface)
-    : m_po_uart_interface(po_uart_interface)
-    {
-    }
-
-    UARTTraceIOInterface::~UARTTraceIOInterface()
-    {
-        // nothing to do here, the UART interface is not in our resposibility
-    }
-
-    int32_t UARTTraceIOInterface::print(const char* pi8_buffer, size_t u_buffer_length)
-    {
-        if (nullptr != m_po_uart_interface)
-        {
-            size_t u_bytes_written = m_po_uart_interface->write(reinterpret_cast<const uint8_t*>(pi8_buffer), u_buffer_length);
-            if (u_buffer_length == u_bytes_written)
-            {
-                return OSServices::ERROR_CODE_SUCCESS;
-            }
-        }
-        return OSServices::ERROR_CODE_INTERNAL_ERROR;
-    }
-
     int32_t Trace::init()
     {
         if (nullptr != m_po_io_thread)
@@ -136,7 +109,7 @@ namespace midware
         // TODO check if the message was completely written
     }
 
-    int32_t Trace::add_trace_io_interface(const std::shared_ptr<TraceIOInterface> &po_trace_io_interface)
+    int32_t Trace::add_trace_io_interface(const std::shared_ptr<OSServices::OSConsole> &po_trace_io_interface)
     {
         std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
         m_ao_trace_io_interfaces.push_back(po_trace_io_interface);
@@ -160,25 +133,37 @@ namespace midware
         {
             if (m_u_buffer_usage > 0)
             {
+                bool bo_data_printed = false;
+
                 // some application has written trace logs into our buffer, print them out.
                 std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
                 for (auto itr = m_ao_trace_io_interfaces.begin(); itr != m_ao_trace_io_interfaces.end(); ++itr)
                 {
-                    (*itr)->print(m_pa_out_buffer, m_u_buffer_usage);
-
-                    // check if trace messages were lost
-                    if (m_u8_number_of_buffer_overflows > 0u)
+                    auto p_io_interface = (*itr)->get_io_interface();
+                    if (nullptr != p_io_interface && false == (*itr)->console_blocked())
                     {
-                        // trace data was actually lost, print a warning message.
-                        char ai8_warning_str[100] = { 0 };
-                        snprintf(ai8_warning_str, 100, "\r\nWarning: Trace buffer overflow. %u messages lost.\r\n", m_u8_number_of_buffer_overflows);
-                        (*itr)->print(ai8_warning_str, strlen(ai8_warning_str));
-                        m_u8_number_of_buffer_overflows = 0u;
+                        // if the data can at least be output on one interface, that's good enough for us
+                        bo_data_printed = true;
+                        p_io_interface->write_data(m_pa_out_buffer, m_u_buffer_usage);
+
+                        // check if trace messages were lost
+                        if (m_u8_number_of_buffer_overflows > 0u)
+                        {
+                            // trace data was actually lost, print a warning message.
+                            char ai8_warning_str[100] = { 0 };
+                            snprintf(ai8_warning_str, 100, "\r\nWarning: Trace buffer overflow. %u byte(s) lost.\r\n", m_u8_number_of_buffer_overflows);
+                            p_io_interface->write_data(ai8_warning_str, strlen(ai8_warning_str));
+                            m_u8_number_of_buffer_overflows = 0u;
+                        }
                     }
                 }
-                // finally, clear the buffer and reset usage to 0.
-                memset(m_pa_out_buffer, 0u, TRACE_BUFFER_LENGTH);
-                m_u_buffer_usage = 0;
+                // only clear the buffer if at least one interface could print out the data. Others won't have received it.
+                if (bo_data_printed)
+                {
+                    // finally, clear the buffer and reset usage to 0.
+                    memset(m_pa_out_buffer, 0u, TRACE_BUFFER_LENGTH);
+                    m_u_buffer_usage = 0;
+                }
             }
             // load balancing
             std_ex::sleep_for(std::chrono::milliseconds(100));

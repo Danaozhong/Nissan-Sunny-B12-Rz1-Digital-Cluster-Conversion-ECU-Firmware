@@ -7,43 +7,12 @@
 #include <cstddef>
 
 #include "ex_thread.hpp"
-#include "generic_uart.hpp"
-
+#include "os_console.hpp"
 
 #define TRACE_BUFFER_LENGTH (512)
-//#define TRACE_MAX_MESSAGE_SIZE (512)
 
 namespace midware
 {
-    /** Virtual base class for a generic log / trace interface. Will be inherited by the
-     * specific implementations, e.g. for tracing via UART, tracing via Ethernet, tracing via
-     * CAN, etc.
-     * Current features are only to print out messages.
-     */
-    class TraceIOInterface
-    {
-    public:
-        /** Virtual destructor. */
-        virtual ~TraceIOInterface();
-        /** Prints a debug message via the IO interface.
-         * \param[in]  pi8_buffer  The buffer to be printed.
-         */
-        virtual int32_t print(const char* pi8_buffer, size_t u_buffer_length) = 0;
-
-    };
-
-    class UARTTraceIOInterface : public TraceIOInterface
-    {
-    public:
-        UARTTraceIOInterface(drivers::GenericUART* po_uart_interface);
-
-        virtual ~UARTTraceIOInterface();
-        int32_t print(const char* pi8_buffer, size_t u_buffer_length);
-    private:
-        /// The UART interface used to send the commands
-        drivers::GenericUART* m_po_uart_interface;
-
-    };
     class Trace
     {
     public:
@@ -59,7 +28,7 @@ namespace midware
         void debug_printf_internal(const char *, va_list args);
 
         /** An IO interface can be used by several tracers, hence needs to be a smart pointer */
-        int32_t add_trace_io_interface(const std::shared_ptr<TraceIOInterface> &po_trace_io_interface);
+        int32_t add_trace_io_interface(const std::shared_ptr<OSServices::OSConsole> &po_trace_io_interface);
 
 
         /** Sets this tracer as the systems default tracer. */
@@ -72,7 +41,7 @@ namespace midware
         void trace_main();
 
         /** All the IO interfaces that are used to send out trace data */
-        std::vector<std::shared_ptr<TraceIOInterface>> m_ao_trace_io_interfaces;
+        std::vector<std::shared_ptr<OSServices::OSConsole>> m_ao_trace_io_interfaces;
 
         /** This thread is low priority, and whenever active, will take the buffered trace data to send
          * it out over the IO interfaces asynchronously. That way performance of the calling module is

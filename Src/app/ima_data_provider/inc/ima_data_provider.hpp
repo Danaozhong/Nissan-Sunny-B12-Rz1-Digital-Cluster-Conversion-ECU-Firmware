@@ -18,7 +18,7 @@ namespace app
     {
         uint16_t u16_engine_rpm;
         uint16_t u16_battery_voltage /* in V */;
-        int16_t i16_ima_motor_current; /* in mV */
+        int16_t i16_ima_motor_current; /* in x10 mV */
         uint16_t u16_SOC; /* SOC of the IMA battery */
         uint8_t u8_some_temperature; /* no idea what temperature, but it looks cool */
     };

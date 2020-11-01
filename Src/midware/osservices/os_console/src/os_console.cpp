@@ -238,7 +238,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 
 
     OSConsole::OSConsole(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface)
-    : m_po_io_interface(po_io_interface), m_u32_num_of_registered_commands(0u)
+    : m_po_io_interface(po_io_interface), m_u32_num_of_registered_commands(0u), m_bo_blocked(false)
     {
         this->register_command(new CommandListTasks());
         this->register_command(new CommandMemory());
@@ -313,11 +313,13 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
             if(this->m_po_io_interface->available() > 0)
             {
                 // show the prompt
+                m_bo_blocked = true;
                 m_po_io_interface << "\r\n\r\nFreeRTOS> ";
                 std::vector<char> ai8_input = read_input_line(m_po_io_interface);
 
                 // command finished, new line
                 m_po_io_interface << "\r\n\r\n";
+                m_bo_blocked = false;
 
                 // command end, process
                 this->process_input(ai8_input.data());
@@ -337,6 +339,16 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         return 0;
     }
 
+
+    bool OSConsole::console_blocked() const
+    {
+        return this->m_bo_blocked;
+    }
+
+    std::shared_ptr<OSConsoleGenericIOInterface> OSConsole::get_io_interface() const
+    {
+        return m_po_io_interface;
+    }
 
     void OSConsole::print_bootscreen() const
     {

@@ -74,9 +74,9 @@ typedef struct {
 
 #if 1
 typedef struct {
-    Can_ControllerStateType controllerMode; // CanIf_ControllerModeType
-    Can_ControllerStateType pendingControllerMode;  // CanIf_ControllerModeType
-    Can_ErrorStateType errorState;
+    //Can_ControllerStateType controllerMode; // CanIf_ControllerModeType
+    //Can_ControllerStateType pendingControllerMode;  // CanIf_ControllerModeType
+    //Can_ErrorStateType errorState;
     //uint8 pduMode;// CanIf_PduGetModeType
     CanIf_PduModeType pduMode;
 #if CANIF_PUBLIC_TXCONFIRM_POLLING_SUPPORT
@@ -225,9 +225,7 @@ Std_ReturnType CanIf_GetControllerMode(uint8 ControllerId, Can_ControllerStateTy
     //VALIDATE(CanIf_ConfigPtr != 0, 4, CANIF_E_UNINIT);
     //VALIDATE(controllerModePtr != 0, 4, CANIF_E_PARAM_POINTER);
     //VALIDATE(controllerId < CANIF_CHANNEL_CNT, 4, CANIF_E_PARAM_CONTROLLERID);
-    //return Can_GetControllerMode(ControllerId, ControllerModePtr);
-    *ControllerModePtr = controllerData[ControllerId].controllerMode;
-    return E_OK;
+    return Can_GetControllerMode(ControllerId, ControllerModePtr);
 }
 
 
@@ -251,10 +249,7 @@ Std_ReturnType CanIf_GetControllerErrorState(uint8 ControllerId, Can_ErrorStateT
 #endif
         return E_NOT_OK;
     }
-
-    *ErrorStatePtr = controllerData[ControllerId].errorState;
-    return E_OK;
-    //return Can_GetControllerErrorStat(ControllerId, ErrorStatePtr);
+    return Can_GetControllerErrorState(ControllerId, ErrorStatePtr);
 }
 #if CANIF_PUBLIC_TX_BUFFERING
 static void AddTxMsgToQueue(PduIdType canTxPduId, const uint8 *sduPtr, uint8 dlc, Can_IdType canId) {
@@ -275,13 +270,21 @@ static void AddTxMsgToQueue(PduIdType canTxPduId, const uint8 *sduPtr, uint8 dlc
 #endif
 
 // service id 5
-Std_ReturnType CanIf_Transmit(PduIdType canTxPduId,    const PduInfoType *pduInfoPtr)
+Std_ReturnType CanIf_Transmit(PduIdType canTxPduId, const PduInfoType *pduInfoPtr)
 {
+    Can_ControllerStateType controllerState = CAN_CS_UNINIT;
+
     VALIDATE(CanIf_ConfigPtr != 0, 5, CANIF_E_UNINIT);
     VALIDATE(pduInfoPtr != 0, 5, CANIF_E_PARAM_POINTER);
     VALIDATE(canTxPduId < CANIF_NUM_TX_PDU_ID, 5, CANIF_E_INVALID_TXPDUID);
 
-    if (controllerData[CanIf_ConfigPtr->TxPduCfg[canTxPduId].controller].controllerMode != CAN_CS_STARTED)
+
+    if (E_OK != Can_GetControllerMode(CanIf_ConfigPtr->TxPduCfg[canTxPduId].controller, &controllerState))
+    {
+        return E_NOT_OK;
+    }
+
+    if (controllerState != CAN_CS_STARTED)
     {
         // channel not started, report to DEM and return
         DEM_REPORTERRORSTATUS(CANIF_E_STOPPED, DEM_EVENT_STATUS_FAILED);
@@ -706,11 +709,6 @@ void CanIf_ControllerBusOff(uint8 ControllerId)
         return;
     }
 
-    // store the new mode
-    controllerData[ControllerId].controllerMode = CAN_CS_STOPPED;
-    controllerData[ControllerId].errorState = CAN_ERRORSTATE_BUSOFF;
-    // update pending mode
-    controllerData[ControllerId].pendingControllerMode = CAN_CS_STOPPED;
     // reset all buffers
     int lock = LockSave();
     ClearTxBuffers(ControllerId);
@@ -727,16 +725,14 @@ void CanIf_ControllerBusOff(uint8 ControllerId)
 
 void CanIf_ControllerModeIndication(uint8 ControllerId, Can_ControllerStateType ControllerMode)
 {
-    // store the new mode
-    controllerData[ControllerId].controllerMode = ControllerMode;
     if(ControllerMode == CAN_CS_STOPPED)
     {
         // stopped mode reached
-    // reset all buffers
-    int lock = LockSave();
-    ClearTxBuffers(ControllerId);
-    ClearRxBuffers(ControllerId);
-    LockRestore(lock);
+        // reset all buffers
+        int lock = LockSave();
+        ClearTxBuffers(ControllerId);
+        ClearRxBuffers(ControllerId);
+        LockRestore(lock);
     }
     else if(ControllerMode == CAN_CS_STARTED)
     {
@@ -745,22 +741,22 @@ void CanIf_ControllerModeIndication(uint8 ControllerId, Can_ControllerStateType 
         controllerData[ControllerId].transmitConfirmedSinceLastStart = CANIF_NO_NOTIFICATION;
 #endif
     }
+
+#if 0
     // check if pending mode reached
     if(controllerData[ControllerId].pendingControllerMode != ControllerMode)
     {
         // pending mode not reached. Set pending mode and return
         CanIf_SetControllerMode(ControllerId, controllerData[ControllerId].pendingControllerMode);
     }
-    else
+
+
+    // requested mode reached. Call ev callback
+    if(canIfDispatchCfg.user_ControllerModeIndication)
     {
-#if 0
-        // requested mode reached. Call ev callback
-        if(canIfDispatchCfg.user_ControllerModeIndication)
-        {
-            (*canIfDispatchCfg.user_ControllerModeIndication)(ControllerId, ControllerMode);
-        }
-#endif
+        (*canIfDispatchCfg.user_ControllerModeIndication)(ControllerId, ControllerMode);
     }
+#endif
 }
 
 void CanIf_TrcvModeIndication(uint8 transceiver, CanTrcv_TrcvModeType transceiverMode)

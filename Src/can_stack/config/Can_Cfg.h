@@ -28,9 +28,9 @@
 #define CAN_DEV_ERROR_DETECT			STD_ON
 #define CAN_VERSION_INFO_API			STD_OFF
 #define CAN_MULTIPLEXED_TRANSMISSION	STD_OFF  // Not supported
-#define CAN_WAKEUP_SUPPORT				STD_OFF  // Not supported
+#define CAN_WAKEUP_SUPPORT				STD_ON  // Not supported
 #define CAN_HW_TRANSMIT_CANCELLATION	STD_OFF  // Not supported
-
+#define C
 typedef enum
 {
 	CAN_CTRL_1 = 0,
@@ -72,7 +72,7 @@ typedef struct {
 	void (*RxIndication)(const Can_HwType*, const PduInfoType*);
 	void (*ControllerBusOff)(uint8);
 	void (*TxConfirmation)(PduIdType);
-	void (*SetWakeupEvent)(uint8);
+	void (*CheckWakeup)(uint8);
 	void (*ControllerModeIndication)(uint8, Can_ControllerStateType);
 
 

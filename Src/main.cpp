@@ -215,20 +215,24 @@ void MAIN_Cycle_100ms(void)
         std_ex::sleep_for(std::chrono::milliseconds(100));
 
 #ifdef USE_CAN
-        PduInfoType pdu_buffer;
-        char buffer[8] = "testda0";
-        pdu_buffer.SduDataPtr = reinterpret_cast<uint8*>(buffer);
-        pdu_buffer.SduLength = 8;
-        const uint32_t u32_num_of_tx_pdus = 2;
-
-        /* Test code for the CAN bus transmission */
-        if (E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
+        for (int32_t k = 0; k < 30; ++k)
         {
-            //DEBUG_PRINTF("Can sending failed!\n\r");
-        }
-        else
-        {
+            PduInfoType pdu_buffer;
+            char buffer[8] = "testda0";
+            pdu_buffer.SduDataPtr = reinterpret_cast<uint8*>(buffer);
+            pdu_buffer.SduLength = 8;
+            const uint32_t u32_num_of_tx_pdus = 2;
 
+            /* Test code for the CAN bus transmission */
+            if (E_OK != CanIf_Transmit(rand() % u32_num_of_tx_pdus, &pdu_buffer))
+            {
+                asm("nop");
+            }
+            else
+            {
+
+            }
+            std_ex::sleep_for(std::chrono::milliseconds(1));
         }
 
         app::get_ima_data_provider().print_ima_data();
@@ -274,6 +278,7 @@ void MAIN_startup_thread(void*)
 		{
 		    po_uart->uart_process_cycle();
 		}
+
         // load balancing
         std_ex::sleep_for(std::chrono::milliseconds(10));
 		// check for debug input

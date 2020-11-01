@@ -2,7 +2,7 @@
 #include "trace_if.h"
 
 #include <cstring>
-
+#include <cstdlib>
 extern "C"
 {
 #if 0
@@ -82,13 +82,14 @@ namespace app
 
 
 
-        int i_ima_current = static_cast<int>(get_ima_data().i16_ima_motor_current);
+        int i_ima_current_int = static_cast<int>(get_ima_data().i16_ima_motor_current) /  100;
+        unsigned int ima_current_frac = std::abs(static_cast<int>(get_ima_data().i16_ima_motor_current)) % 100;
         unsigned int u_temperature = static_cast<unsigned int>(get_ima_data().u8_some_temperature);
 
         DEBUG_PRINTF("   Engine RPM: %u rpm\n\r", u_rpm);
         DEBUG_PRINTF("   Battery Voltage: %u.%uV\n\r", u_battery_voltage_int, u_battery_voltage_frac);
         DEBUG_PRINTF("   Battery SOC: %u.%u%%\n\r", u_soc_int, u_soc_frac);
-        DEBUG_PRINTF("   Battery Current: %i mA\n\r", i_ima_current);
+        DEBUG_PRINTF("   Battery Current: %i.%uA\n\r", i_ima_current_int, ima_current_frac);
         DEBUG_PRINTF("   Battery temperature: %uF\n\r", u_temperature);
         DEBUG_PRINTF("\n\r\n\r");
     }

@@ -170,6 +170,11 @@ typedef struct {
 
     // Data stored for Txconfirmation callbacks to CanIf
     PduIdType swPduHandle; //
+
+    Can_ErrorStateType errorState;
+
+    Std_ReturnType wakeupDetected;
+
 } Can_UnitType;
 
 
@@ -299,16 +304,16 @@ static void Can_WakeIsr( uint8 ControllerId )
         return;
     }
 
+    /* SWS_Can_00271 */
     if (CAN_CS_SLEEP == currentControllerState)
     {
-        if (NULL != GET_CALLBACKS()->SetWakeupEvent)
+        if (NULL != GET_CALLBACKS()->CheckWakeup)
         {
-            GET_CALLBACKS()->SetWakeupEvent(ControllerId);
+            GET_CALLBACKS()->CheckWakeup(ControllerId);
         }
 
         Can_SetControllerMode(ControllerId, CAN_CS_STOPPED);
     }
-    // TODO Implement SWS_Can_00271: callback to EcuM_CheckWakeup();
 }
 
 /**
@@ -375,6 +380,29 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
 }
 
 
+
+static void Can_BusOffDetected(int ControllerId)
+{
+    Can_UnitType *canUnit = GET_PRIVATE_DATA(ControllerId);
+    CAN_HW_t *canHw = GetController(ControllerId);
+
+    canUnit->stats.boffCnt++;
+    canUnit->errorState = CAN_ERRORSTATE_BUSOFF;
+    // SWS_Can_00020
+    Can_SetControllerMode(ControllerId, CAN_CS_STOPPED); // CANIF272
+
+    // Notify CanIf about the bus off event (SRS_Can_01055)
+    /* SWS_Can_00234 */
+    if (GET_CALLBACKS()->ControllerBusOff != NULL)
+    {
+        GET_CALLBACKS()->ControllerBusOff(ControllerId);
+    }
+
+    // SRS_Can_01060: Abort all pending messages
+    Can_AbortTx( canHw, canUnit ); // CANIF273
+}
+
+
 static void Can_ErrIsr( int unit )
 {
   CAN_HW_t *canHw = GetController(unit);
@@ -385,19 +413,7 @@ static void Can_ErrIsr( int unit )
   /* Bus off detected */
   if(canUnit->CanHandle.ErrorCode & CAN_IT_BUSOFF) // Need to check peripheral if more than 1
   {
-    canUnit->stats.boffCnt++;
-    // SWS_Can_00020
-    Can_SetControllerMode(unit, CAN_CS_STOPPED); // CANIF272
-
-    // Notify CanIf about the bus off event (SRS_Can_01055)
-    /* SWS_Can_00234 */
-    if (GET_CALLBACKS()->ControllerBusOff != NULL)
-    {
-        GET_CALLBACKS()->ControllerBusOff(unit);
-    }
-
-    // SRS_Can_01060: Abort all pending messages
-    Can_AbortTx( canHw, canUnit ); // CANIF273
+      Can_BusOffDetected(unit);
 
     // Clear int
 #if 0 // TODO no idea how this works in HAL
@@ -560,6 +576,9 @@ void Can_Init( const Can_ConfigType *config )
     canUnit->state = CAN_CS_STOPPED;
 
     canUnit->lock_cnt = 0;
+
+    canUnit->wakeupDetected = STD_OFF;
+    canUnit->errorState = CAN_ERRORSTATE_PASSIVE;
 
     // Clear stats
     memset(&canUnit->stats, 0, sizeof(Can_Arc_StatisticsType));
@@ -795,7 +814,7 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
   canUnit->CanHandle.Instance = CAN; // canHw; /* which CAN unit to use on this controller */
 
   canUnit->CanHandle.Init.TimeTriggeredMode = DISABLE;
-  canUnit->CanHandle.Init.AutoBusOff = DISABLE;
+  canUnit->CanHandle.Init.AutoBusOff = ENABLE;
   canUnit->CanHandle.Init.AutoWakeUp = DISABLE;
   canUnit->CanHandle.Init.AutoRetransmission = ENABLE;
   canUnit->CanHandle.Init.ReceiveFifoLocked = DISABLE;
@@ -850,8 +869,19 @@ Std_ReturnType Can_SetBaudrate( uint8 controller, uint16 BaudRateConfigID)
 
 Std_ReturnType Can_GetControllerErrorState(uint8 ControllerId, Can_ErrorStateType* ErrorStatePtr)
 {
+    /* SWS_Can_91006 */
+    VALIDATE((ControllerId < GET_CONTROLLER_CNT()), 0x4, CAN_E_PARAM_CONTROLLER );
 
+    Can_UnitType* canUnit = GET_PRIVATE_DATA(ControllerId);
 
+    /* SWS_Can_91005 */
+    VALIDATE( (canUnit->state != CAN_CS_UNINIT), 0x4, CAN_E_UNINIT );
+
+    /* SWS_Can_91007 */
+    VALIDATE((ErrorStatePtr != NULL), 0x4, CAN_E_PARAM_POINTER );
+
+    *ErrorStatePtr = canUnit->errorState;
+    return E_OK;
 }
 
 
@@ -865,7 +895,8 @@ Std_ReturnType Can_GetControllerMode(uint8 controller, Can_ControllerStateType* 
     }
 
     Can_UnitType *canUnit = GET_PRIVATE_DATA(controller);
-    return canUnit->state;
+    *ControllerModePtr = canUnit->state;
+    return E_OK;
 }
 
 Std_ReturnType Can_SetControllerMode( uint8 controller, Can_ControllerStateType transition )
@@ -896,18 +927,22 @@ Std_ReturnType Can_SetControllerMode( uint8 controller, Can_ControllerStateType 
         }
         else
         {
-        canUnit->state = CAN_CS_STARTED;
-        //Irq_Save(state);
-        if (canUnit->lock_cnt == 0)
-        {   // REQ CAN196
-          Can_EnableControllerInterrupts(controller);
+            canUnit->state = CAN_CS_STARTED;
+            canUnit->errorState= CAN_ERRORSTATE_ACTIVE;
+            // reset the error counters
+            canUnit->stats.txErrorCnt = 0;
+
+            //Irq_Save(state);
+            if (canUnit->lock_cnt == 0)
+            {   // REQ CAN196
+              Can_EnableControllerInterrupts(controller);
+            }
+
+            /* Notify CanIf about the state change in the driver */
+            GET_CALLBACKS()->ControllerModeIndication(controller, CAN_CS_STARTED);
+
+            //Irq_Restore(state);
         }
-
-        /* Notify CanIf about the state change in the driver */
-        GET_CALLBACKS()->ControllerModeIndication(controller, CAN_CS_STARTED);
-
-        //Irq_Restore(state);
-    }
     break;
   case CAN_CS_SLEEP:  //CAN258, CAN290
     VALIDATE(canUnit->state == CAN_CS_STOPPED, 0x3, CAN_E_TRANSITION);
@@ -1016,17 +1051,12 @@ void Can_EnableControllerInterrupts( uint8 controller ) {
   if( canHwConfig->CanRxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
   {
     /* Turn on the rx interrupt */
-#if 1
       HAL_CAN_ActivateNotification (&canUnit->CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING);
-#endif
   }
   if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
   {
     /* Turn on the tx interrupt mailboxes */
-#if 1
-      //CAN_ITConfig(canHw, CAN_IT_TME, ENABLE);
       HAL_CAN_ActivateNotification (&canUnit->CanHandle, CAN_IT_TX_MAILBOX_EMPTY);
-#endif
   }
 
   // BusOff here represents all errors and warnings
@@ -1042,69 +1072,100 @@ void Can_EnableControllerInterrupts( uint8 controller ) {
   return;
 }
 
-Can_ReturnType Can_Write( Can_HwHandleType Hth, Can_PduType *PduInfo ) {
-  Can_ReturnType rv = CAN_OK;
-  CAN_HW_t *canHw;
-  const Can_HardwareObjectType *hohObj;
-  const Can_ControllerConfigType *canHwConfig;
-  uint32 controller;
-  //imask_t state;
+Can_ReturnType Can_Write( Can_HwHandleType Hth, Can_PduType *PduInfo )
+{
+    Can_ReturnType rv = CAN_OK;
+    CAN_HW_t *canHw;
+    const Can_HardwareObjectType *hohObj;
+    const Can_ControllerConfigType *canHwConfig;
+    uint32 controller;
+    //imask_t state;
 
-  VALIDATE( (Can_Global.initRun == CAN_READY), 0x6, CAN_E_UNINIT );
-  VALIDATE( (PduInfo != NULL), 0x6, CAN_E_PARAM_POINTER );
-  VALIDATE( (PduInfo->length <= 8), 0x6, CAN_E_PARAM_DLC ); /* SWS_Can_00218 */
-  VALIDATE( (Hth < NUM_OF_HTHS ), 0x6, CAN_E_PARAM_HANDLE );
+    VALIDATE( (Can_Global.initRun == CAN_READY), 0x6, CAN_E_UNINIT );
+    VALIDATE( (PduInfo != NULL), 0x6, CAN_E_PARAM_POINTER );
+    VALIDATE( (PduInfo->length <= 8), 0x6, CAN_E_PARAM_DLC ); /* SWS_Can_00218 */
+    VALIDATE( (Hth < NUM_OF_HTHS ), 0x6, CAN_E_PARAM_HANDLE );
 
-  hohObj = Can_FindHoh(Hth, &controller);
-  if (hohObj == NULL)
+    hohObj = Can_FindHoh(Hth, &controller);
+    if (hohObj == NULL)
     return CAN_NOT_OK;
 
-  Can_UnitType *canUnit = GET_PRIVATE_DATA(controller);
+    Can_UnitType *canUnit = GET_PRIVATE_DATA(controller);
 
-  canHw = GetController(controller);
-  //Irq_Save(state);
+    canHw = GetController(controller);
+    //Irq_Save(state);
 
-  //CanTxMsg TxMessage;
-  CAN_TxHeaderTypeDef   TxMessageHeader;
-  uint8_t               TxData[8];
-  uint32_t              TxMailbox;
+    //CanTxMsg TxMessage;
+    CAN_TxHeaderTypeDef   TxMessageHeader;
+    uint8_t               TxData[8];
+    uint32_t              TxMailbox;
 
-  TxMessageHeader.RTR= CAN_RTR_DATA;
-  TxMessageHeader.DLC= PduInfo->length;
+    TxMessageHeader.RTR= CAN_RTR_DATA;
+    TxMessageHeader.DLC= PduInfo->length;
 
-  memcpy(TxData, PduInfo->sdu, PduInfo->length);
+    memcpy(TxData, PduInfo->sdu, PduInfo->length);
 
-  if (hohObj->CanIdType == CAN_ID_TYPE_EXTENDED) {
-      TxMessageHeader.IDE=CAN_ID_EXT;
-      TxMessageHeader.ExtId=PduInfo->id;
-  } else {
-      TxMessageHeader.IDE=CAN_ID_STD;
-      TxMessageHeader.StdId=PduInfo->id;
-  }
-
-  // check for any free box
-  if(HAL_CAN_AddTxMessage(&canUnit->CanHandle, &TxMessageHeader, TxData, &TxMailbox) == HAL_OK) //CAN_NO_MB) {
-  {
-    canHwConfig = GET_CONTROLLER_CONFIG(Can_Global.channelMap[controller]);
-
-    if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
+    if (hohObj->CanIdType == CAN_ID_TYPE_EXTENDED)
     {
-        /* Turn on the tx interrupt mailboxes */
-        //CAN_ITConfig(canHw,CAN_IT_TME, ENABLE);
-        __HAL_CAN_ENABLE_IT(&canUnit->CanHandle, CAN_IT_TX_MAILBOX_EMPTY);
+        TxMessageHeader.IDE=CAN_ID_EXT;
+        TxMessageHeader.ExtId=PduInfo->id;
+    }
+    else
+    {
+        TxMessageHeader.IDE=CAN_ID_STD;
+        TxMessageHeader.StdId=PduInfo->id;
     }
 
-    // Increment statistics
-    canUnit->stats.txSuccessCnt++;
+    // check for any free box
+    if(HAL_CAN_AddTxMessage(&canUnit->CanHandle, &TxMessageHeader, TxData, &TxMailbox) == HAL_OK) //CAN_NO_MB) {
+    {
+        canHwConfig = GET_CONTROLLER_CONFIG(Can_Global.channelMap[controller]);
 
-    // Store pdu handle in unit to be used by TxConfirmation
-    canUnit->swPduHandle = PduInfo->swPduHandle;
-  } else {
-    rv = CAN_BUSY;
-  }
-  //Irq_Restore(state);
+        if( canHwConfig->CanTxProcessing == CAN_ARC_PROCESS_TYPE_INTERRUPT )
+        {
+            /* Turn on the tx interrupt mailboxes */
+            //CAN_ITConfig(canHw,CAN_IT_TME, ENABLE);
+            __HAL_CAN_ENABLE_IT(&canUnit->CanHandle, CAN_IT_TX_MAILBOX_EMPTY);
+        }
+
+        /* Update statistics. Upon successful transmission, the success counter is increased,
+        * and the error counter decreased.
+        * If the transmission was not successful, the error counter will be increased by 8.
+        */
+        canUnit->stats.txSuccessCnt++;
+        if (canUnit->stats.txErrorCnt > 0)
+        {
+            canUnit->stats.txErrorCnt--;
+        }
+
+        // Store pdu handle in unit to be used by TxConfirmation
+        canUnit->swPduHandle = PduInfo->swPduHandle;
+    }
+    else
+    {
+        /* error during transmit */
+        canUnit->stats.txErrorCnt += 8;
+        if (canUnit->stats.txErrorCnt > 255)
+        {
+            /* if sending failed too often, transit to bus off state */
+            Can_BusOffDetected(controller);
+        }
+        rv = CAN_BUSY;
+    }
+    //Irq_Restore(state);
 
   return rv;
+}
+
+Std_ReturnType Can_CheckWakeup(uint8 Controller)
+{
+    Can_UnitType *canUnit;
+    VALIDATE( (Can_Global.initRun == CAN_READY), 0x6, CAN_E_UNINIT ); /* SWS_Can_00362 */
+    VALIDATE_NO_RV( (Controller < GET_CONTROLLER_CNT()), 0x4, CAN_E_PARAM_CONTROLLER ); /* SWS_Can_00363 */
+
+    canUnit = GET_PRIVATE_DATA(Controller);
+
+    return canUnit->wakeupDetected;
 }
 
 void Can_MainFunction_Read( void ) {

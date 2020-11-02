@@ -1,6 +1,7 @@
 #include "speed_sensor_converter.hpp"
 #include "os_console.hpp"
 #include "excp_handler_if.h"
+#include "trace_if.h"
 
 namespace app
 {
@@ -136,6 +137,10 @@ namespace app
             return;
         }
 
+        if (m_u32_input_frequency_mHz != 0)
+        {
+            DEBUG_PRINTF("Encountered a speed value != 0!, %u", m_u32_input_frequency_mHz);
+        }
         // convert to the output pulses
         if (0u != m_u32_input_pulses_per_kmph_mHz)
         {

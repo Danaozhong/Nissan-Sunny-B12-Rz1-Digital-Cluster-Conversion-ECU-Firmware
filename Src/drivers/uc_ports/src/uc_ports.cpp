@@ -2,6 +2,7 @@
 #include "stm32fxxx.h"
 
 
+#ifdef USE_CAN
 
 #define CANx                           CAN
 #define CANx_CLK_ENABLE()              __HAL_RCC_CAN1_CLK_ENABLE()
@@ -29,7 +30,7 @@
 #define CANx_RX_IRQn                   CAN1_RX0_IRQn
 #define CANx_RX_IRQHandler             CAN1_RX0_IRQHandler
 #endif
-
+#endif
 
 namespace
 {
@@ -46,6 +47,7 @@ namespace drivers
 
     int32_t STM32F303CCT6UcPorts::init_ports_can()
     {
+#ifdef USE_CAN
         GPIO_InitTypeDef   GPIO_InitStruct;
 
         /*##-1- Enable peripherals and GPIO Clocks #################################*/
@@ -77,12 +79,13 @@ namespace drivers
         /* NVIC configuration for CAN1 Reception complete interrupt */
         HAL_NVIC_SetPriority(CANx_RX_IRQn, 1, 0);
         HAL_NVIC_EnableIRQ(CANx_RX_IRQn);
-
+#endif
         return 0;
     }
 
     int32_t STM32F303CCT6UcPorts::deinit_ports_can()
     {
+#ifdef USE_CAN
         /*##-1- Reset peripherals ##################################################*/
         CANx_FORCE_RESET();
         CANx_RELEASE_RESET();
@@ -95,7 +98,7 @@ namespace drivers
 
         /*##-4- Disable the NVIC for CAN reception #################################*/
         HAL_NVIC_DisableIRQ(CANx_RX_IRQn);
-
+#endif
         return 0;
     }
 
@@ -130,9 +133,11 @@ namespace drivers
         GPIO_InitStruct.Pull = GPIO_NOPULL;
         */
 
+        /* Clemens 2020-11-01 this doesnt seem to work */
         GPIO_InitStruct.Pin = GPIO_PIN_11;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull = GPIO_PULLUP;
+        //GPIO_InitStruct.Pull = GPIO_PULLUP;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF10_TIM4;
         //HAL_GPIO_Init(GPIO_PORT, &GPIO_InitStruct);
@@ -211,7 +216,7 @@ namespace drivers
 
 extern "C"
 {
-
+#ifdef USE_CAN
     /**
       * @brief CAN MSP Initialization
       *        This function configures the hardware resources used in this example:
@@ -244,8 +249,10 @@ extern "C"
             po_port_configuration->deinit_ports_can();
         }
     }
+#endif
 
-    void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
+
+    void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim_base)
     {
         if (nullptr != po_port_configuration && htim_base->Instance==TIM4)
         {

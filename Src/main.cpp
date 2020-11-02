@@ -49,8 +49,6 @@
 #include "main_application.hpp"
 #include "uc_ports.hpp"
 
-#include "ima_data_provider.hpp"
-
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{
@@ -194,8 +192,7 @@ void MAIN_Cycle_100ms(void)
 
         if (nullptr != o_application.m_po_speed_sensor_converter)
         {
-            // disabled for testing CAN
-            //o_application.m_po_speed_sensor_converter->cycle();
+            o_application.m_po_speed_sensor_converter->cycle();
         }
 
         // TODO temporarly check this here

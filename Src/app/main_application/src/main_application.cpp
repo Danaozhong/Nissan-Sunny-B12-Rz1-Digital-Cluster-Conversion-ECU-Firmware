@@ -204,7 +204,7 @@ namespace app
 	    m_p_pwm_ic = new drivers::STM32PWM_IC(TIM2, TIM_CHANNEL_2, TIM_CHANNEL_3, 1u, 65536u);
 #else
         m_p_pwm = new drivers::STM32PWM(TIM3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_6);
-        m_p_pwm_ic = new drivers::STM32PWM_IC(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 1023u, 65536u); // Pins PA11 PA12
+        m_p_pwm_ic = new drivers::STM32PWM_IC(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 0u, 65536u); // Pins PA11 PA12 1023u prescaler?? TODO
 #endif
 
         int32_t i32_ret_val = m_p_pwm_ic->init();

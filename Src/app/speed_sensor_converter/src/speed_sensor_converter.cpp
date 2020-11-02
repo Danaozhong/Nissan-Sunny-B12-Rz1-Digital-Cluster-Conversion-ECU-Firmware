@@ -11,7 +11,7 @@ namespace app
                 uint32_t u32_output_pulses_per_kmph_mHz)
     : m_p_output_pwm(p_output_pwm), m_p_output_pwm_input_capture(p_output_pwm_input_capture),
       m_en_current_speed_output_mode(OUTPUT_MODE_CONVERSION),
-      m_i32_manual_speed(0), m_u32_current_vehicle_speed_kmph(0u),
+      m_i32_manual_speed(75), m_u32_current_vehicle_speed_kmph(0u),
       m_u32_input_pulses_per_kmph_mHz(u32_input_pulses_per_kmph_mHz),
       m_u32_output_pulses_per_kmph_mHz(u32_output_pulses_per_kmph_mHz)
     {
@@ -137,10 +137,6 @@ namespace app
             return;
         }
 
-        if (m_u32_input_frequency_mHz != 0)
-        {
-            DEBUG_PRINTF("Encountered a speed value != 0!, %u", m_u32_input_frequency_mHz);
-        }
         // convert to the output pulses
         if (0u != m_u32_input_pulses_per_kmph_mHz)
         {

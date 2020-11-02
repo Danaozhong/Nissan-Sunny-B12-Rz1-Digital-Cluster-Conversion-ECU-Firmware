@@ -20,6 +20,8 @@ namespace drivers
           m_u16_arr(u16_arr),
           m_bo_initialized(false)
       {
+        memset(&m_timer_handle, 0, sizeof(m_timer_handle));
+
         m_o_last_input_capture_timestamp = 0u;
 
         map_tim_handles_to_object[&m_timer_handle] = this;
@@ -99,7 +101,7 @@ namespace drivers
         sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
         sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
         sSlaveConfig.TriggerFilter = 0;
-        if (HAL_TIM_SlaveConfigSynchronization(&m_timer_handle, &sSlaveConfig) != HAL_OK)
+        if (HAL_TIM_SlaveConfigSynchro(&m_timer_handle, &sSlaveConfig) != HAL_OK)
         {
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }

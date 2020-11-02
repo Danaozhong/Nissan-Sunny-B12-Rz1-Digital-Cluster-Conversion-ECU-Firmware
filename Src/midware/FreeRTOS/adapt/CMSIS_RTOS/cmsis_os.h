@@ -30,11 +30,7 @@
 #endif
 
 #include <stdint.h>
-#ifdef STM32_FAMILY_F3
-#include "core_cmFunc.h"
-#elif defined STM_FAMILY_F4
 #include "cmsis_compiler.h"
-#endif
 	
 #include "FreeRTOS.h"
 #include "task.h"

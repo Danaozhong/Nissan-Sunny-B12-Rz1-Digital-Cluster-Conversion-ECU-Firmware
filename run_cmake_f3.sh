@@ -1,6 +1,6 @@
 # Set environment variables
 DIR_STM32_GNU_TOOLCHAIN="D:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.0.0.201904181610/tools"
-DIR_STM32_CUBE="C:/Users/Clemens/STM32Cube/Repository/STM32Cube_FW_F3"
+DIR_STM32_CUBE="C:/Users/Clemens/STM32Cube/Repository/STM32CubeF3"
 STM32_CHIP="STM32F303CCT6"
 
 echo "STM32_CHIP " $STM32_CHIP

@@ -188,6 +188,7 @@ namespace app
         m_o_fuel_gauge_output_characteristic = app::CharacteristicCurve<int32_t, int32_t>(a_output_lut, sizeof(a_output_lut) / sizeof(a_output_lut[0]));
 
         // for speed conversion
+        //m_u32_input_pulses_per_kmph_mHz = 4200u; // for testing feedback only
         m_u32_input_pulses_per_kmph_mHz = 700u;
         m_u32_output_pulses_per_kmph_mHz = 4200u;
         m_u32_dac_out_amplifying_factor = 2000u;

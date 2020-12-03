@@ -16,7 +16,10 @@ namespace drivers
 
 	STM32PWM::STM32PWM(TIM_TypeDef* pt_timer_unit, uint32_t u32_timer_channel,
 			GPIO_TypeDef* pt_gpio_block, uint16_t u16_gpio_pin)
-	: m_u32_timer_channel(u32_timer_channel)
+	: m_u32_timer_channel(u32_timer_channel),
+	  m_u32_configured_frequency_millihertz(123u), // set a random initial value, is set to 0 later
+	  m_pt_gpio_block(pt_gpio_block),
+	  m_u16_gpio_pin(u16_gpio_pin)
 	{
 		/* Do the port configuration */
 
@@ -49,43 +52,71 @@ namespace drivers
 			__HAL_RCC_GPIOC_CLK_ENABLE();
 		}
 
-		GPIO_InitTypeDef   GPIO_InitStruct;
+#ifdef HAL_TIM_MODULE_ENABLED
+	     o_timer_handle.Instance = pt_timer_unit;
+#endif
+	     // set a frequency of 0
+	     set_frequency(0);
+	}
 
-		/* Common configuration for all channels */
-		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-		GPIO_InitStruct.Pull = GPIO_PULLUP;
-		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	int32_t STM32PWM::configure_gpio_as_pwm()
+	{
+        GPIO_InitTypeDef   GPIO_InitStruct;
 
-		if (TIM1 == pt_timer_unit)
+        /* Common configuration for all channels */
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+        GPIO_InitStruct.Pin = m_u16_gpio_pin;
+
+        if (TIM1 == o_timer_handle.Instance)
         {
             GPIO_InitStruct.Alternate = GPIO_AF6_TIM1;
         }
-        else if (TIM2 == pt_timer_unit)
+        else if (TIM2 == o_timer_handle.Instance)
         {
             GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
         }
-		else if (TIM3 == pt_timer_unit)
-		{
-			GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
-		}
-		else
-		{
-			// TODO cover other cases
-		}
-		GPIO_InitStruct.Pin = u16_gpio_pin;
-		HAL_GPIO_Init(pt_gpio_block, &GPIO_InitStruct);
+        else if (TIM3 == o_timer_handle.Instance)
+        {
+            GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
+        }
+        else
+        {
+            // TODO cover other cases
+        }
 
 
-#ifdef HAL_TIM_MODULE_ENABLED
-	     o_timer_handle.Instance = pt_timer_unit;
-		reconfigure_pwm(300, 500);
-#endif
+        HAL_GPIO_DeInit(m_pt_gpio_block, m_u16_gpio_pin);
+        HAL_GPIO_Init(m_pt_gpio_block, &GPIO_InitStruct);
+        return 0;
 	}
 
+	int32_t STM32PWM::configure_gpio_as_high()
+	{
+	    HAL_GPIO_DeInit(m_pt_gpio_block, m_u16_gpio_pin);
+
+	    /* reconfigure the pin to output / push pull */
+        GPIO_InitTypeDef   GPIO_InitStruct;
+        GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+        GPIO_InitStruct.Pin = m_u16_gpio_pin;
+	    HAL_GPIO_Init(m_pt_gpio_block, &GPIO_InitStruct);
+
+	    // set GPIO to high
+	    HAL_GPIO_WritePin(m_pt_gpio_block, m_u16_gpio_pin, GPIO_PIN_SET);
+	    return 0;
+	}
 
 	int32_t STM32PWM::reconfigure_pwm(uint32_t u32_frequency, uint32_t u32_duty_cycle)
 	{
-        /* Compute the prescaler value to have TIM3 counter clock equal to 24000000 Hz */
+        if (0 == u32_frequency || u32_duty_cycle > 1000)
+        {
+            return -1;
+        }
+
+	    /* Compute the prescaler value to have TIM3 counter clock equal to 24000000 Hz */
         // uhPrescalerValue = (uint32_t)(SystemCoreClock / 24000000) - 1;
 
         // 350 Hz
@@ -99,17 +130,12 @@ namespace drivers
         //uhPrescalerValue = (uint32_t)(SystemCoreClock / 960000) - 1; // 180km/h/h  -- 1444kHz
 	    const uint32_t u32_timer_clock = 24000;
 
-        u32_prescaler_value = static_cast<uint32_t>(SystemCoreClock / u32_timer_clock) - 1; // 171km/h  -- 721Hz
+        u32_prescaler_value = static_cast<uint32_t>(SystemCoreClock / u32_timer_clock) - 1;
 
         // timer is currently clocked at 24kHz
         // f = timer_clock / u32_timer_value
         // u32_timer_value = 24kHz / f
         u32_timer_value = u32_timer_clock * 1000 / u32_frequency - 1;
-
-
-                /* Private typedef -----------------------------------------------------------*/
-                //#define  PERIOD_VALUE       (uint32_t)(665 - 1)  /* Period Value  */
-               // #define  PULSE1_VALUE       (uint32_t)(PERIOD_VALUE/2)        /* Capture Compare 1 Value  */
 
         /*##-1- Configure the TIM peripheral #######################################*/
         /* -----------------------------------------------------------------------
@@ -162,7 +188,7 @@ namespace drivers
         if (HAL_TIM_PWM_Init(&o_timer_handle) != HAL_OK)
         {
             /* Initialization Error */
-            Error_Handler();
+            return -2;
         }
 
         /*##-2- Configure the PWM channels #########################################*/
@@ -180,7 +206,7 @@ namespace drivers
         if (HAL_TIM_PWM_ConfigChannel(&o_timer_handle, &sConfig, m_u32_timer_channel) != HAL_OK)
             {
             /* Configuration Error */
-            Error_Handler();
+            return -3;
         }
         else
         {
@@ -189,7 +215,7 @@ namespace drivers
             if (HAL_TIM_PWM_Start(&o_timer_handle, m_u32_timer_channel) != HAL_OK)
             {
                 /* PWM Generation Error */
-                Error_Handler();
+                return -4;
             }
         }
         return 0;
@@ -202,15 +228,25 @@ namespace drivers
 
 	void STM32PWM::set_frequency(uint32_t u32_frequency_mhz)
 	{
-		// TODO
-        HAL_TIM_PWM_Stop(&o_timer_handle, m_u32_timer_channel);  // Stop PWM
-
-        reconfigure_pwm(u32_frequency_mhz, 500);  // re-initialize the Timer2
-
-        //HAL_TIM_PWM_Start(&o_timer_handle,u32_timer_channel); // Start PWM again
-
-        //__HAL_TIM_SetCompare(&o_timer_handle, u32_timer_channel, 20); // Set Duty Cuyle
-
+	    if (m_u32_configured_frequency_millihertz != u32_frequency_mhz)
+        {
+	        if (0 == m_u32_configured_frequency_millihertz)
+	        {
+	            // reconfigure GPIO from normal GPIO to PWM output
+	            configure_gpio_as_pwm();
+	        }
+            HAL_TIM_PWM_Stop(&o_timer_handle, m_u32_timer_channel);  // Stop PWM
+            if (0 != u32_frequency_mhz)
+            {
+                reconfigure_pwm(u32_frequency_mhz, 500);  // re-initialize the Timer2
+            }
+            else
+            {
+                // set the pin to GPIO high (no output at the moment)
+                configure_gpio_as_high();
+            }
+            m_u32_configured_frequency_millihertz = u32_frequency_mhz;
+        }
 	}
 
 	void STM32PWM::set_duty_cycle(uint32_t u32_duty_cycle)

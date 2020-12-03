@@ -142,6 +142,39 @@ namespace app
 	    return m_po_speed_sensor_converter;
     }
 
+	void MainApplication::cycle_10ms()
+	{
+        // poll vehicle speed
+        if (nullptr != m_po_speed_sensor_converter)
+        {
+            m_po_speed_sensor_converter->poll_vehicle_speed();
+        }
+        // check for debug input
+        get_os_console()->run();
+	}
+
+    void MainApplication::cycle_100ms()
+    {
+        if (nullptr != m_p_o_fuel_gauge_input)
+        {
+            m_p_o_fuel_gauge_input->process_cycle();
+        }
+
+        if (nullptr != m_po_speed_sensor_converter)
+        {
+            m_po_speed_sensor_converter->cycle();
+        }
+
+    }
+
+    void MainApplication::cycle_1000ms()
+    {
+        // backup the shadow to flash every second
+        get_nonvolatile_data_handler()->store();
+    }
+
+
+
 #ifdef USE_NVDH
         std::shared_ptr<midware::NonvolatileDataHandler> MainApplication::get_nonvolatile_data_handler() const
         {
@@ -175,7 +208,6 @@ namespace app
     {
         return m_o_dataset;
     }
-
 
 	void MainApplication::fuel_sensor_input_received(int32_t i32_value)
 	{
@@ -214,13 +246,9 @@ namespace app
                     false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
         }
 
-
-
-
         m_po_speed_sensor_converter = new SpeedSensorConverter(m_p_pwm, m_p_pwm_ic,
                 get_dataset().get_input_pulses_per_kmph_mHz(),
                 get_dataset().get_output_pulses_per_kmph_mHz());
-
 
 
         return OSServices::ERROR_CODE_SUCCESS;
@@ -253,10 +281,19 @@ namespace app
 
         // attach to the signal of the fuel sensor input
         auto event_handler = std::bind(&MainApplication::fuel_sensor_input_received, this, std::placeholders::_1);
-        m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
+        if (nullptr == m_p_o_fuel_gauge_input)
+        {
+            ExceptionHandler_handle_exception(EXCP_MODULE_FUEL_SIGNAL_CONVERTER, EXCP_TYPE_NULLPOINTER, false, __FILE__, __LINE__, 0u);
+            return OSServices::ERROR_CODE_INTERNAL_ERROR;
+        }
+        else
+        {
+            m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
 
-
-        return OSServices::ERROR_CODE_SUCCESS;
+            // trigger one reading cycle, to immediately display a fuel value after startup.
+            m_p_o_fuel_gauge_input->process_cycle();
+            return OSServices::ERROR_CODE_SUCCESS;
+        }
     }
 
     int32_t MainApplication::deinit_fuel_level_converter()

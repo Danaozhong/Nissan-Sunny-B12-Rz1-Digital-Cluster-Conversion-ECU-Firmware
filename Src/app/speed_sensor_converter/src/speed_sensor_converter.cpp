@@ -197,41 +197,42 @@
         {
             // first, copy all the frequencies and convert them to m/h
             uint32_t u32_num_of_pwm_captures = 0u;
+            uint32_t u32_num_of_new_readings = 0u;
+
+            // unit is m/h
             uint32_t au32_measured_vehicle_speeds[SPEED_SENSOR_READINGS_BUFFER_LENGTH];
             uint8_t u8_start_position = 0u;
             {
                 //std::lock_guard<std::mutex> lock(m_pwm_capture_data_mutex);
                 u32_num_of_pwm_captures = m_u32_num_of_pwm_captures;
-                u8_start_position = m_u8_input_array_position;
-                for (uint8_t u8_i = 0; u8_i < SPEED_SENSOR_READINGS_BUFFER_LENGTH; u8_i++)
+
+                /*
+                first check if we have received any new readings at all, but maximize to not take more
+                than what fits into the read buffer.
+                */
+                u32_num_of_new_readings = std::min<uint32_t>(
+                        SPEED_SENSOR_READINGS_BUFFER_LENGTH,
+                        u32_num_of_pwm_captures - m_u32_num_of_processed_pwm_captures);
+                m_u32_num_of_processed_pwm_captures = u32_num_of_pwm_captures;
+
+                // calculate the array index position from where to read the first value
+                u8_start_position = (m_u8_input_array_position + SPEED_SENSOR_READINGS_BUFFER_LENGTH - u32_num_of_new_readings) % SPEED_SENSOR_READINGS_BUFFER_LENGTH;
+                for (uint8_t u8_i = 0; u8_i < u32_num_of_new_readings; u8_i++)
                 {
-                    au32_measured_vehicle_speeds[u8_i] = (m_au32_input_frequency_mHz[u8_i] * 1000) / m_u32_input_pulses_per_kmph_mHz;
+                    // read the value and copy to the new list. New list starts with index 0
+                    au32_measured_vehicle_speeds[u8_i] =
+                            (m_au32_input_frequency_mHz[(u8_start_position + u8_i) % SPEED_SENSOR_READINGS_BUFFER_LENGTH] * 1000)
+                            / m_u32_input_pulses_per_kmph_mHz;
                 }
             }
 
-
             // mutex lock is released now, now we can spend more effort on doing the actual calculations.
 
-            // first check if we have received any new readings at all
-            const uint32_t cu32_num_of_new_readings = std::min(
-                    SPEED_SENSOR_READINGS_BUFFER_LENGTH,
-                    u32_num_of_pwm_captures - m_u32_num_of_processed_pwm_captures);
+            // by default, set vehicle speed to 0.Only if the input makes sense, it will be updated.
+            m_u32_current_vehicle_speed_mph = 0u;
 
-            // caculate the position in the array of the first value to process
-            u8_start_position = (static_cast<uint32_t>(u8_start_position) +
-                    SPEED_SENSOR_READINGS_BUFFER_LENGTH
-                    - cu32_num_of_new_readings) % SPEED_SENSOR_READINGS_BUFFER_LENGTH;
-
-            // rearrange the array so that the first n indices are the values we want to process
-            for (uint8_t u8_i = 0; u8_i < cu32_num_of_new_readings; u8i++)
+            if (u32_num_of_new_readings > 0)
             {
-                //
-
-            }
-            m_u32_num_of_processed_pwm_captures = u32_num_of_pwm_captures;
-            if (cu32_num_of_new_readings > 0)
-            {
-
                 char debug_str[100] = "";
                 snprintf(debug_str, 99, "%u, %u, %u, %u, %u, %u, %u, %u, %u, %u",
                         au32_measured_vehicle_speeds[0],
@@ -244,71 +245,80 @@
                         au32_measured_vehicle_speeds[7],
                         au32_measured_vehicle_speeds[8],
                         au32_measured_vehicle_speeds[9]);
-                DEBUG_PRINTF("%s values read\n\r", debug_str);
+                DEBUG_PRINTF("%s buffer content, %u new values read\n\r", debug_str, u32_num_of_new_readings);
 
-
-                // calculate average and variance
+                // calculate average
                 uint32_t u32_avg = 0u;
-                uint32_t u32_min = 0u;
-                for (uint8_t u8_i = 0; u8_i < cu32_num_of_new_readings; u8_i++)
+                for (uint8_t u8_i = 0; u8_i < u32_num_of_new_readings; u8_i++)
                 {
                     u32_avg += au32_measured_vehicle_speeds[u8_i];
                 }
-                u32_avg /= cu32_num_of_new_readings;
+                u32_avg /= u32_num_of_new_readings;
 
-#if 0
-                uint32_t u32_variance = 0u;
-                if (SPEED_SENSOR_READINGS_BUFFER_LENGTH > 1)
+                bool stats_printed = false;
+                uint32_t u32_gap = 0;
+
+                while (u32_num_of_new_readings > 3) // take at least three readings into account, if filtering is employed
                 {
-                    for (uint8_t u8_i = 0; u8_i < SPEED_SENSOR_READINGS_BUFFER_LENGTH; u8_i++)
+                    // calculate min, max, and the data point furthest away from the average
+                    uint32_t u32_min = au32_measured_vehicle_speeds[0];
+                    uint32_t u32_max = au32_measured_vehicle_speeds[0];
+                    uint32_t u32_max_deviation = 0u;
+                    uint8_t u8_max_deviation_index = 0u;
+
+                    for (uint8_t u8_i = 0; u8_i < u32_num_of_new_readings; u8_i++)
                     {
-                        u32_variance += (au32_measured_vehicle_speeds[u8_i] - u32_avg) * (au32_measured_vehicle_speeds[u8_i] - u32_avg);
-                    }
-                    u32_variance /= (SPEED_SENSOR_READINGS_BUFFER_LENGTH + 1);
-                }
-#endif
+                        u32_max = std::max(u32_max, au32_measured_vehicle_speeds[u8_i]);
+                        u32_min = std::min(u32_max, au32_measured_vehicle_speeds[u8_i]);
 
-                DEBUG_PRINTF("Mid: %u, Min: %u, Max: %u\n\r", u32_avg);
-                if (u32_variance == 0u)
-                {
-                    // no deviation at all - just take the averaged speed value.
-                    m_u32_current_vehicle_speed_mph = u32_avg;
-                }
-                else
-                {
-                    // filter out all items that have a z score > 3
-                    uint32_t u32_averaged_filtered_vehicle_speed = 0u;
-                    uint8_t u8_number_of_values = 0u;
-                    const uint32_t u32_maximum_z_distance = 3u;
-                    for (uint8_t u8_i = 0; u8_i < SPEED_SENSOR_READINGS_BUFFER_LENGTH; u8_i++)
-                    {
-                        uint32_t u32_delta = std::abs(static_cast<int>(au32_measured_vehicle_speeds[u8_i])- static_cast<int32_t>(u32_avg));
-
-                        // filter outliers by using the z distance
-                        if ((u32_delta * u32_delta / u32_variance) < u32_maximum_z_distance*u32_maximum_z_distance)
+                        // check if the current point is further away from the average than the previous ones
+                        uint32_t u32_current_deviation = std::abs(static_cast<int32_t>(u32_avg) - static_cast<int32_t>(au32_measured_vehicle_speeds[u8_i]));
+                        if (u32_current_deviation > u32_max_deviation)
                         {
-                            // do not buffer again, just calculate the next average for the filtered data
-                            u32_averaged_filtered_vehicle_speed += au32_measured_vehicle_speeds[u8_i];
-                            u8_number_of_values++;
+                            u32_max_deviation = u32_current_deviation;
+                            u8_max_deviation_index = u8_i;
                         }
                     }
 
-                    if ( u8_number_of_values > 0)
+                    if (false == stats_printed)
                     {
-                        m_u32_current_vehicle_speed_mph = u32_averaged_filtered_vehicle_speed / u8_number_of_values;
+                        stats_printed = true;
+                        DEBUG_PRINTF("Avg: %u, Min: %u, Max: %u\n\r", u32_avg, u32_min, u32_max);
                     }
-                    else
+
+
+                    u32_gap = u32_max - u32_min;
+                    // check if the average value satisfies the termination criteria.
+                    if (u32_gap < 1000)
                     {
-                        // this should never happen - all data points are outliers!
-                        DEBUG_PRINTF("Too many outliers! %s\n\r");
-                        m_u32_current_vehicle_speed_mph = 0u;
+                        // no more filtering needed
+                        break;
                     }
+
+                    // remove the item with the largest deviation from the list...
+                    u32_num_of_new_readings--;
+                    std::swap(au32_measured_vehicle_speeds[u32_num_of_new_readings], au32_measured_vehicle_speeds[u8_max_deviation_index]);
+
+                    // ...and recalculate average
+                    u32_avg = 0;
+                    for (uint8_t u8_i = 0; u8_i < u32_num_of_new_readings; u8_i++)
+                    {
+                        u32_avg += au32_measured_vehicle_speeds[u8_i];
+                    }
+                    u32_avg /= u32_num_of_new_readings;
                 }
-            }
-            else
-            {
-                // no new readings - set vehicle speed to 0
-                m_u32_current_vehicle_speed_mph = 0u;
+
+                // in case the gap would be extremely huge, we probably have a completely wrong reading.
+                if (u32_gap > 10000) // 10 km/h delta within 10ms
+                {
+                    DEBUG_PRINTF("Unexplicable high gap in the data, data does not make any sense! Gap is %u\n\r", u32_gap);
+                    m_u32_current_vehicle_speed_mph = 0;
+                }
+                else
+                {
+                    // display the filtered value.
+                    m_u32_current_vehicle_speed_mph = u32_avg;
+                }
             }
         }
 

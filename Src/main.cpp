@@ -185,16 +185,9 @@ void MAIN_Cycle_100ms(void)
 
     while(true)
     {
-        if (nullptr != o_application.m_p_o_fuel_gauge_input)
-        {
-            o_application.m_p_o_fuel_gauge_input->process_cycle();
-        }
+        auto start_time = std::chrono::system_clock::now();
 
-        if (nullptr != o_application.m_po_speed_sensor_converter)
-        {
-            o_application.m_po_speed_sensor_converter->cycle();
-        }
-
+        o_application.cycle_100ms();
         // TODO temporarly check this here
         if (nullptr != po_uart)
         {
@@ -205,11 +198,12 @@ void MAIN_Cycle_100ms(void)
         if (counter > 10)
         {
             counter = 0;
-            // backup the shadow to flash every second
-            o_application.get_nonvolatile_data_handler()->store();
+            o_application.cycle_1000ms();
         }
 
-        std_ex::sleep_for(std::chrono::milliseconds(100));
+        auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - std::chrono::system_clock::now());
+        auto sleep_delta = std::min(std::chrono::milliseconds(0), std::chrono::milliseconds(100) - delta);
+        std_ex::sleep_for(sleep_delta);
     }
 }
 
@@ -232,7 +226,7 @@ void MAIN_startup_thread(void*)
 
 
     // wait for the scheduler to be ready.
-    std_ex::sleep_for(std::chrono::milliseconds(400));
+    std_ex::sleep_for(std::chrono::milliseconds(10));
 
     // and create our main application.
     app::MainApplication& o_application = app::MainApplication::get();
@@ -251,16 +245,11 @@ void MAIN_startup_thread(void*)
             po_uart->uart_process_cycle();
         }
 
-        // poll vehicle speed
-        if (nullptr != o_application.m_po_speed_sensor_converter)
-        {
-            o_application.m_po_speed_sensor_converter->poll_vehicle_speed();
-        }
+
 
         // load balancing
         std_ex::sleep_for(std::chrono::milliseconds(10));
-        // check for debug input
-        o_application.get_os_console()->run();
+
     }
     vTaskDelete(NULL);
 }

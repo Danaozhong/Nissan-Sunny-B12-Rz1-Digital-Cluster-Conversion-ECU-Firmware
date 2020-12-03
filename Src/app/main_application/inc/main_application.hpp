@@ -66,6 +66,15 @@ namespace app
 
 		SpeedSensorConverter* get_speed_sensor_converter() const;
 
+		/** Cyclic container to be executed every 10ms */
+		void cycle_10ms();
+
+		/** Cyclic container to be executed every 100ms */
+		void cycle_100ms();
+
+		/** Cyclic container to be executed every 1 second */
+		void cycle_1000ms();
+
 #ifdef USE_NVDH
         std::shared_ptr<midware::NonvolatileDataHandler> get_nonvolatile_data_handler() const;
 #endif

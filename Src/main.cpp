@@ -251,6 +251,12 @@ void MAIN_startup_thread(void*)
             po_uart->uart_process_cycle();
         }
 
+        // poll vehicle speed
+        if (nullptr != o_application.m_po_speed_sensor_converter)
+        {
+            o_application.m_po_speed_sensor_converter->poll_vehicle_speed();
+        }
+
         // load balancing
         std_ex::sleep_for(std::chrono::milliseconds(10));
         // check for debug input
@@ -261,7 +267,7 @@ void MAIN_startup_thread(void*)
 
 
 int main(void)
-{
+ {
     // create the port configuration object
     drivers::UcPorts* po_uc_port_configuration = new drivers::STM32F303CCT6UcPorts();
 

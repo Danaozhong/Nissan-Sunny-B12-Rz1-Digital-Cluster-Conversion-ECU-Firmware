@@ -18,6 +18,9 @@ namespace drivers
 
         /** Reads the duty cycle and the frequency of the set port */
         virtual int32_t read_frequency_and_duty_cycle(uint32_t &u32_frequency_in_milihz, uint32_t &u32_duty_cylce_permil) = 0;
+
+        /** Set a function callback */
+        virtual int32_t set_capture_callback(void(*p_callback)(GenericPWM_IC*, uint32_t, uint32_t)) = 0;
     };
 }
 

@@ -18,7 +18,8 @@ namespace drivers
           m_u32_second_channel(u32_second_channel),
           m_u32_prescaler(u32_prescaler),
           m_u16_arr(u16_arr),
-          m_bo_initialized(false)
+          m_bo_initialized(false),
+          m_p_callback(nullptr)
       {
         memset(&m_timer_handle, 0, sizeof(m_timer_handle));
 
@@ -165,6 +166,12 @@ namespace drivers
 
     }
 
+    int32_t STM32PWM_IC::set_capture_callback(void(*p_callback)(GenericPWM_IC*, uint32_t, uint32_t))
+    {
+        m_p_callback = p_callback;
+        return 0;
+    }
+
     void STM32PWM_IC::process_capture_callback(TIM_HandleTypeDef *htim)
     {
         // HAL_TIM_ACTIVE_CHANNEL_2
@@ -207,6 +214,12 @@ namespace drivers
             {
                 m_u32_duty_cycle_permil = 0u;
                 m_u32_frequency_in_milihz = 0u;
+            }
+
+            // trigger user-configurable callback, if used
+            if (nullptr != m_p_callback)
+            {
+                m_p_callback(this, m_u32_frequency_in_milihz, m_u32_duty_cycle_permil);
             }
 
             // save a timestamp when the last input capture was done

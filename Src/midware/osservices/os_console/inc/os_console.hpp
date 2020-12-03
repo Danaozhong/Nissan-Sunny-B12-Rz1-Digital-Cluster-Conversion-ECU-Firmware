@@ -46,7 +46,17 @@ namespace OSServices
 			return m_ai8_command_str;
 		}
 
+		/** Main processing function when a command is called.
+		 * \param[in] params C string array of params. Each param is separated by a space.
+		 * \param[in] u32_num_of_params Number of parameters.
+		 * \param p_o_io_interface The IO interface from where to retrieve data (yes/no)
+		 */
 		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface) = 0;
+
+		/**
+		 * Prints the usage of this command. The default implementation will do nothing.
+		 */
+		virtual void print_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface) const {}
 		char m_ai8_command_str[COMMAND_MAXIMUM_LENGTH];
 
 	};

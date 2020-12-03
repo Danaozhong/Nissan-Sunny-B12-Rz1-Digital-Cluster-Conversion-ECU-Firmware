@@ -86,22 +86,22 @@ namespace app
         else if (0 == strcmp(params[0], "show"))
         {
             // print all the parameters
-            unsigned int u_input_frequency = static_cast<unsigned int>(po_speed_sensor_converter->get_current_input_frequency());
-            int i_output_speed = static_cast<int>(po_speed_sensor_converter->get_current_speed());
-            int i_input_speed = static_cast<int>(po_speed_sensor_converter->get_current_input_speed());
-            unsigned int u_output_frequency  = static_cast<unsigned int>(po_speed_sensor_converter->get_current_frequency());
+            unsigned int u_current_vehicle_speed = static_cast<unsigned int>(po_speed_sensor_converter->get_current_vehicle_speed()) / 1000;
+            int i_displayed_speed = static_cast<int>(po_speed_sensor_converter->get_current_displayed_speed());
+            //int i_input_speed = static_cast<int>(po_speed_sensor_converter->get_current_input_speed());
+            unsigned int u_output_frequency  = static_cast<unsigned int>(po_speed_sensor_converter->get_current_output_frequency());
 
             char pi8_buffer[1024] = "";
             snprintf(pi8_buffer, 1024, "Speed Sensor Conversion Characteristics:\n\r"
                     "\n\r"
-                    "  Measured vehicle speed:  %i\n\r"
-                    "  Measured PWM frequency: %u.%u Hz\n\r"
-                    "  Displayed vehicle speed:  %i\n\r"
+                    "  Measured vehicle speed:  %ukm/h\n\r"
+                    //"  Measured PWM frequency: %u.%u Hz\n\r"
+                    "  Displayed vehicle speed:  %ikm/h\n\r"
                     "  Display PWM frequency: %u.%u Hz\n\r",
-                    i_input_speed,
-                    u_input_frequency / 1000u,
-                    u_input_frequency % 1000u,
-                    i_output_speed,
+                    u_current_vehicle_speed,
+                    //u_input_frequency / 1000u,
+                    //u_input_frequency % 1000u,
+                    i_displayed_speed,
                     u_output_frequency / 1000u,
                     u_output_frequency % 1000u
                     );
@@ -257,21 +257,53 @@ namespace app
     int32_t CommandDataset::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
    {
        MainApplication& o_application  = MainApplication::get();
-
-       if (u32_num_of_params == 0)
+       if (u32_num_of_params > 0)
        {
-           // parameter error, no parameter provided
-           return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
-       }
+           if (0 == strcmp(params[0], "write_flash"))
+           {
+               int32_t i32_ret_val = o_application.get_dataset().write_dataset(*o_application.get_nonvolatile_data_handler());
 
-       if (0 == strcmp(params[0], "write_flash"))
-       {
-           o_application.get_dataset().write_dataset(*o_application.get_nonvolatile_data_handler());
-           return OSServices::ERROR_CODE_SUCCESS;
+               if (OSServices::ERROR_CODE_SUCCESS == i32_ret_val)
+               {
+                   p_o_io_interface << "dataset written successfully.\n\r";
+                   return OSServices::ERROR_CODE_SUCCESS;
+               }
+               p_o_io_interface << "Error writing dataset to flash!\n\r";
+               return OSServices::ERROR_CODE_INTERNAL_ERROR;
+
+           }
+           else if (0 == strcmp(params[0], "load_flash"))
+           {
+               int32_t i32_ret_val = o_application.get_dataset().load_dataset(*o_application.get_nonvolatile_data_handler());
+
+               if (OSServices::ERROR_CODE_SUCCESS == i32_ret_val)
+               {
+                   p_o_io_interface << "dataset loaded successfully.\n\r";
+                   return OSServices::ERROR_CODE_SUCCESS;
+               }
+               p_o_io_interface << "Error loading dataset from flash!\n\r";
+               return OSServices::ERROR_CODE_INTERNAL_ERROR;
+           }
+           else if (0 == strcmp(params[0], "load_default"))
+           {
+               /* overwrite the current dataset with the default one */
+               o_application.get_dataset().load_default_dataset();
+               p_o_io_interface << "Default dataset loaded to RAM.\n\r";
+               return OSServices::ERROR_CODE_SUCCESS;
+           }
        }
-       // if no early return, the command was executed successfully.
+       print_usage(p_o_io_interface);
        return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
    }
+
+    void CommandDataset::print_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface) const
+    {
+        p_o_io_interface << "Datset command\n\r";
+        p_o_io_interface << "Supported parameters:\n\r";
+        p_o_io_interface << "write_flash - writes the currently configured dataset into flash.\n\r";
+        p_o_io_interface << "load_flash - loads the currently configured dataset into flash.\n\r";
+        p_o_io_interface << "load_default - overwrites the dataset in RAM with the default values.:\n\r";
+    }
 
     int32_t CommandVersion::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
    {

@@ -10,10 +10,14 @@ namespace app
     {
     public:
 
+        /** Loads a dataset from a nonvolatile data source
+         * \return ERROR_CODE_SUCCESS if successful, otherwise ... */
         int32_t load_dataset(midware::NonvolatileDataHandler &po_nonvolatile_data_handler);
 
+        /** Loads the default dataset (hardcoded values */
         void load_default_dataset();
 
+        /** Writes the currently dataset in RAM into nonvolatile memory */
         int32_t write_dataset(midware::NonvolatileDataHandler &po_nonvolatile_data_handler);
 
         const app::CharacteristicCurve<int32_t, int32_t>& get_fuel_input_lookup_table() const;

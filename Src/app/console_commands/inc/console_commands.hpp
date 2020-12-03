@@ -21,7 +21,9 @@ namespace app
         virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
     };
 
-
+    /**
+     * This command is used to configure everything related to the fuel signal conversion.
+     */
     class CommandFuel : public OSServices::Command
     {
     public:
@@ -34,6 +36,9 @@ namespace app
         virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
     };
 
+    /**
+     * This command is used to handle the dataset. It handles dataset and storage/loading from RAM.
+     */
     class CommandDataset : public OSServices::Command
     {
     public:
@@ -42,8 +47,13 @@ namespace app
         virtual ~CommandDataset() {};
 
         virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
+
+        virtual void print_usage(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface) const;
     };
 
+    /**
+     * This command is used to print version information of the flashed SW.
+     */
     class CommandVersion : public OSServices::Command
     {
     public:

@@ -62,11 +62,13 @@ namespace app
 
         if (OSServices::ERROR_CODE_SUCCESS != lb_store_characteristic_curve(m_o_fuel_gauge_output_characteristic, 100))
         {
-            // don't write the new dataset - it is too large. TODO give exception
+            // don't write the new dataset - it is too large.
+            return OSServices::ERROR_CODE_NOT_ENOUGH_MEMORY;
         }
         if (OSServices::ERROR_CODE_SUCCESS != lb_store_characteristic_curve(m_o_fuel_gauge_input_characteristic, 200))
         {
             // don't write the new dataset - it is too large. TODO give exception
+            return OSServices::ERROR_CODE_NOT_ENOUGH_MEMORY;
         }
 
         return OSServices::ERROR_CODE_SUCCESS;
@@ -82,10 +84,8 @@ namespace app
             return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
         }
 
-        int32_t i32_ret_val;
-
         std::vector<uint8_t> au8_buffer;
-        i32_ret_val = o_nonvolatile_data_handler.read_section(ai8_section_name, au8_buffer);
+        int32_t i32_ret_val = o_nonvolatile_data_handler.read_section(ai8_section_name, au8_buffer);
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {
             return i32_ret_val;
@@ -155,8 +155,8 @@ namespace app
          * http://texelography.com/2019/06/21/nissan-rz1-digital-cluster-conversion/ for the full dataset */
         std::pair<int32_t, int32_t> a_input_lut[] =
         {
-                /* Fuel level (% * 100)  Resistor value in mOhm */
-                std::make_pair(-1000, 120000),
+                /* x = Fuel level (% * 100), y = Resistor value in mOhm */
+                std::make_pair(-1000, 120000), /* this is below empty */
                 std::make_pair(-100, 87000),
                 std::make_pair(500, 80600),
                 std::make_pair(2500, 61800),
@@ -164,31 +164,30 @@ namespace app
                 std::make_pair(7700, 21000),
                 std::make_pair(10000, 11800),
                 std::make_pair(11000, 2400),
-                std::make_pair(11500, 0000),
+                std::make_pair(11500, 0000), /* fuel value supports more than 100% - if the tank is really filled to the maximum */
         };
 
         m_o_fuel_gauge_input_characteristic = app::CharacteristicCurve<int32_t, int32_t>(a_input_lut, sizeof(a_input_lut) / sizeof(a_input_lut[0]));
 
-        /* Characteristics of the digital cluster fuel gauge */
+        /* Characteristics of the digital cluster fuel gauge
+         * x = percentage, y = output voltage (mV) */
         std::pair<int32_t, int32_t> a_output_lut[] =
         {
                 std::make_pair(-1000, 5000),
                 std::make_pair(0, 5000),
                 std::make_pair(100, 4900),
-                //std::make_pair(0, 4700),
                 std::make_pair(714, 4340),
                 std::make_pair(2143, 4040),
                 std::make_pair(4286, 3300),
-                std::make_pair(6429, 2240),
-                std::make_pair(9286, 1100),
-                std::make_pair(10000, 700),
-                std::make_pair(11000, 700)
+                std::make_pair(6429, 2000),
+                std::make_pair(9200, 700) /* up to 92% fuel level display all bars */
         };
+
 
         m_o_fuel_gauge_output_characteristic = app::CharacteristicCurve<int32_t, int32_t>(a_output_lut, sizeof(a_output_lut) / sizeof(a_output_lut[0]));
 
         // for speed conversion
-        //m_u32_input_pulses_per_kmph_mHz = 4200u; // for testing feedback only
+        //m_u32_input_pulses_per_kmph_mHz = 4200u; // for testing direct feedback only (input pin connected to output pin)
         m_u32_input_pulses_per_kmph_mHz = 700u;
         m_u32_output_pulses_per_kmph_mHz = 4200u;
         m_u32_dac_out_amplifying_factor = 2000u;

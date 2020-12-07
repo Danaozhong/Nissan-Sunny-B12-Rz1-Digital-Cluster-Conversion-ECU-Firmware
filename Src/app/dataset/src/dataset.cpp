@@ -175,12 +175,12 @@ namespace app
         {
                 std::make_pair(-1000, 5000),
                 std::make_pair(0, 5000),
-                std::make_pair(100, 4900),
-                std::make_pair(714, 4340),
-                std::make_pair(2143, 4040),
+                std::make_pair(100, 4800),
+                std::make_pair(714, 4500),
+                std::make_pair(2143, 4100),
                 std::make_pair(4286, 3300),
                 std::make_pair(6429, 2000),
-                std::make_pair(9200, 700) /* up to 92% fuel level display all bars */
+                std::make_pair(9000, 700) /* up to 90% fuel level display all bars */
         };
 
 

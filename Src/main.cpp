@@ -185,14 +185,17 @@ void MAIN_Cycle_100ms(void)
 
     while(true)
     {
-        auto start_time = std::chrono::system_clock::now();
+        //auto start_time = std::chrono::system_clock::now();
+
+        o_application.cycle_10ms();
+
 
         o_application.cycle_100ms();
         // TODO temporarly check this here
-        if (nullptr != po_uart)
-        {
-            po_uart->uart_process_cycle();
-        }
+        //if (nullptr != po_uart)
+        //{
+        //    po_uart->uart_process_cycle();
+        //}
 
         counter++;
         if (counter > 10)
@@ -201,9 +204,11 @@ void MAIN_Cycle_100ms(void)
             o_application.cycle_1000ms();
         }
 
-        auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - std::chrono::system_clock::now());
-        auto sleep_delta = std::min(std::chrono::milliseconds(0), std::chrono::milliseconds(100) - delta);
-        std_ex::sleep_for(sleep_delta);
+        //auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - std::chrono::system_clock::now());
+        //auto sleep_delta = std::min(std::chrono::milliseconds(0), std::chrono::milliseconds(100) - delta);
+        std_ex::sleep_for(std::chrono::milliseconds(100));
+        //std_ex::sleep_for(sleep_delta);
+
     }
 }
 
@@ -226,7 +231,7 @@ void MAIN_startup_thread(void*)
 
 
     // wait for the scheduler to be ready.
-    std_ex::sleep_for(std::chrono::milliseconds(10));
+    //std_ex::sleep_for(std::chrono::milliseconds(400));
 
     // and create our main application.
     app::MainApplication& o_application = app::MainApplication::get();
@@ -236,15 +241,16 @@ void MAIN_startup_thread(void*)
     std_ex::thread* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
     cycle_100ms_thread->detach();
 
+    drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
+
     while (true)
     {
         // Check for data on the UART
-        drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
+
         if (nullptr != po_uart)
         {
             po_uart->uart_process_cycle();
         }
-
 
 
         // load balancing
@@ -274,7 +280,7 @@ int main(void)
     TaskHandle_t xHandle = NULL;
     xTaskCreate( MAIN_startup_thread,
                  "MAIN_startup_thread",
-                 0x800,
+                 0xA00,
                  NULL,
                  3u,
                  &xHandle );

@@ -144,13 +144,12 @@ namespace app
 
 	void MainApplication::cycle_10ms()
 	{
-        // poll vehicle speed
-        if (nullptr != m_po_speed_sensor_converter)
-        {
-            m_po_speed_sensor_converter->poll_vehicle_speed();
-        }
         // check for debug input
-        get_os_console()->run();
+	    auto p_console = get_os_console();
+	    if (nullptr != p_console)
+	    {
+	        p_console->run();
+	    }
 	}
 
     void MainApplication::cycle_100ms()

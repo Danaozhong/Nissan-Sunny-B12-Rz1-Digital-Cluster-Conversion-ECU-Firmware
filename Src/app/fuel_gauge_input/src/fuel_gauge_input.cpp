@@ -35,6 +35,11 @@ namespace app
 		return 0;
 	}
 
+	int32_t VoltageDivider::get_supply_voltage() const
+	{
+	    return m_i32_supply_voltage;
+	}
+
 	ParallelVoltageDivider::ParallelVoltageDivider(uint32_t d_resistor_1, uint32_t d_resistor_2_parallel, int32_t d_supply_voltage)
 	: m_u32_resistor_1(d_resistor_1), m_i32_supply_voltage(d_supply_voltage), m_u32_resistor_2_parallel(d_resistor_2_parallel),
 			m_voltage_divider(d_resistor_1, d_supply_voltage)
@@ -52,7 +57,9 @@ namespace app
 			const app::CharacteristicCurve<int32_t, int32_t>& o_fuel_input_characteristic)
 	: m_p_adc(p_adc), m_o_fuel_input_characteristic(o_fuel_input_characteristic),
 	  m_u32_buffer_counter(0u), m_bo_initialized(false), m_bo_terminate_thread(false), m_u32_invalid_read_counter(0u),
-      m_o_voltage_divider(100000, 3000) // 100 Ohm (value representation is in mOhm), 3V supply
+      m_o_voltage_divider(100000, 3300), // 100 Ohm (value representation is in mOhm), 3V3 supply
+      m_i32_adc_pin_voltage(0),
+      m_i32_fuel_sensor_resistor_value(0)
 	{
 #ifdef FUEL_GAUGE_INPUT_USE_OWN_TASK
 		// start the data acquisition thread
@@ -82,15 +89,16 @@ namespace app
         FUEL_GAUGE_LOG("Current ADC value: %u\r\n", u32_adc_value);
 
         // covert to voltage
-        int32_t i32_adc_pin_voltage = (3300 * u32_adc_value) / m_p_adc->get_adc_max_value();
+        m_i32_adc_pin_voltage = (m_o_voltage_divider.get_supply_voltage() * u32_adc_value) / m_p_adc->get_adc_max_value();
         FUEL_GAUGE_LOG("Current ADC voltage: %i.%iV\r\n", i32_adc_pin_voltage / 1000, i32_adc_pin_voltage % 1000);
 
         // convert to resistor value of the fuel sensor (in mOhm)
-        int32_t i32_last_read_resistor_value = m_o_voltage_divider.get_resistor_2_value(i32_adc_pin_voltage);
-        FUEL_GAUGE_LOG("Current calculated resistor value: %i mOhm\r\n", i32_last_read_resistor_value);
+        m_i32_fuel_sensor_resistor_value = m_o_voltage_divider.get_resistor_2_value(m_i32_adc_pin_voltage);
+
+        FUEL_GAUGE_LOG("Current calculated resistor value: %i mOhm\r\n", m_i32_fuel_sensor_resistor_value);
 
         // find the percentage
-        int32_t i32_read_fuel_percentage = m_o_fuel_input_characteristic.get_x(i32_last_read_resistor_value);
+        int32_t i32_read_fuel_percentage = m_o_fuel_input_characteristic.get_x(m_i32_fuel_sensor_resistor_value);
 
         /* On the first read, initialize the buffer with the read values */
         if (false == m_bo_initialized)
@@ -162,4 +170,15 @@ namespace app
 		}
 		return static_cast<int32_t>(i64_avg_value / FUEL_GAUGE_INPUT_AVERAGING_SIZE);
 	}
+
+
+    int32_t FuelGaugeInputFromADC::get_adc_voltage() const
+    {
+        return m_i32_adc_pin_voltage;
+    }
+
+    int32_t FuelGaugeInputFromADC::get_fuel_sensor_resistor_value() const
+    {
+        return m_i32_fuel_sensor_resistor_value;
+    }
 }

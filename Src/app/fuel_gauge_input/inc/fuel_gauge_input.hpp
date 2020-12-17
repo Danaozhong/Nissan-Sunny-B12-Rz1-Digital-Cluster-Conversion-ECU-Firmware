@@ -25,6 +25,9 @@ namespace app
 
 		uint32_t get_resistor_2_value(int32_t i32_resistor_2_voltage) const;
 		int32_t get_resistor_2_voltage(uint32_t u32_resistor_2_value) const;
+
+		/** Returns the supply voltage in mV */
+		int32_t get_supply_voltage() const;
 	private:
 		uint32_t m_u32_resistor_1;
 		int32_t m_i32_supply_voltage;
@@ -57,6 +60,13 @@ namespace app
 		void process_cycle();
 
 		int32_t get_average_fuel_percentage() const;
+
+		/** Returns the voltage read at the ADC */
+		int32_t get_adc_voltage() const;
+
+		/** Reaturns the calculated fuel resistor value */
+		int32_t get_fuel_sensor_resistor_value() const;
+
     private:
 #ifdef FUEL_GAUGE_INPUT_USE_OWN_TASK
         void thread_main(void);
@@ -79,6 +89,9 @@ namespace app
         // and a 330Ohm resistor in parallel to the fuel gauge.
         VoltageDivider m_o_voltage_divider;
 
+        // some variables to store
+        int32_t m_i32_adc_pin_voltage;
+        int32_t m_i32_fuel_sensor_resistor_value;
 
 
 	};

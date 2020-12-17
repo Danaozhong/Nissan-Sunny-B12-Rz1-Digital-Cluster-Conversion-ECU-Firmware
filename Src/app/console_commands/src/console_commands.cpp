@@ -97,7 +97,7 @@ namespace app
                     "  Measured vehicle speed:  %ukm/h\n\r"
                     //"  Measured PWM frequency: %u.%u Hz\n\r"
                     "  Displayed vehicle speed:  %ikm/h\n\r"
-                    "  Display PWM frequency: %u.%u Hz\n\r",
+                    "  Display PWM frequency: %u.%02u Hz\n\r",
                     u_current_vehicle_speed,
                     //u_input_frequency / 1000u,
                     //u_input_frequency % 1000u,
@@ -181,6 +181,9 @@ namespace app
         else if (0 == strcmp(params[0], "show"))
         {
             // print all the parameters
+            int i_inut_adc_voltage = o_application.m_p_o_fuel_gauge_input->get_adc_voltage();
+            int i_inut_fuel_resistor_value = o_application.m_p_o_fuel_gauge_input->get_fuel_sensor_resistor_value();
+
             int i32_average_fuel_level_sensor = o_application.m_i32_fuel_sensor_read_value;
             int i32_manually_set_fuel_level = o_application.m_i32_fuel_gauge_output_manual_value;
             int i32_voltage_cluster = o_application.m_p_o_fuel_gauge_output->get_voltage_output();
@@ -190,11 +193,17 @@ namespace app
 
             snprintf(pi8_buffer, 500, "Fuel Level Conversion Characteristics:\n\r"
                     "\n\r"
+                    "  ADC voltage: %i.%02iV\n\r"
+                    "  Input fuel sensor resistance: %i.%02iOhm\n\r"
                     "  Input fuel sensor level:  %i%%\n\r"
                     "  Manually set fuel sensor level: %i%%\n\r"
-                    "  Simulated sensor voltage: %i.%iV\n\r"
-                    "  Output voltage DAC: %i.%iV\n\r"
-                    "  DAC amplify factor: %i.%i\n\r",
+                    "  Simulated sensor voltage: %i.%02iV\n\r"
+                    "  Output voltage DAC: %i.%02iV\n\r"
+                    "  DAC amplify factor: %i.%02i\n\r",
+                    i_inut_adc_voltage / 1000,
+                    (i_inut_adc_voltage % 1000) / 10,
+                    i_inut_fuel_resistor_value / 1000,
+                    (i_inut_fuel_resistor_value % 1000) / 10,
                     i32_average_fuel_level_sensor / 100,
                     i32_manually_set_fuel_level / 100,
                     i32_voltage_cluster / 1000,

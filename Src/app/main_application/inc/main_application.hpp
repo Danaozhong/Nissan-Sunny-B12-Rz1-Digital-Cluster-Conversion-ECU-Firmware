@@ -29,6 +29,7 @@
 #ifdef USE_TRACE
 #include "trace.hpp"
 #endif
+#include "eol.hpp"
 
 namespace app
 {
@@ -80,6 +81,9 @@ namespace app
 #endif
 		std::shared_ptr<OSServices::OSConsole> get_os_console();
 
+		std::shared_ptr<OSServices::OSConsoleGenericIOInterface> get_stdio();
+
+
 
         /** Use this to select the mode in which the speed signal is sent out to the cluster.
          * use OUTPUT_MODE_CONVERSION to derive the speed signal from the input speed sensor,
@@ -94,6 +98,9 @@ namespace app
 
         const app::Dataset& get_dataset() const;
         app::Dataset& get_dataset();
+
+        app::EOLData& get_eol_data();
+
     //private:
         // prevent copying
         MainApplication(MainApplication &other) = delete;
@@ -130,6 +137,8 @@ namespace app
 		SpeedSensorConverter* m_po_speed_sensor_converter;
 
 		app::Dataset m_o_dataset;
+
+		app::EOLData m_o_eol_data;
 
 	    int32_t m_i32_fuel_sensor_read_value;
 	    int32_t m_i32_fuel_gauge_output_manual_value;

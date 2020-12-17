@@ -61,7 +61,6 @@ SET(PROJECT_SOURCES
     drivers/adc/src/stm32_adc.cpp
     drivers/dac/src/generic_dac.cpp
     drivers/dac/src/stm32_dac.cpp
-    drivers/eeprom/src/eeprom.c
     drivers/pwm/src/stm32_pwm.cpp
     drivers/pwm_ic/src/stm32_pwm_ic.cpp
     drivers/uart/src/generic_uart.cpp
@@ -71,26 +70,13 @@ SET(PROJECT_SOURCES
 
     
     midware/events/event_handler.cpp
-    midware/excp_handler/src/excp_handler.cpp
-    midware/excp_handler/src/excp_handler_console_commands.cpp
-    
-
     midware/std_ex/ex_threads/ex_thread.cpp
-
-    midware/util_algorithms/src/util_algorithms.cpp
-    
-
-    
     misc/ascii_arts/src/ascii_diagram.cpp
 )
 
 
 
-if (USE_NVDH)
-    list(APPEND PROJECT_SOURCES
-        midware/nonvolatile_data/src/nonvolatile_data_handler.cpp
-    )
-endif()
+
 
 add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})
 
@@ -122,7 +108,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/adc/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/dac/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/eeprom/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/pwm/inc
     drivers/pwm_ic/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uart/inc
@@ -130,10 +115,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/cppstdlib
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/events
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/excp_handler/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/osservices/os_console/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/std_ex/ex_threads
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/util_algorithms/inc
 
     misc/ascii_arts/inc
 )
@@ -151,16 +134,28 @@ list(APPEND EXTRA_LIBS stdcppex)
 add_subdirectory(midware/osservices)
 list(APPEND EXTRA_LIBS osservices)
 
-add_subdirectory(misc/libs/libtable)
-list(APPEND EXTRA_LIBS libtable)
+add_subdirectory(midware/util_algorithms)
+list(APPEND EXTRA_LIBS util_algorithms)
 
 add_subdirectory(drivers/uart)
 list(APPEND EXTRA_LIBS uart)
 
+add_subdirectory(drivers/eeprom)
+list(APPEND EXTRA_LIBS eeprom)
+
+add_subdirectory(misc/libs/libtable)
+list(APPEND EXTRA_LIBS libtable)
+
 add_subdirectory(app/version_info)
 list(APPEND EXTRA_LIBS version_info)
 
+add_subdirectory(app/eol)
+list(APPEND EXTRA_LIBS eol)
 
+if (USE_NVDH)
+    add_subdirectory(midware/nonvolatile_data)
+    list(APPEND EXTRA_LIBS nonvolatile_data_handler)
+endif()
 
 if (USE_TRACE)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
@@ -169,6 +164,11 @@ if (USE_TRACE)
     add_subdirectory(midware/trace)
     list(APPEND EXTRA_LIBS trace)
 endif()
+
+
+add_subdirectory(midware/excp_handler)
+list(APPEND EXTRA_LIBS excp_handler)
+
 
 if (USE_CAN)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC

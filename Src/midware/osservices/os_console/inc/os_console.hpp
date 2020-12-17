@@ -12,6 +12,7 @@
 #include "freertos/task.h"
 
 #include "generic_uart.hpp"
+#include "os_console.hpp"
 
 #define COMMAND_MAXIMUM_LENGTH (30u)
 #define LINE_LENGTH  (100u)

@@ -152,13 +152,21 @@ namespace midware
             auto itr = find_section(default_section.m_ac_name);
             if (itr == m_flash_sections.end())
             {
-                add_section(default_section.m_ac_name, default_section.m_u32_size);
+                i32_ret_val = add_section(default_section.m_ac_name, default_section.m_u32_size);
+                if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
+                {
+                    ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_SECTION_ADD_FAILED, false, __FILE__, __LINE__, i32_ret_val);
+
+                }
             }
             else if (itr->m_u32_size != default_section.m_u32_size)
             {
-                resize_section(default_section.m_ac_name, default_section.m_u32_size);
+                i32_ret_val = resize_section(default_section.m_ac_name, default_section.m_u32_size);
+                if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
+                {
+                    ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_RESIZE_FAILED, false, __FILE__, __LINE__, i32_ret_val);
 
-                // todo must check if the resize is successful.
+                }
             }
         }
         return i32_ret_val;
@@ -358,6 +366,7 @@ namespace midware
 
            if (false == EE_Reads(0, u32_block_size_in_words, au32_buffer)) /* _EEPROM_FLASH_PAGE_SIZE is missing here TODO */
            {
+               ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_READ_FAILED, false, __FILE__, __LINE__, 0u);
                return OSServices::ERROR_CODE_INTERNAL_ERROR;
            }
 
@@ -367,11 +376,14 @@ namespace midware
                // data of this flash block is different to what we see, rewrite
                if (false == EE_ErasePage(u16_block))
                {
+                   ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_ERASE_FAILED, false, __FILE__, __LINE__, 0u);
                    return OSServices::ERROR_CODE_INTERNAL_ERROR;
                }
                // write the block
-               if (false == EE_Writes(0, cu32_current_block_size / 4, reinterpret_cast<uint32_t*>(m_au8_data_shadow.data() + current_read_index)))
+               uint32_t u32_ret_val = EE_Writes(0, cu32_current_block_size / 4, reinterpret_cast<uint32_t*>(m_au8_data_shadow.data() + current_read_index));
+               if (0 != u32_ret_val)
                {
+                   ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_WRITE_FAILED, false, __FILE__, __LINE__, u32_ret_val);
                    return OSServices::ERROR_CODE_INTERNAL_ERROR;
                }
            }
@@ -384,11 +396,10 @@ namespace midware
     {
         m_ao_flash_default_sections.clear();
         int32_t i32_ret_val = OSServices::ERROR_CODE_SUCCESS;
-
+        uint32_t u32_total_size = cu32_header_size + cu32_block_information_size;
         for (auto section : ao_default_sections)
         {
             // check is such a section already exists
-            uint32_t u32_total_size = cu32_header_size + cu32_block_information_size;
             if (std::find_if(std::begin(m_ao_flash_default_sections), std::end(m_ao_flash_default_sections), [&](const auto& cmp)
             {
                 return strcmp(cmp.m_ac_name, section.m_ac_name) == 0;
@@ -409,8 +420,11 @@ namespace midware
                 continue;
             }
 
+            u32_total_size += section.m_u32_size;
+
             m_ao_flash_default_sections.push_back(section);
         }
+
         return i32_ret_val;
     }
 

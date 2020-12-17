@@ -73,16 +73,17 @@ namespace app
         // initialize non-volatile memory (uses 1 block of size 1024) TODO move config to CMake
         m_po_nonvolatile_data_handler = std::make_shared<midware::NonvolatileDataHandler>(1u, 1024u);
 
-        // Configure the default sections for the module
+        // Configure the default sections for the module. Size must be < total size (header
         std::vector<midware::FlashSection> default_flash_sections =
-                {
-                    midware::FlashSection{"EXCP", 256},
-                    midware::FlashSection{"DATASET", 512}
-                };
+        {
+            midware::FlashSection{"EOL", 64u},
+            midware::FlashSection{"EXCP", 300u},
+            midware::FlashSection{"DATASET", 300u}
+        };
 
         if (OSServices::ERROR_CODE_SUCCESS != m_po_nonvolatile_data_handler->set_default_sections(default_flash_sections))
         {
-            ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_SETTING_DEFAULT_SECTIONS_FAILED, false, __FILE__, __LINE__, 0u);
+            ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_SETTING_DEFAULT_SECTIONS_FAILED, true, __FILE__, __LINE__, 0u);
         }
 
         // afterwards, have a look what is in memory and read it
@@ -103,6 +104,18 @@ namespace app
 	    m_po_os_console->register_command(new midware::CommandListExceptions());
 
 
+        m_o_eol_data.set_nonvolatile_data_handler(m_po_nonvolatile_data_handler, "EOL");
+        if (OSServices::ERROR_CODE_SUCCESS != m_o_eol_data.eol_init())
+        {
+            ExceptionHandler_handle_exception(EXCP_MODULE_EOL, EXCP_TYPE_NONVOLATILE_DATA_LOADING_FAILED, false, __FILE__, __LINE__, 0u);
+        }
+
+        // print further bootscreen info (SW version, EOL data, etc.)
+        auto p_o_command_version = new app::CommandVersion();
+        this->m_po_os_console->register_command(p_o_command_version);
+        p_o_command_version->command_main(nullptr, 0, this->get_stdio());
+
+
 #ifdef USE_NVDH
 	    // read the dataset
 	    if (OSServices::ERROR_CODE_SUCCESS != m_o_dataset.load_dataset(*m_po_nonvolatile_data_handler))
@@ -110,13 +123,15 @@ namespace app
 	        ExceptionHandler_handle_exception(EXCP_MODULE_DATASET, EXCP_TYPE_DATASET_LOADING_FAILED, false, __FILE__, __LINE__, 0u);
 	        // load default dataset
 	        m_o_dataset.load_default_dataset();
+
+	        // overwrite corrupted dataset in flash
+	        m_o_dataset.write_dataset(*m_po_nonvolatile_data_handler);
 	    }
 
 #else
 	    // load default dataset
         m_o_dataset.load_default_dataset();
 #endif
-
 
         // initialization below is for the application
         init_fuel_level_converter();
@@ -127,7 +142,6 @@ namespace app
         this->m_po_os_console->register_command(new app::CommandSpeed());
         this->m_po_os_console->register_command(new app::CommandFuel());
         this->m_po_os_console->register_command(new app::CommandDataset());
-        this->m_po_os_console->register_command(new app::CommandVersion());
 	}
 
 	MainApplication& MainApplication::get()
@@ -186,6 +200,11 @@ namespace app
 	    return this->m_po_os_console;
 	}
 
+    std::shared_ptr<OSServices::OSConsoleGenericIOInterface> MainApplication::get_stdio()
+    {
+        return get_os_console()->get_io_interface();
+    }
+
     void MainApplication::set_fuel_gauge_output_mode(FuelGaugeOutputMode en_fuel_output_mode)
     {
         m_en_fuel_gauge_output_mode = en_fuel_output_mode;
@@ -206,6 +225,11 @@ namespace app
     app::Dataset& MainApplication::get_dataset()
     {
         return m_o_dataset;
+    }
+
+    app::EOLData& MainApplication::get_eol_data()
+    {
+        return m_o_eol_data;
     }
 
 	void MainApplication::fuel_sensor_input_received(int32_t i32_value)

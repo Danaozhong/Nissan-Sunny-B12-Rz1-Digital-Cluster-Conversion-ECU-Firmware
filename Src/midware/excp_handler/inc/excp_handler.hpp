@@ -4,7 +4,9 @@
 #include "excp_handler_if.h"
 #include "os_console.hpp"
 #include <vector>
+#ifdef USE_NVDH
 #include "nonvolatile_data_handler.hpp"
+#endif
 
 #define EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH (16)
 // TODO make this code thread safe
@@ -22,7 +24,7 @@ namespace midware
                 ExceptionTypeID en_exception_id,
                 bool bo_critical,
                 const char* pci8_file,
-                uint32_t u32_line, uint32_t u32_misc);
+                uint32_t u32_line, int32_t i32_misc);
 
         int32_t store_into_buffer_version_100(uint8_t* pu8_memory, size_t u_memory_size, size_t &written_size) const;
 
@@ -34,7 +36,7 @@ namespace midware
         bool m_bo_critical;
         char m_ai8_file[EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH];
         uint32_t m_u32_line;
-        uint32_t m_u32_misc;
+        int32_t m_i32_misc;
         uint32_t m_u32_occurence_count;
         uint64_t m_u64_timestamp;
     };
@@ -57,7 +59,7 @@ namespace midware
                 ExceptionTypeID en_exception_id,
                 bool bo_critical,
                 const char* pci8_file,
-                uint32_t u32_line, uint32_t u32_misc);
+                uint32_t u32_line, int32_t i32_misc);
 
         /// same as the parameter version of handle_exception(), but this time takes an object
         void handle_exception(const Exception &exception);

@@ -315,13 +315,33 @@ namespace app
     }
 
     int32_t CommandVersion::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
-   {
+    {
         p_o_io_interface << "\n\r\n\r";
         p_o_io_interface << app::get_app_name() << "\n\r\n\r";
         p_o_io_interface << app::get_version_info() << "\n\r";
-        p_o_io_interface << "Build on commit #" << app::get_git_commit() << "\n\r\n\r";
-       // if no early return, the command was executed successfully.
-       return OSServices::ERROR_CODE_SUCCESS;
+        p_o_io_interface << "Build on commit #" << app::get_git_commit() << "\n\r";
+
+        // print some further stuff about the EOL data
+        app::MainApplication& o_application = app::MainApplication::get();
+        auto eol_data = o_application.get_eol_data();
+        p_o_io_interface << "Serial No #" << eol_data.get_serial_no() << "\n\r";
+        if (!eol_data.is_eol_data_written())
+        {
+            p_o_io_interface << "EOL data not written - developer build\n\r";
+        }
+        else
+        {
+            p_o_io_interface << "EOL data written\n\r";
+        }
+        if (!eol_data.is_fuel_sensor_licensed())
+        {
+            p_o_io_interface << "   WARNING: fuel sensor conversion is not licensed, and will eventually cease to function.\n\r";
+        }
+        if (!eol_data.is_speed_sensor_licensed())
+        {
+            p_o_io_interface << "   WARNING: speed sensor conversion is not licensed, and will eventually cease to function.\n\r";
+        }
+        return OSServices::ERROR_CODE_SUCCESS;
    }
 }
 

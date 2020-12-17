@@ -21,10 +21,10 @@ namespace midware
             ExceptionTypeID en_exception_id,
             bool bo_critical,
             const char* pci8_file,
-            uint32_t u32_line, uint32_t u32_misc)
+            uint32_t u32_line, int32_t i32_misc)
         : m_en_module_id(en_module_id), m_en_exception_id(en_exception_id),
           m_bo_critical(bo_critical),
-          m_u32_line(u32_line), m_u32_misc(u32_misc),
+          m_u32_line(u32_line), m_i32_misc(i32_misc),
           m_u32_occurence_count(0u)
     {
         std::memset(m_ai8_file, 0, EXCP_HANDLER_EXCEPTION_FILE_NAME_ATTR_MAX_LENGTH);
@@ -70,7 +70,7 @@ namespace midware
          */
         memcpy(&pu8_memory[0], &u32_module_id, 4);
         memcpy(&pu8_memory[4], &u32_exception_id, 4);
-        memcpy(&pu8_memory[8], &m_u32_misc, 4);
+        memcpy(&pu8_memory[8], &m_i32_misc, 4);
         memcpy(&pu8_memory[12], &m_u32_line, 4);
         memcpy(&pu8_memory[16], &m_u32_occurence_count, 4);
         memcpy(&pu8_memory[20], &m_u64_timestamp, 8);
@@ -85,17 +85,19 @@ namespace midware
 
     void Exception::print(char* pi8_buffer, size_t u_buffer_size) const
     {
-        snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%u\t%u\t%lu\t%s\r\n",
+        snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%i\t%u\t%lu\t%s\r\n",
             static_cast<unsigned int>(m_en_module_id),
             static_cast<unsigned int>(m_en_exception_id),
-            static_cast<unsigned int>(m_u32_misc),
+            static_cast<int>(m_i32_misc),
             static_cast<unsigned int>(m_u32_occurence_count),
             static_cast<unsigned long>(m_u64_timestamp),
             m_ai8_file);
     }
 
     ExceptionHandler::ExceptionHandler()
+#ifdef USE_NVDH
      : m_cu8_flash_section_name("INV"), m_po_nonvolatile_data_handler(nullptr)
+#endif
     {
     }
 
@@ -150,9 +152,9 @@ namespace midware
             ExceptionTypeID en_exception_id,
             bool bo_critical,
             const char* pci8_file,
-            uint32_t u32_line, uint32_t u32_misc)
+            uint32_t u32_line, int32_t i32_misc)
     {
-        Exception o_excp(en_module_id, en_exception_id, bo_critical, pci8_file, u32_line, u32_misc);
+        Exception o_excp(en_module_id, en_exception_id, bo_critical, pci8_file, u32_line, i32_misc);
         handle_exception(o_excp);
     }
 
@@ -216,7 +218,7 @@ namespace midware
 
             snprintf(ac_module_id, 10, "%u", static_cast<unsigned int>(itr->m_en_module_id));
             snprintf(ac_excp_id, 10, "%u", static_cast<unsigned int>(itr->m_en_exception_id));
-            snprintf(ac_misc, 10, "%u", static_cast<unsigned int>(itr->m_u32_misc));
+            snprintf(ac_misc, 10, "%i", static_cast<int>(itr->m_i32_misc));
             snprintf(ac_count, 10, "%u", static_cast<unsigned int>(itr->m_u32_occurence_count));
             snprintf(ac_timestamp, 10, "%ul", static_cast<unsigned long>(itr->m_u64_timestamp));
             snprintf(ac_line, 10, "%u", static_cast<unsigned int>(itr->m_u32_line));
@@ -245,10 +247,10 @@ namespace midware
         }
 
 
-        snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%u\t%u\t%lu\t%s\r\n",
+        snprintf(pi8_buffer, u_buffer_size, "%u\t%u\t%i\t%u\t%lu\t%s\r\n",
             static_cast<unsigned int>(m_en_module_id),
             static_cast<unsigned int>(m_en_exception_id),
-            static_cast<unsigned int>(m_u32_misc),
+            static_cast<unsigned int>(m_i32_misc),
             static_cast<unsigned int>(m_u32_occurence_count),
             static_cast<unsigned long>(m_u64_timestamp),
             m_ai8_file);
@@ -321,7 +323,14 @@ namespace midware
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
 
         }
-        std::vector<uint8_t> au8_buffer(m_po_nonvolatile_data_handler->get_section_size(m_cu8_flash_section_name));
+
+        const uint32_t u32_section_size = m_po_nonvolatile_data_handler->get_section_size(m_cu8_flash_section_name);
+        // sanity check if the EEPROM data actually makes sense.
+        if (u32_section_size == 0 || u32_section_size > 1024)
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        std::vector<uint8_t> au8_buffer(u32_section_size);
         i32_ret_val = m_po_nonvolatile_data_handler->read_section(m_cu8_flash_section_name, au8_buffer);
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {
@@ -540,7 +549,7 @@ namespace midware
             o_result.m_bo_critical = false;
             memcpy(&u32_module_id, &pc_buffer[0], 4);
             memcpy(&u32_exception_id, &pc_buffer[4], 4);
-            memcpy(&o_result.m_u32_misc, &pc_buffer[8], 4);
+            memcpy(&o_result.m_i32_misc, &pc_buffer[8], 4);
             memcpy(&o_result.m_u32_line, &pc_buffer[12], 4);
             memcpy(&o_result.m_u32_occurence_count, &pc_buffer[16], 4);
             memcpy(&o_result.m_u64_timestamp, &pc_buffer[20], 8);
@@ -560,7 +569,7 @@ bool midware::operator==(const Exception &o_excp1, const Exception &o_excp2)
 {
     if (o_excp1.m_en_exception_id == o_excp2.m_en_exception_id
             && o_excp1.m_en_module_id == o_excp2.m_en_module_id
-            && o_excp1.m_u32_misc == o_excp2.m_u32_misc
+            && o_excp1.m_i32_misc == o_excp2.m_i32_misc
             && o_excp1.m_u32_line == o_excp2.m_u32_line)
     {
         return true;
@@ -577,7 +586,7 @@ extern "C"
         ExceptionTypeID en_exception_id,
         bool bo_critical,
         const char* pci8_file,
-        uint32_t u32_line, uint32_t u32_misc)
+        uint32_t u32_line, int32_t i32_misc)
     {
         static uint32_t u32_non_counted_exceptions = 0u;
 
@@ -585,7 +594,7 @@ extern "C"
         {
             po_default_exception_handler->handle_exception(
                     en_module_id, en_exception_id, bo_critical,
-                    pci8_file, u32_line, u32_misc);
+                    pci8_file, u32_line, i32_misc);
         }
         else
         {

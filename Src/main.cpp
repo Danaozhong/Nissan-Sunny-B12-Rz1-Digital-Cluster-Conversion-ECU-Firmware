@@ -181,22 +181,14 @@ void MAIN_Cycle_100ms(void)
 {
     app::MainApplication& o_application = app::MainApplication::get();
     int32_t counter = 0;
-    drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
 
     while(true)
     {
-        //auto start_time = std::chrono::system_clock::now();
+        auto start_time = std::chrono::system_clock::now();
 
         o_application.cycle_10ms();
 
-
         o_application.cycle_100ms();
-        // TODO temporarly check this here
-        //if (nullptr != po_uart)
-        //{
-        //    po_uart->uart_process_cycle();
-        //}
-
         counter++;
         if (counter > 10)
         {
@@ -204,10 +196,10 @@ void MAIN_Cycle_100ms(void)
             o_application.cycle_1000ms();
         }
 
-        //auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - std::chrono::system_clock::now());
-        //auto sleep_delta = std::min(std::chrono::milliseconds(0), std::chrono::milliseconds(100) - delta);
-        std_ex::sleep_for(std::chrono::milliseconds(100));
-        //std_ex::sleep_for(sleep_delta);
+        auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - std::chrono::system_clock::now());
+        auto sleep_delta = std::min(std::chrono::milliseconds(0), std::chrono::milliseconds(100) - delta);
+        //std_ex::sleep_for(std::chrono::milliseconds(100));
+        std_ex::sleep_for(std::max(std::chrono::milliseconds(10), sleep_delta));
 
     }
 }
@@ -229,11 +221,7 @@ void MAIN_startup_thread(void*)
     BSP_LED_Init(LED_GREEN);
 #endif
 
-
-    // wait for the scheduler to be ready.
-    //std_ex::sleep_for(std::chrono::milliseconds(400));
-
-    // and create our main application.
+    // create our main application.
     app::MainApplication& o_application = app::MainApplication::get();
     o_application.startup_from_reset();
 
@@ -262,7 +250,7 @@ void MAIN_startup_thread(void*)
 
 
 int main(void)
- {
+{
     // create the port configuration object
     drivers::UcPorts* po_uc_port_configuration = new drivers::STM32F303CCT6UcPorts();
 

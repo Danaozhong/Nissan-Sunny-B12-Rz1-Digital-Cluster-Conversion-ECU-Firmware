@@ -10,7 +10,7 @@ namespace app
 
     const char* get_version_info()
     {
-        return "v00.00.pre 2020_10_15";
+        return "v00.01.pre 2020_12_25";
     }
     
     const char* get_git_commit()

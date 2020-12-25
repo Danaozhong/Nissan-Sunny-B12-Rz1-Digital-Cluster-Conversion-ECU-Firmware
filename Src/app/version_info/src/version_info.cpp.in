@@ -13,6 +13,23 @@ namespace app
         return "v00.01.pre 2020_12_25";
     }
     
+    const char* get_build_type()
+    {
+#ifdef VERSION_INFO_BUILD_TYPE
+#if VERSION_INFO_BUILD_TYPE == BUILD_TYPE_Release
+        return "release";
+#elif VERSION_INFO_BUILD_TYPE == BUILD_TYPE_Debug
+        return "debug";
+#else
+        return "unknown";
+#endif /* VERSION_INFO_BUILD_TYPE == Release */
+#else
+#error 456
+        return "unknown";
+#endif
+    
+    }
+    
     const char* get_git_commit()
     {
         return GIT_SHA1 "_" GIT_LOCAL_CHANGES;

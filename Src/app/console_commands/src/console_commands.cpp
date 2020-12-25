@@ -324,6 +324,7 @@ namespace app
         p_o_io_interface << "\n\r\n\r";
         p_o_io_interface << app::get_app_name() << "\n\r\n\r";
         p_o_io_interface << app::get_version_info() << "\n\r";
+        p_o_io_interface << "Build type: " << app::get_build_type() << "\r\n";
         p_o_io_interface << "Build on commit #" << app::get_git_commit() << "\n\r";
 
         // print some further stuff about the EOL data

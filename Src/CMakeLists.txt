@@ -1,6 +1,8 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/stm32_gcc.cmake)
 
-PROJECT(SunnyRz1FuelGaugeConverter VERSION 1.0 DESCRIPTION "The firmware of an ECU to convert a Nissan Rz1 to digital cluster" LANGUAGES C CXX)
+PROJECT(SunnyRz1FuelGaugeConverter VERSION 1.0 DESCRIPTION "The firmware of an ECU to convert a Nissan Rz1 to digital cluster" LANGUAGES ASM C CXX)
+set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
 # some options
@@ -18,23 +20,22 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/l
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE})
 
-ENABLE_LANGUAGE(ASM)
+find_package(CMSIS COMPONENTS STM32F303CCT6 REQUIRED)
+find_package(HAL COMPONENTS STM32F303CCT6 REQUIRED)
+find_library(GCCLIBSTDCXXNANO libstdc++_nano.a REQUIRED)
+  
 
-FIND_PACKAGE(CMSIS REQUIRED)
-FIND_PACKAGE(STM32HAL COMPONENTS gpio tim adc dac can dma uart flash REQUIRED)
-
-
-if(${STM32_FAMILY} STREQUAL "F3")
+#if(${STM32_FAMILY} STREQUAL "F3")
     add_definitions(
         -DSTM32_FAMILY_F3
         -DSTM32F303xC
     )
-elseif(${STM32_FAMILY} STREQUAL "F4")
-    add_definitions(
-        -DSTM32_FAMILY_F4
-        -DSTM32F429xx
-    )
-endif()
+#elseif(${STM32_FAMILY} STREQUAL "F4")
+#    add_definitions(
+#        -DSTM32_FAMILY_F4
+#        -DSTM32F429xx
+#    )
+#endif()
 
 add_definitions(
     -D_BSD_SOURCE
@@ -67,17 +68,13 @@ SET(PROJECT_SOURCES
     drivers/uart/src/stm32_uart.cpp
     drivers/uc_ports/src/uc_ports.cpp
     
-
-    
     midware/events/event_handler.cpp
     midware/std_ex/ex_threads/ex_thread.cpp
 )
 
 
 
-
-
-add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES} ${CMSIS_SOURCES} ${STM32HAL_SOURCES})
+add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 
 # Make sure the file extension of the created binary is *.elf
 set_target_properties(
@@ -85,13 +82,40 @@ set_target_properties(
     PROPERTIES 
         SUFFIX ".elf"
 )
-
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMSIS_INCLUDE_DIRS}
-    ${STM32HAL_INCLUDE_DIR}
-
+add_compile_options(
+    #$<$<STREQUAL:$<TARGET_PROPERTY:LINKER_LANGUAGE>,CXX>:-std=c++14>
+    #$<$<STREQUAL:$<TARGET_PROPERTY:LINKER_LANGUAGE>,CXX>:-fno-rtti>
+    #$<$<STREQUAL:$<TARGET_PROPERTY:LINKER_LANGUAGE>,CXX>:-fno-use-cxa-atexit>
+    -fno-exceptions
+    #-pedantic
 )
+
+add_definitions(
+    -D_BSD_SOURCE
+    -D_GCC_MULTITHREAD_FREERTOS_ENABLE
+    -DconfigRECORD_STACK_HIGH_ADDRESS=1
+#    -DDEBUG
+#    -DUSE_HAL_DRIVER
+)
+
+# global includes and libraries
+include_directories(
+    ../Inc/
+)
+
+link_libraries(
+    CMSIS::STM32::F303CC
+    STM32::Nano
+)
+
+add_subdirectory(midware/cppstdlib)
+add_subdirectory(midware/FreeRTOS)
+add_subdirectory(midware/std_ex)
+
+link_libraries(    
+    freertos
+    stdcpp
+    stdcppex)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../Inc
@@ -119,14 +143,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 )
 
 
-add_subdirectory(midware/FreeRTOS)
-list(APPEND EXTRA_LIBS freertos)
 
-add_subdirectory(midware/cppstdlib)
-list(APPEND EXTRA_LIBS stdcpp)
 
-add_subdirectory(midware/std_ex)
-list(APPEND EXTRA_LIBS stdcppex)
 
 add_subdirectory(midware/osservices)
 list(APPEND EXTRA_LIBS osservices)
@@ -206,8 +224,42 @@ if (USE_NVDH)
     )
 endif()
     
-    
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${EXTRA_LIBS})
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC 
+    HAL::STM32::F3::GPIO
+    HAL::STM32::F3::TIM
+    HAL::STM32::F3::TIMEx
+    HAL::STM32::F3::ADC
+    HAL::STM32::F3::ADCEx
+    HAL::STM32::F3::DAC
+    HAL::STM32::F3::CAN
+    HAL::STM32::F3::DMA
+    HAL::STM32::F3::UART
+    HAL::STM32::F3::UARTEx
+    HAL::STM32::F3::FLASH
+    HAL::STM32::F3::FLASHEx
+    HAL::STM32::F3::RCC
+    HAL::STM32::F3::RCCEx
+    HAL::STM32::F3::CORTEX
+    libstdc++_nano.a
+    ${EXTRA_LIBS}
+)
 
-STM32_SET_TARGET_PROPERTIES(${CMAKE_PROJECT_NAME})
-STM32_ADD_HEX_BIN_TARGETS(${CMAKE_PROJECT_NAME})
+target_link_options(${CMAKE_PROJECT_NAME} PUBLIC 
+    -Wl,-Map=${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/${CMAKE_PROJECT_NAME}.map
+    -Wl,-t
+    -flto
+    -nodefaultlibs
+)
+#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
+
+
+get_target_property(OUT ${CMAKE_PROJECT_NAME} LINK_LIBRARIES)
+message(STATUS ${OUT})
+
+#add_custom_target(graphviz ALL
+#                  COMMAND "${CMAKE_COMMAND}" "--graphviz=foo.dot" .
+#                  COMMAND D:/Programme/GraphWiz/Graphviz/bin/dot -Tpng foo.dot -o foo.png
+#                  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+                  
+#STM32_SET_TARGET_PROPERTIES(${CMAKE_PROJECT_NAME})
+#STM32_ADD_HEX_BIN_TARGETS(${CMAKE_PROJECT_NAME})

@@ -3,6 +3,8 @@
 namespace app
 {
 
+    const uint32_t Dataset::cu32_version_number = 100u;
+
     int32_t Dataset::write_dataset(midware::NonvolatileDataHandler &o_nonvolatile_data_handler)
     {
         const char ai8_section_name[] = "DATASET";

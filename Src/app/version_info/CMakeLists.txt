@@ -1,6 +1,4 @@
 
-
-
 set(MODULE_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/src/version_info.cpp
 )

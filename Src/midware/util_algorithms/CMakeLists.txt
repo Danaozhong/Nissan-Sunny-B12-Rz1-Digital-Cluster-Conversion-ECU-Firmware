@@ -6,6 +6,8 @@ SET(MODULE_SOURCES
 
 add_library(util_algorithms STATIC ${MODULE_SOURCES})
 
+target_link_libraries(util_algorithms freertos)
+
 target_include_directories(util_algorithms PUBLIC
     inc
 )

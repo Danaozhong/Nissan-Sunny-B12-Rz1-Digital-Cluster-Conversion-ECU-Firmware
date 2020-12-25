@@ -40,7 +40,7 @@ namespace app
 
         void set_dac_out_amplifying_factor(uint32_t u32_amplifying_factor);
     private:
-        static const uint32_t cu32_version_number = 100u;
+        static const uint32_t cu32_version_number;
 
         bool m_bo_initialized;
         app::CharacteristicCurve<int32_t, int32_t> m_o_fuel_gauge_input_characteristic;

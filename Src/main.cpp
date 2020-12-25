@@ -93,18 +93,121 @@ ADC_HandleTypeDef    AdcHandle;
 
 extern "C"
 {
-void* malloc (size_t size) // _NOTHROW
-{
-    /* Call the FreeRTOS version of malloc. */
-    return pvPortMalloc( size );
-}
-void free (void* ptr)
-{
-    /* Call the FreeRTOS version of free. */
-    vPortFree( ptr );
-}
+    extern int _end;
+
+    void *_sbrk(int incr)
+    {
+      static unsigned char *heap = NULL;
+      unsigned char *prev_heap;
+
+      if (heap == NULL) {
+        heap = (unsigned char *)&_end;
+      }
+      prev_heap = heap;
+
+      heap += incr;
+
+      return prev_heap;
+    }
+
+    int _close(int file)
+    {
+        return -1;
+    }
+
+    int _fstat(int file, struct stat *st)
+    {
+        //st->st_mode = S_IFCHR;
+        return 0;
+    }
+
+    int _isatty(int file)
+    {
+        return 1;
+    }
+
+    int _lseek(int file, int ptr, int dir)
+    {
+        return 0;
+    }
+
+    void _exit(int status)
+    {
+        __asm("BKPT #0");
+    }
+
+    void _kill(int pid, int sig)
+    {
+        return;
+    }
+
+    int _getpid(void)
+    {
+        return -1;
+    }
+
+    int _write (int file, char * ptr, int len)
+    {
+        return len;
+    #if 0
+      int written = 0;
+
+      if ((file != 1) && (file != 2) && (file != 3)) {
+        return -1;
+      }
+
+      for (; len != 0; --len) {
+        if (usart_serial_putchar(&stdio_uart_module, (uint8_t)*ptr++)) {
+          return -1;
+        }
+        ++written;
+      }
+      return written;
+    #endif
+    }
+
+    int _read (int file, char * ptr, int len)
+    {
+    #if 0
+      int read = 0;
+
+      if (file != 0) {
+        return -1;
+      }
+
+      for (; len > 0; --len) {
+        usart_serial_getchar(&stdio_uart_module, (uint8_t *)ptr++);
+        read++;
+      }
+      return read;
+    #endif
+          return 0;
+    }
+
+    int _gettimeofday( struct timeval *tv, void *tzvp )
+    {
+        const uint64_t tickFrequency = static_cast<uint64_t>(HAL_GetTickFreq()); /* unit is Hz */
+
+        uint64_t t = static_cast<uint64_t>(HAL_GetTick()) * 1000 * 1000 * 1000 / tickFrequency;  // get uptime in nanoseconds
+        tv->tv_sec = t / 1000000000;  // convert to seconds
+        tv->tv_usec = ( t % 1000000000 ) / 1000;  // get remaining microseconds
+        return 0;  // return non-zero for error
+    } // end _gettimeofday()
+
+    void* malloc (size_t size) // _NOTHROW
+    {
+        /* Call the FreeRTOS version of malloc. */
+        return pvPortMalloc( size );
+    }
+    void free (void* ptr)
+    {
+        /* Call the FreeRTOS version of free. */
+        vPortFree( ptr );
+    }
 
 }
+
+
 void * operator new( size_t size )
 {
     return pvPortMalloc( size );
@@ -127,22 +230,21 @@ void operator delete[]( void * ptr )
 
 extern "C"
 {
-
-void vApplicationMallocFailedHook( void )
-{
-    /* vApplicationMallocFailedHook() will only be called if
-    configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h.  It is a hook
-    function that will get called if a call to pvPortMalloc() fails.
-    pvPortMalloc() is called internally by the kernel whenever a task, queue,
-    timer or semaphore is created.  It is also called by various parts of the
-    demo application.  If heap_1.c or heap_2.c are used, then the size of the
-    heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
-    FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
-    to query the size of free heap space that remains (although it does not
-    provide information on how the remaining heap might be fragmented). */
-    taskDISABLE_INTERRUPTS();
-    for( ;; );
-}
+    void vApplicationMallocFailedHook( void )
+    {
+        /* vApplicationMallocFailedHook() will only be called if
+        configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h.  It is a hook
+        function that will get called if a call to pvPortMalloc() fails.
+        pvPortMalloc() is called internally by the kernel whenever a task, queue,
+        timer or semaphore is created.  It is also called by various parts of the
+        demo application.  If heap_1.c or heap_2.c are used, then the size of the
+        heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
+        FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
+        to query the size of free heap space that remains (although it does not
+        provide information on how the remaining heap might be fragmented). */
+        taskDISABLE_INTERRUPTS();
+        for( ;; );
+    }
 
     void vApplicationIdleHook( void )
     {

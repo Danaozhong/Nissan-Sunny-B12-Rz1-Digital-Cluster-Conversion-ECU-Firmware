@@ -71,7 +71,6 @@ SET(PROJECT_SOURCES
     
     midware/events/event_handler.cpp
     midware/std_ex/ex_threads/ex_thread.cpp
-    misc/ascii_arts/src/ascii_diagram.cpp
 )
 
 
@@ -117,8 +116,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/events
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/osservices/os_console/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/midware/std_ex/ex_threads
-
-    misc/ascii_arts/inc
 )
 
 
@@ -143,14 +140,21 @@ list(APPEND EXTRA_LIBS uart)
 add_subdirectory(drivers/eeprom)
 list(APPEND EXTRA_LIBS eeprom)
 
+add_subdirectory(misc/ascii_graph)
+list(APPEND EXTRA_LIBS ascii_graph)
+
 add_subdirectory(misc/libs/libtable)
 list(APPEND EXTRA_LIBS libtable)
+
 
 add_subdirectory(app/version_info)
 list(APPEND EXTRA_LIBS version_info)
 
 add_subdirectory(app/eol)
 list(APPEND EXTRA_LIBS eol)
+
+add_subdirectory(app/eol_command)
+list(APPEND EXTRA_LIBS eol_command)
 
 if (USE_NVDH)
     add_subdirectory(midware/nonvolatile_data)

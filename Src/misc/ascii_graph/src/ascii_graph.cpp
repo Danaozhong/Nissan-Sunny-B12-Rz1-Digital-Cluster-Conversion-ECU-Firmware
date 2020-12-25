@@ -1,15 +1,15 @@
 
-#include "ascii_diagram.hpp"
+#include "ascii_graph.hpp"
 #include <algorithm>
 
-namespace misc
+namespace ASCIIGraphNs
 {
-    ASCIIDiagram::ASCIIDiagram(uint32_t u32_line_length, uint32_t u32_diagram_x_span, uint32_t u32_diagram_y_span)
+    ASCIIGraph::ASCIIGraph(uint32_t u32_line_length, uint32_t u32_diagram_x_span, uint32_t u32_diagram_y_span)
         : m_u32_line_length(u32_line_length), m_u32_diagram_x_span(u32_diagram_x_span), m_u32_diagram_y_span(u32_diagram_y_span)
     {
     }
 
-    int32_t ASCIIDiagram::draw(const app::CharacteristicCurve<int32_t, int32_t> &o_data_table, char* pc_buffer, size_t u_buffer_size, size_t u_buffer_offset)
+    int32_t ASCIIGraph::draw(const ASCIIGraphNs::DataTable<int32_t, int32_t> &o_data_table, char* pc_buffer, size_t u_buffer_size, size_t u_buffer_offset)
     {
         m_po_data_table = &o_data_table;
         m_pc_current_buffer = pc_buffer;
@@ -66,7 +66,7 @@ namespace misc
         return i32_remaining_buffer_size + 1; // need to add +1 because we replaced the last character by a 0 terminator
     }
 
-    void ASCIIDiagram::calculate_layout()
+    void ASCIIGraph::calculate_layout()
     {
         m_u32_diag_x_num_of_dashes = 5;
         m_u32_diag_x_dashes_spacing = m_u32_diagram_x_content / (m_u32_diag_x_num_of_dashes - 1);
@@ -77,7 +77,7 @@ namespace misc
         m_u32_x_axis_row = 0;
     }
 
-    void ASCIIDiagram::clear_buffer()
+    void ASCIIGraph::clear_buffer()
     {
         // clear the entire buffer, or maximum as much as was currently passed.
         memset(m_pc_current_buffer, ' ', std::min(m_u_required_buffer_size, m_u_buffer_size));
@@ -91,7 +91,7 @@ namespace misc
         write_cell(m_u_required_buffer_size - 1, '\0');
     }
 
-    void ASCIIDiagram::draw_values()
+    void ASCIIGraph::draw_values()
     {
         int32_t i32_left_row = calculate_row_from_dataset_x_value(m_po_data_table->get_y(m_i32_x_min));
 
@@ -132,7 +132,7 @@ namespace misc
         }
     }
 
-    void ASCIIDiagram::draw_frame()
+    void ASCIIGraph::draw_frame()
     {
         for (int32_t i32_row = 0; i32_row < m_u32_diagram_y_span; ++i32_row)
         {
@@ -170,7 +170,7 @@ namespace misc
         }
     }
 
-    void ASCIIDiagram::draw_labels()
+    void ASCIIGraph::draw_labels()
     {
         // write the vertical labels for the diagram.
         const uint32_t u32_vertical_labels_max_length = 10; // m_i32_diagram_x;
@@ -216,7 +216,7 @@ namespace misc
         }
     }
 
-    void ASCIIDiagram::write_absolute_cell(int32_t x, int32_t y, char value)
+    void ASCIIGraph::write_absolute_cell(int32_t x, int32_t y, char value)
     {
         const int32_t i32_memory_offset = static_cast<int32_t>((m_u32_diagram_y_span - y - 1) * m_u32_line_length + x);
         write_cell(i32_memory_offset, value);
@@ -224,7 +224,7 @@ namespace misc
 
     // lambda to access a cell
 
-    void ASCIIDiagram::write_cell(uint32_t u32_absolute_position, char value)
+    void ASCIIGraph::write_cell(uint32_t u32_absolute_position, char value)
     {
         const int32_t i32_buffer_location = -static_cast<int32_t>(m_u_buffer_offset)+ static_cast<int32_t>(u32_absolute_position);
         if (i32_buffer_location >= 0 && i32_buffer_location < static_cast<int32_t>(this->m_u_buffer_size))
@@ -232,12 +232,12 @@ namespace misc
             *(m_pc_current_buffer + i32_buffer_location) = value;
         }
     }
-    void ASCIIDiagram::write_cell(int32_t col, int32_t row, char value)
+    void ASCIIGraph::write_cell(int32_t col, int32_t row, char value)
     {
         write_absolute_cell(col + m_i32_diagram_x, row, value);
     }
 
-    void ASCIIDiagram::write_cells(int32_t x, int32_t y, char* src, size_t size)
+    void ASCIIGraph::write_cells(int32_t x, int32_t y, char* src, size_t size)
     {
         for (size_t i = 0; i < size; ++i)
         {
@@ -246,17 +246,17 @@ namespace misc
     }
 
     // write in the data
-    auto ASCIIDiagram::calculate_dataset_x_value_from_col(int32_t i32_col) -> int32_t
+    auto ASCIIGraph::calculate_dataset_x_value_from_col(int32_t i32_col) -> int32_t
     {
         return (m_u32_range_x * i32_col) / (m_u32_diagram_x_span - 1) + m_i32_x_min;
     }
 
-    auto ASCIIDiagram::calculate_dataset_y_value_from_row(int32_t i32_row) -> int32_t
+    auto ASCIIGraph::calculate_dataset_y_value_from_row(int32_t i32_row) -> int32_t
     {
         return i32_row * m_u32_range_y / m_u32_diagram_y_content + m_i32_y_min;
     }
 
-    auto ASCIIDiagram::calculate_row_from_dataset_x_value(int32_t x_value) -> int32_t
+    auto ASCIIGraph::calculate_row_from_dataset_x_value(int32_t x_value) -> int32_t
     {
         const int32_t y_value = m_po_data_table->get_y(x_value);
         return ((y_value - m_i32_y_min) * m_u32_diagram_y_content) / m_u32_range_y;

@@ -157,6 +157,9 @@ namespace OSServices
 		bool m_bo_blocked;
 	};
 
+	int32_t read_bool_input(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, bool &ret_val);
+	int32_t read_timestamp(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, std::time_t& timestamp);
+	int32_t read_int32(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, int32_t& value);
 	std::vector<char> read_input_line(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface);
 }
 

@@ -359,6 +359,111 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         m_po_io_interface << ai8_bootscreen;
     }
 
+    int32_t read_bool_input(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, bool &ret_val)
+    {
+        bool valid_input_given = false;
+        while (false == valid_input_given)
+        {
+            po_io_interface->wait_for_input_to_be_available(std::chrono::milliseconds(100000));
+            char input = static_cast<char>(po_io_interface->read());
+            if ('y' == input)
+            {
+                ret_val = true;
+                return OSServices::ERROR_CODE_SUCCESS;
+            } else if ('n' == input)
+            {
+                ret_val = false;
+                return OSServices::ERROR_CODE_SUCCESS;
+            }
+            else if ('\e' == input)
+            {
+                valid_input_given = false;
+            }
+            else
+            {
+                po_io_interface << "Invalid input. Enter either \'y\', \'n\'n, or press ESC to abort.\n\r";
+            }
+        }
+        return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+    }
+
+    int32_t read_timestamp(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, std::time_t& timestamp)
+    {
+        int32_t i32_day, i32_month, i32_year, i32_hour, i32_minute = 0;
+
+        po_io_interface << "Please enter the day:\r\n";
+        if (OSServices::ERROR_CODE_SUCCESS != read_int32(po_io_interface, i32_day))
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        po_io_interface << "Please enter the month:\r\n";
+        if (OSServices::ERROR_CODE_SUCCESS != read_int32(po_io_interface, i32_month))
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        po_io_interface << "Please enter the year:\r\n";
+        if (OSServices::ERROR_CODE_SUCCESS != read_int32(po_io_interface, i32_year))
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        po_io_interface << "Please enter the hour:\r\n";
+        if (OSServices::ERROR_CODE_SUCCESS != read_int32(po_io_interface, i32_hour))
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        po_io_interface << "Please enter the minute:\r\n";
+        if (OSServices::ERROR_CODE_SUCCESS != read_int32(po_io_interface, i32_minute))
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+
+        // query complete, convert to time_t struct
+        std::tm timeinfo = {0};
+        timeinfo.tm_year = i32_year - 1900; // + tmUtil::tm_yearCorrection;
+        timeinfo.tm_mon = i32_month - 1; // + tmUtil::tm_monthCorrection; // TODO Check boundary
+        timeinfo.tm_mday = i32_day;
+        timeinfo.tm_hour = i32_hour;
+        timeinfo.tm_min = i32_minute;
+        timeinfo.tm_sec = 0;
+        timeinfo.tm_isdst = 0; //tmUtil::tm_isdst_dontKnow;
+
+        timestamp = mktime(&timeinfo);
+
+
+        // verify from user again
+
+
+        // write the timestamp of the EOL data write
+        std::tm* ptm = std::localtime(&timestamp);
+        char timestamp_buffer[32];
+        std::strftime(timestamp_buffer, 32, "%a, %d.%m.%Y %H:%M:%S", ptm);
+        po_io_interface << "The entered time stamp is: " << timestamp_buffer << " Is that correct?\n\r";
+
+        bool bo_input_correct = false;
+        if (OSServices::ERROR_CODE_SUCCESS != read_bool_input(po_io_interface, bo_input_correct) || bo_input_correct == false)
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+
+        return OSServices::ERROR_CODE_SUCCESS;
+    }
+
+    int32_t read_int32(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, int32_t& value)
+    {
+        while (true)
+        {
+            auto str_input = read_input_line(po_io_interface);
+            int i_value;
+            if(1 == sscanf(str_input.data(), "%d", &i_value))
+            {
+                value = static_cast<int32_t>(i_value);
+                return OSServices::ERROR_CODE_SUCCESS;
+            }
+            po_io_interface << "Invalid value. please enter a valid number.\r\n";
+        }
+        return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+    }
+
     std::vector<char> read_input_line(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface)
     {
         std::vector<char> ai8_output = {'\0'};

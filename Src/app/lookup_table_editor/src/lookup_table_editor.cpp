@@ -1,6 +1,6 @@
 #include "lookup_table_editor.hpp"
 #include "main_application.hpp"
-#include "ascii_diagram.hpp"
+#include "ascii_graph.hpp"
 
 namespace app
 {
@@ -108,11 +108,12 @@ namespace app
         else if (input == 'p')
         {
             // print out the chart
-            misc::ASCIIDiagram o_ascii_diagram(82, 70, 25);
+            ASCIIGraphNs::ASCIIGraph o_ascii_diagram(82, 70, 25);
+            ASCIIGraphNs::DataTable<int32_t, int32_t> o_data_table(m_loaded_lookup_table.get_data_points());
             const size_t s_buffer_size = 512u;
             char ac_buffer[s_buffer_size];
             size_t s_buffer_offset = 0u;
-            while (0 != o_ascii_diagram.draw(m_loaded_lookup_table,
+            while (0 != o_ascii_diagram.draw(o_data_table,
                    ac_buffer,
                    s_buffer_size,
                    s_buffer_offset))

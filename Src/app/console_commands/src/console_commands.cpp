@@ -1,9 +1,10 @@
 #include "console_commands.hpp"
 #include "main_application.hpp"
 #include <cstring>
+#include <ctime>   // localtime
 #include "version_info.hpp"
 
-#include "ascii_diagram.hpp"
+#include "ascii_graph.hpp"
 
 using namespace OSServices;
 
@@ -117,7 +118,7 @@ namespace app
 
     void CommandFuel::display_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
     {
-        p_o_io_interface << "Wrong usage command, or wrong parameters.";
+        p_o_io_interface << "Wrong usage command, or wrong parameters. Supported parameters are: mode, show, diag_in, diag_out.";
     }
 
     int32_t CommandFuel::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
@@ -222,11 +223,13 @@ namespace app
             p_o_io_interface << "y axis: resistor value in mOhm\n\r\n\r";
 
             // show the maps of the fuel sensors
-            misc::ASCIIDiagram o_ascii_diagram(82, 70, 40);
+            ASCIIGraphNs::ASCIIGraph o_ascii_diagram(82, 70, 40);
+            const ASCIIGraphNs::DataTable<int32_t, int32_t> o_fuel_input_lookup_table(o_application.get_dataset().get_fuel_input_lookup_table().get_data_points());
+
             const size_t s_buffer_size = 128u;
             char ac_buffer[s_buffer_size];
             size_t s_buffer_offset = 0u;
-            while (0 != o_ascii_diagram.draw(o_application.get_dataset().get_fuel_input_lookup_table(),
+            while (0 != o_ascii_diagram.draw(o_fuel_input_lookup_table,
                     ac_buffer,
                     s_buffer_size,
                     s_buffer_offset))
@@ -243,11 +246,13 @@ namespace app
             p_o_io_interface << "x axis: fuel level in %% * 100\n\r";
             p_o_io_interface << "y axis: sensor voltage in mV\n\r\n\r";
             // show the maps of the fuel sensors
-            misc::ASCIIDiagram o_ascii_diagram(82, 70, 25);
+            ASCIIGraphNs::ASCIIGraph o_ascii_diagram(82, 70, 25);
+            const ASCIIGraphNs::DataTable<int32_t, int32_t> o_fuel_output_lookup_table(o_application.get_dataset().get_fuel_output_lookup_table().get_data_points());
+
             const size_t s_buffer_size = 512u;
             char ac_buffer[s_buffer_size];
             size_t s_buffer_offset = 0u;
-            while (0 != o_ascii_diagram.draw(o_application.get_dataset().get_fuel_output_lookup_table(),
+            while (0 != o_ascii_diagram.draw(o_fuel_output_lookup_table,
                     ac_buffer,
                     s_buffer_size,
                     s_buffer_offset))
@@ -333,6 +338,13 @@ namespace app
         {
             p_o_io_interface << "EOL data written\n\r";
         }
+        // write the timestamp of the EOL data write
+        std::time_t o_timestamp = eol_data.get_eol_data_written_timestamp();
+        std::tm* ptm = std::localtime(&o_timestamp);
+        char timestamp_buffer[32];
+        std::strftime(timestamp_buffer, 32, "%a, %d.%m.%Y %H:%M:%S", ptm);
+
+        p_o_io_interface << "EOL data written on " << timestamp_buffer << "\n\r";
         if (!eol_data.is_fuel_sensor_licensed())
         {
             p_o_io_interface << "   WARNING: fuel sensor conversion is not licensed, and will eventually cease to function.\n\r";

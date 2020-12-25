@@ -13,14 +13,13 @@ target_compile_definitions(trace PUBLIC
     -DUSE_TRACE
 )
 
-add_definitions(
-    -D_BSD_SOURCE
-    -D_GCC_MULTITHREAD_FREERTOS_ENABLE
-    -DconfigRECORD_STACK_HIGH_ADDRESS=1
-    -DDEBUG
-    -DUSE_HAL_DRIVER
-        -DSTM32_FAMILY_F3
-        -DSTM32F303xC
+target_compile_definitions(trace PUBLIC
+    _BSD_SOURCE
+    _GCC_MULTITHREAD_FREERTOS_ENABLE
+    configRECORD_STACK_HIGH_ADDRESS=1
+    USE_HAL_DRIVER
+    STM32_FAMILY_F3
+    STM32F303xC
 )
 
 target_include_directories(trace PUBLIC

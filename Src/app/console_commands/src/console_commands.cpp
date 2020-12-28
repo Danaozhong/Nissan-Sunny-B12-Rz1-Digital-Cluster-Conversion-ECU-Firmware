@@ -11,12 +11,12 @@ using namespace OSServices;
 namespace app
 {
 
-    void CommandSpeed::display_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    void CommandSpeed::display_usage(OSConsoleGenericIOInterface& p_o_io_interface)
     {
         p_o_io_interface<< "Wrong usage command, or wrong parameters.";
     }
 
-    int32_t CommandSpeed::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandSpeed::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
     {
 
         auto po_speed_sensor_converter = MainApplication::get().get_speed_sensor_converter();
@@ -116,12 +116,12 @@ namespace app
     }
 
 
-    void CommandFuel::display_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    void CommandFuel::display_usage(OSConsoleGenericIOInterface& p_o_io_interface)
     {
         p_o_io_interface << "Wrong usage command, or wrong parameters. Supported parameters are: mode, show, diag_in, diag_out.";
     }
 
-    int32_t CommandFuel::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandFuel::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
     {
         MainApplication& o_application  = MainApplication::get();
 
@@ -268,7 +268,7 @@ namespace app
     }
 
 
-    int32_t CommandDataset::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandDataset::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
    {
        MainApplication& o_application  = MainApplication::get();
        if (u32_num_of_params > 0)
@@ -310,7 +310,7 @@ namespace app
        return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
    }
 
-    void CommandDataset::print_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface) const
+    void CommandDataset::print_usage(OSConsoleGenericIOInterface& p_o_io_interface) const
     {
         p_o_io_interface << "Datset command\n\r";
         p_o_io_interface << "Supported parameters:\n\r";
@@ -319,7 +319,7 @@ namespace app
         p_o_io_interface << "load_default - overwrites the dataset in RAM with the default values.:\n\r";
     }
 
-    int32_t CommandVersion::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandVersion::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
     {
         p_o_io_interface << "\n\r\n\r";
         p_o_io_interface << app::get_app_name() << "\n\r\n\r";

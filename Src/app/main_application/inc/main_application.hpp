@@ -79,9 +79,9 @@ namespace app
 #ifdef USE_NVDH
         std::shared_ptr<midware::NonvolatileDataHandler> get_nonvolatile_data_handler() const;
 #endif
-		std::shared_ptr<OSServices::OSConsole> get_os_console();
+		OSServices::OSConsole* get_os_console();
 
-		std::shared_ptr<OSServices::OSConsoleGenericIOInterface> get_stdio();
+		OSServices::OSConsoleGenericIOInterface& get_stdio();
 
 
 
@@ -113,8 +113,8 @@ namespace app
         int32_t deinit_fuel_level_converter();
 
         drivers::GenericUART* m_p_uart;
-        std::shared_ptr<OSServices::OSConsole> m_po_os_console;
-        std::shared_ptr<OSServices::OSConsoleGenericIOInterface> m_po_os_io_interface;
+        OSServices::OSConsole* m_po_os_console;
+        OSServices::OSConsoleGenericIOInterface* m_po_os_io_interface;
 
         midware::ExceptionHandler* m_po_exception_handler;
 #ifdef USE_TRACE

@@ -15,9 +15,9 @@ namespace app
 
         virtual ~EOLCommand() {}
 
-        void display_usage(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
+        void display_usage(OSServices::OSConsoleGenericIOInterface& p_o_io_interface);
 
-        virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface);
+        virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, OSServices::OSConsoleGenericIOInterface& p_o_io_interface);
     private:
         app::EOLData& m_o_eol_data;
     };

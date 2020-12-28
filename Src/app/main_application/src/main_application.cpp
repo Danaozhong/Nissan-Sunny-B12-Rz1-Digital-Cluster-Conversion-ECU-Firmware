@@ -39,8 +39,8 @@ namespace app
 	    m_p_uart->connect(9600, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
 
 	    // Create the debug console
-	    m_po_os_io_interface = std::make_shared<OSServices::OSConsoleUartIOInterface>(m_p_uart);
-	    m_po_os_console = std::make_shared<OSServices::OSConsole>(m_po_os_io_interface);
+	    m_po_os_io_interface = new OSServices::OSConsoleUartIOInterface(m_p_uart);
+	    m_po_os_console = new OSServices::OSConsole(*m_po_os_io_interface);
 
 #ifdef USE_CAN
         /* Init the CAN interface (AUTOSAR conform) */
@@ -197,12 +197,12 @@ namespace app
         }
 #endif
 
-    std::shared_ptr<OSServices::OSConsole> MainApplication::get_os_console()
+    OSServices::OSConsole* MainApplication::get_os_console()
 	{
 	    return this->m_po_os_console;
 	}
 
-    std::shared_ptr<OSServices::OSConsoleGenericIOInterface> MainApplication::get_stdio()
+    OSServices::OSConsoleGenericIOInterface& MainApplication::get_stdio()
     {
         return get_os_console()->get_io_interface();
     }

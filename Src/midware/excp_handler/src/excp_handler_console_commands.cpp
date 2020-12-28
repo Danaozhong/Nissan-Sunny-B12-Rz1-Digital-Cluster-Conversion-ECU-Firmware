@@ -5,12 +5,12 @@
 namespace midware
 {
 
-    void CommandListExceptions::display_usage(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface) const
+    void CommandListExceptions::display_usage(OSServices::OSConsoleGenericIOInterface& p_o_io_interface) const
     {
         p_o_io_interface << "Wrong parameter. Allowed commands are list, clear, write_flash, read_flash.\r\n";
     }
 
-    int32_t CommandListExceptions::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandListExceptions::command_main(const char** params, uint32_t u32_num_of_params, OSServices::OSConsoleGenericIOInterface& p_o_io_interface)
     {
         ExceptionHandler* p_exception_handler = ExceptionHandler::get_default_exception_handler();
 

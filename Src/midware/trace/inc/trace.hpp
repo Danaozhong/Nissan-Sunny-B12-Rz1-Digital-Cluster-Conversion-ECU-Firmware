@@ -27,8 +27,8 @@ namespace midware
 
         void debug_printf_internal(const char *, va_list args);
 
-        /** An IO interface can be used by several tracers, hence needs to be a smart pointer */
-        int32_t add_trace_io_interface(const std::shared_ptr<OSServices::OSConsole> &po_trace_io_interface);
+        /** An IO interface can be used by several tracers, hence needs to be a pointer */
+        int32_t add_trace_io_interface(OSServices::OSConsole* po_trace_io_interface);
 
 
         /** Sets this tracer as the systems default tracer. */
@@ -41,7 +41,7 @@ namespace midware
         void trace_main();
 
         /** All the IO interfaces that are used to send out trace data */
-        std::vector<std::shared_ptr<OSServices::OSConsole>> m_ao_trace_io_interfaces;
+        std::vector<OSServices::OSConsole*> m_ao_trace_io_interfaces;
 
         /** This thread is low priority, and whenever active, will take the buffered trace data to send
          * it out over the IO interfaces asynchronously. That way performance of the calling module is

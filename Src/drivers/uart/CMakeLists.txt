@@ -7,7 +7,7 @@ SET(MODULE_SOURCES
 
 add_library(uart STATIC ${MODULE_SOURCES})
 
-target_link_libraries(uart stdcpp)
+target_link_libraries(uart cppstdlib)
 target_link_libraries(uart stdcppex)
 
 target_include_directories(uart PUBLIC

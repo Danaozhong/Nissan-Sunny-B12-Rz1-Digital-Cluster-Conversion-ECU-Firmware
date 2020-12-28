@@ -4,13 +4,8 @@ namespace OSServices
 {
 
 
-int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
 {
-    if (nullptr == p_o_io_interface)
-    {
-        return -1;
-    }
-
     const uint32_t u32_buffer_size = 1024;
     char p_i8_output_buffer[1024] = "";
 
@@ -104,7 +99,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         return 0;
     }
 
-    int32_t CommandMemory::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandMemory::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
     {
         int i_free_heap = xPortGetFreeHeapSize();
         int i_min_heap = xPortGetMinimumEverFreeHeapSize();
@@ -191,7 +186,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         return 0;
     }
 
-    int32_t CommandReset::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t CommandReset::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
     {
         NVIC_SystemReset();
         return OSServices::ERROR_CODE_SUCCESS;
@@ -237,7 +232,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
     }
 
 
-    OSConsole::OSConsole(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface)
+    OSConsole::OSConsole(OSConsoleGenericIOInterface& po_io_interface)
     : m_po_io_interface(po_io_interface), m_u32_num_of_registered_commands(0u), m_bo_blocked(false)
     {
         this->register_command(new CommandListTasks());
@@ -289,7 +284,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
                     char ai8_print_str[LINE_LENGTH] = { 0 };
                     snprintf(ai8_print_str, LINE_LENGTH - 1, "\r\nProgram \'%s\' has terminated with return code %i.\r\n", \
                             p_command->get_command(), static_cast<int>(i32_return_code));
-                    m_po_io_interface->write_data(ai8_print_str, strlen(ai8_print_str));
+                    m_po_io_interface.write_data(ai8_print_str, strlen(ai8_print_str));
 
                     bo_program_executed = true;
                 }
@@ -301,29 +296,26 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
             {
                 char ai8_print_str[LINE_LENGTH] = { 0 };
                 snprintf(ai8_print_str, LINE_LENGTH - 1, "No command found with name \'%s\'.\r\n", ai8_command_copy);
-                m_po_io_interface->write_data(ai8_print_str, strlen(ai8_print_str));
+                m_po_io_interface.write_data(ai8_print_str, strlen(ai8_print_str));
             }
         }
     }
 
     void OSConsole::run()
     {
-        if (this->m_po_io_interface != nullptr)
+        if(this->m_po_io_interface.available() > 0)
         {
-            if(this->m_po_io_interface->available() > 0)
-            {
-                // show the prompt
-                m_bo_blocked = true;
-                m_po_io_interface << "\r\n\r\nFreeRTOS> ";
-                std::vector<char> ai8_input = read_input_line(m_po_io_interface);
+            // show the prompt
+            m_bo_blocked = true;
+            m_po_io_interface << "\r\n\r\nFreeRTOS> ";
+            std::vector<char> ai8_input = read_input_line(m_po_io_interface);
 
-                // command finished, new line
-                m_po_io_interface << "\r\n\r\n";
-                m_bo_blocked = false;
+            // command finished, new line
+            m_po_io_interface << "\r\n\r\n";
+            m_bo_blocked = false;
 
-                // command end, process
-                this->process_input(ai8_input.data());
-            }
+            // command end, process
+            this->process_input(ai8_input.data());
         }
     }
 
@@ -345,7 +337,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         return this->m_bo_blocked;
     }
 
-    std::shared_ptr<OSConsoleGenericIOInterface> OSConsole::get_io_interface() const
+    OSConsoleGenericIOInterface& OSConsole::get_io_interface() const
     {
         return m_po_io_interface;
     }
@@ -359,13 +351,13 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         m_po_io_interface << ai8_bootscreen;
     }
 
-    int32_t read_bool_input(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, bool &ret_val)
+    int32_t read_bool_input(OSConsoleGenericIOInterface& po_io_interface, bool &ret_val)
     {
         bool valid_input_given = false;
         while (false == valid_input_given)
         {
-            po_io_interface->wait_for_input_to_be_available(std::chrono::milliseconds(100000));
-            char input = static_cast<char>(po_io_interface->read());
+            po_io_interface.wait_for_input_to_be_available(std::chrono::milliseconds(100000));
+            char input = static_cast<char>(po_io_interface.read());
             if ('y' == input)
             {
                 ret_val = true;
@@ -387,7 +379,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
     }
 
-    int32_t read_timestamp(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, std::time_t& timestamp)
+    int32_t read_timestamp(OSConsoleGenericIOInterface& po_io_interface, std::time_t& timestamp)
     {
         int32_t i32_day, i32_month, i32_year, i32_hour, i32_minute = 0;
 
@@ -448,7 +440,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
-    int32_t read_int32(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, int32_t& value)
+    int32_t read_int32(OSConsoleGenericIOInterface& po_io_interface, int32_t& value)
     {
         while (true)
         {
@@ -464,7 +456,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
     }
 
-    std::vector<char> read_input_line(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface)
+    std::vector<char> read_input_line(OSConsoleGenericIOInterface& po_io_interface)
     {
         std::vector<char> ai8_output = {'\0'};
         char input = '\0';
@@ -473,8 +465,8 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         {
             const size_t s_previous_size = strlen(ai8_output.data());
 
-            po_io_interface->wait_for_input_to_be_available(std::chrono::milliseconds(100000));
-            input = static_cast<char>(po_io_interface->read());
+            po_io_interface.wait_for_input_to_be_available(std::chrono::milliseconds(100000));
+            input = static_cast<char>(po_io_interface.read());
             if (input != '\r')
             {
                 *ai8_output.rbegin() = input; // insert at second last position to keep the 0 termination
@@ -489,12 +481,12 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
                     if ('\b' == input)
                     {
                         char ai8_delete_last_char[] = "\b \b"; // go back one char, space, and back again.
-                        po_io_interface->write_data(ai8_delete_last_char, 3);
+                        po_io_interface.write_data(ai8_delete_last_char, 3);
                     }
                     else
                     {
                         // print out the character to the serial (like in a terminal)
-                        po_io_interface->write_data(&input, 1);
+                        po_io_interface.write_data(&input, 1);
                     }
                 }
             }
@@ -504,16 +496,13 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 }
 
 
-std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, const char* pc_string)
+OSServices::OSConsoleGenericIOInterface& operator<< (OSServices::OSConsoleGenericIOInterface& po_console_io_interface, const char* pc_string)
 {
-    if (nullptr != po_console_io_interface)
-    {
-        po_console_io_interface->write_data(pc_string, strlen(pc_string));
-    }
+    po_console_io_interface.write_data(pc_string, strlen(pc_string));
     return po_console_io_interface;
 }
 
-std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, int32_t i32_value)
+OSServices::OSConsoleGenericIOInterface& operator<< (OSServices::OSConsoleGenericIOInterface& po_console_io_interface, int32_t i32_value)
 {
     char ac_buffer[64] = "";
     snprintf(ac_buffer, 64, "%i", static_cast<int>(i32_value));

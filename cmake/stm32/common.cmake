@@ -233,10 +233,8 @@ endif()
 if(NOT (TARGET STM32::Nano))
     add_library(STM32::Nano INTERFACE IMPORTED)
     target_compile_options(STM32::Nano INTERFACE $<$<C_COMPILER_ID:GNU>:--specs=nano.specs>)
-    target_link_options(STM32::Nano INTERFACE $<$<C_COMPILER_ID:GNU>:--specs=nosys.specs>)
+    target_link_options(STM32::Nano INTERFACE $<$<C_COMPILER_ID:GNU>:--specs=nano.specs>)
 endif()
-
-
 
 include(stm32/utilities)
 include(stm32/f0)

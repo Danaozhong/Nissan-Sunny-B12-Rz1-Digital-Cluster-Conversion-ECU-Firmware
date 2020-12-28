@@ -20,6 +20,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/l
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE})
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 find_package(CMSIS COMPONENTS STM32F303CCT6 REQUIRED)
 find_package(HAL COMPONENTS STM32F303CCT6 REQUIRED)
 find_library(GCCLIBSTDCXXNANO libstdc++_nano.a REQUIRED)
@@ -41,8 +45,8 @@ add_definitions(
     -D_BSD_SOURCE
     -D_GCC_MULTITHREAD_FREERTOS_ENABLE
     -DconfigRECORD_STACK_HIGH_ADDRESS=1
-    -DDEBUG
-    -DUSE_HAL_DRIVER
+    #-DDEBUG
+    #-DUSE_HAL_DRIVER
 )
 
 SET(PROJECT_SOURCES
@@ -82,6 +86,8 @@ set_target_properties(
     PROPERTIES 
         SUFFIX ".elf"
 )
+
+
 add_compile_options(
     #$<$<STREQUAL:$<TARGET_PROPERTY:LINKER_LANGUAGE>,CXX>:-std=c++14>
     #$<$<STREQUAL:$<TARGET_PROPERTY:LINKER_LANGUAGE>,CXX>:-fno-rtti>
@@ -94,27 +100,31 @@ add_definitions(
     -D_BSD_SOURCE
     -D_GCC_MULTITHREAD_FREERTOS_ENABLE
     -DconfigRECORD_STACK_HIGH_ADDRESS=1
-#    -DDEBUG
-#    -DUSE_HAL_DRIVER
+    #-DDEBUG
+    #-DUSE_HAL_DRIVER
 )
 
 # global includes and libraries
 include_directories(
-    ../Inc/
-)
-
-link_libraries(
-    CMSIS::STM32::F303CC
-    STM32::Nano
+    midware/cppstdlib/cpp11_gcc  # This include directory must come first, so that the freertos cpp11 libs work.
+    ../Inc/ # This includes the STM32 configuration headers.
 )
 
 add_subdirectory(midware/cppstdlib)
 add_subdirectory(midware/FreeRTOS)
 add_subdirectory(midware/std_ex)
 
+link_libraries(
+    CMSIS::STM32::F303CC
+    STM32::Nano
+)
+
+
+
+
 link_libraries(    
     freertos
-    stdcpp
+    cppstdlib
     stdcppex)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
@@ -240,7 +250,9 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC
     HAL::STM32::F3::RCC
     HAL::STM32::F3::RCCEx
     HAL::STM32::F3::CORTEX
-    libstdc++_nano.a
+    #libstdc++_nano.a
+    
+    #D:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.0.0.201904181610/tools/arm-none-eabi/lib/libstdc++_nano.a
     ${EXTRA_LIBS}
 )
 
@@ -248,7 +260,7 @@ target_link_options(${CMAKE_PROJECT_NAME} PUBLIC
     -Wl,-Map=${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/${CMAKE_PROJECT_NAME}.map
     -Wl,-t
     -flto
-    -nodefaultlibs
+    #-nodefaultlibs
 )
 #SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
 
@@ -263,3 +275,14 @@ message(STATUS ${OUT})
                   
 #STM32_SET_TARGET_PROPERTIES(${CMAKE_PROJECT_NAME})
 #STM32_ADD_HEX_BIN_TARGETS(${CMAKE_PROJECT_NAME})
+
+# Print output section size
+add_custom_command(
+  OUTPUT print_size
+  POST_BUILD COMMAND ${TOOLCHAIN_BIN_PATH}/arm-none-eabi-size ${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/${CMAKE_PROJECT_NAME}.elf 
+  DEPENDS ${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/${CMAKE_PROJECT_NAME}.elf
+  COMMENT "Binary size:\n\n"
+)
+
+add_custom_target(size ALL DEPENDS print_size) 
+

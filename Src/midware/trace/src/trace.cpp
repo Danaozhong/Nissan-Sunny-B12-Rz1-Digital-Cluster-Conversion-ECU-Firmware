@@ -109,11 +109,15 @@ namespace midware
         // TODO check if the message was completely written
     }
 
-    int32_t Trace::add_trace_io_interface(const std::shared_ptr<OSServices::OSConsole> &po_trace_io_interface)
+    int32_t Trace::add_trace_io_interface(OSServices::OSConsole* po_trace_io_interface)
     {
-        std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
-        m_ao_trace_io_interfaces.push_back(po_trace_io_interface);
-        return OSServices::ERROR_CODE_SUCCESS;
+        if (nullptr != po_trace_io_interface)
+        {
+            std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
+            m_ao_trace_io_interfaces.push_back(po_trace_io_interface);
+            return OSServices::ERROR_CODE_SUCCESS;
+        }
+        return OSServices::ERROR_CODE_NULLPTR;
     }
 
 
@@ -139,12 +143,12 @@ namespace midware
                 std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
                 for (auto itr = m_ao_trace_io_interfaces.begin(); itr != m_ao_trace_io_interfaces.end(); ++itr)
                 {
-                    auto p_io_interface = (*itr)->get_io_interface();
-                    if (nullptr != p_io_interface && false == (*itr)->console_blocked())
+                    auto& p_io_interface = (*itr)->get_io_interface();
+                    if (false == (*itr)->console_blocked())
                     {
                         // if the data can at least be output on one interface, that's good enough for us
                         bo_data_printed = true;
-                        p_io_interface->write_data(m_pa_out_buffer, m_u_buffer_usage);
+                        p_io_interface.write_data(m_pa_out_buffer, m_u_buffer_usage);
 
                         // check if trace messages were lost
                         if (m_u8_number_of_buffer_overflows > 0u)
@@ -152,7 +156,7 @@ namespace midware
                             // trace data was actually lost, print a warning message.
                             char ai8_warning_str[100] = { 0 };
                             snprintf(ai8_warning_str, 100, "\r\nWarning: Trace buffer overflow. %u byte(s) lost.\r\n", m_u8_number_of_buffer_overflows);
-                            p_io_interface->write_data(ai8_warning_str, strlen(ai8_warning_str));
+                            p_io_interface.write_data(ai8_warning_str, strlen(ai8_warning_str));
                             m_u8_number_of_buffer_overflows = 0u;
                         }
                     }

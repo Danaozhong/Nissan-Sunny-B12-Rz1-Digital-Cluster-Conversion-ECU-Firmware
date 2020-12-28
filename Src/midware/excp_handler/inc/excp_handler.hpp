@@ -70,7 +70,7 @@ namespace midware
 
         void clear_exceptions();
 
-        void print(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface) const;
+        void print(OSServices::OSConsoleGenericIOInterface& p_o_io_interface) const;
 
         /// saves everything into data flash ((EEPROM emulation)
         int32_t store_into_data_flash() const;

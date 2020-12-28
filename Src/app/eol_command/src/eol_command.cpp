@@ -3,12 +3,12 @@
 
 namespace app
 {
-    void EOLCommand::display_usage(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface)
+    void EOLCommand::display_usage(OSServices::OSConsoleGenericIOInterface& p_o_io_interface)
     {
         p_o_io_interface << "Wrong usage command, or wrong parameters.";
     }
 
-    int32_t EOLCommand::command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface)
+    int32_t EOLCommand::command_main(const char** params, uint32_t u32_num_of_params, OSServices::OSConsoleGenericIOInterface& p_o_io_interface)
     {
         auto& o_eol = this->m_o_eol_data;
 

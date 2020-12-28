@@ -200,7 +200,7 @@ namespace midware
         this->m_ao_stored_exceptions.clear();
     }
 
-    void ExceptionHandler::print(std::shared_ptr<OSServices::OSConsoleGenericIOInterface> p_o_io_interface) const
+    void ExceptionHandler::print(OSServices::OSConsoleGenericIOInterface& p_o_io_interface) const
     {
         tst_lib_table table;
         i32_lib_table_initialize_table(&table);

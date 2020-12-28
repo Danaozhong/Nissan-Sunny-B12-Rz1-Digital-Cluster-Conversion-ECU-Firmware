@@ -52,12 +52,12 @@ namespace OSServices
 		 * \param[in] u32_num_of_params Number of parameters.
 		 * \param p_o_io_interface The IO interface from where to retrieve data (yes/no)
 		 */
-		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface) = 0;
+		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface) = 0;
 
 		/**
 		 * Prints the usage of this command. The default implementation will do nothing.
 		 */
-		virtual void print_usage(std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface) const {}
+		virtual void print_usage(OSConsoleGenericIOInterface& p_o_io_interface) const {}
 		char m_ai8_command_str[COMMAND_MAXIMUM_LENGTH];
 
 	};
@@ -71,7 +71,7 @@ namespace OSServices
 
 		virtual ~CommandListTasks() {}
 
-		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
+		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface);
 	};
 
 	/** This command prints out the heap memory size */
@@ -82,7 +82,7 @@ namespace OSServices
 
 		virtual ~CommandMemory() {}
 
-		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
+		virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface);
 	};
 
     class CommandReset : public Command
@@ -92,7 +92,7 @@ namespace OSServices
 
         virtual ~CommandReset() {}
 
-        virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, std::shared_ptr<OSConsoleGenericIOInterface> p_o_io_interface);
+        virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface);
     };
 
 	/** Something like a generic IO stream object */
@@ -125,7 +125,7 @@ namespace OSServices
 	class OSConsole
 	{
 	public:
-		OSConsole(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface);
+		OSConsole(OSConsoleGenericIOInterface& po_io_interface);
 		~OSConsole() {}
 
 		void run();
@@ -139,7 +139,7 @@ namespace OSServices
 		bool console_blocked() const;
 
 		/* returns the IO object */
-		std::shared_ptr<OSConsoleGenericIOInterface> get_io_interface() const;
+		OSConsoleGenericIOInterface& get_io_interface() const;
 	private:
 		void print_bootscreen() const;
 
@@ -147,7 +147,7 @@ namespace OSServices
 
 
 		/// The input/output interface which this console is running on.
-		std::shared_ptr<OSConsoleGenericIOInterface> m_po_io_interface;
+		OSConsoleGenericIOInterface& m_po_io_interface;
 
 		/// the executable commands that can be run in this console context
 		Command* m_apo_commands[OS_CONSOLE_MAX_NUM_OF_COMMANDS];
@@ -157,17 +157,17 @@ namespace OSServices
 		bool m_bo_blocked;
 	};
 
-	int32_t read_bool_input(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, bool &ret_val);
-	int32_t read_timestamp(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, std::time_t& timestamp);
-	int32_t read_int32(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface, int32_t& value);
-	std::vector<char> read_input_line(std::shared_ptr<OSConsoleGenericIOInterface> po_io_interface);
+	int32_t read_bool_input(OSConsoleGenericIOInterface& po_io_interface, bool &ret_val);
+	int32_t read_timestamp(OSConsoleGenericIOInterface& po_io_interface, std::time_t& timestamp);
+	int32_t read_int32(OSConsoleGenericIOInterface& po_io_interface, int32_t& value);
+	std::vector<char> read_input_line(OSConsoleGenericIOInterface& po_io_interface);
 }
 
 
 /** Allow comfortable c++ like stream outputs for C strings */
-std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, const char* pc_string);
+OSServices::OSConsoleGenericIOInterface& operator<< (OSServices::OSConsoleGenericIOInterface& po_console_io_interface, const char* pc_string);
 
-std::shared_ptr<OSServices::OSConsoleGenericIOInterface> operator<< (std::shared_ptr<OSServices::OSConsoleGenericIOInterface> po_console_io_interface, int32_t i32_value);
+OSServices::OSConsoleGenericIOInterface& operator<< (OSServices::OSConsoleGenericIOInterface& po_console_io_interface, int32_t i32_value);
 
 
 /** This function takes a C string, and processes all the backspaces in it. */

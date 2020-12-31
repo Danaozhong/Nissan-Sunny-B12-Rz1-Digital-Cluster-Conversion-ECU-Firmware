@@ -148,23 +148,15 @@ extern "C"
 
     int _write (int file, char * ptr, int len)
     {
-#if 0
-        int DataIdx;
-
-        for (DataIdx = 0; DataIdx < len; DataIdx++)
-        {
-            __io_putchar(*ptr++);
-        }
-        return len;
-#endif
-        return len;
-    #if 0
       int written = 0;
 
       if ((file != 1) && (file != 2) && (file != 3)) {
         return -1;
       }
 
+      DEBUG_PRINTF(ptr);
+      return len;
+      /*
       for (; len != 0; --len) {
         if (usart_serial_putchar(&stdio_uart_module, (uint8_t)*ptr++)) {
           return -1;
@@ -172,7 +164,7 @@ extern "C"
         ++written;
       }
       return written;
-    #endif
+      */
     }
 
     int _read (int file, char * ptr, int len)

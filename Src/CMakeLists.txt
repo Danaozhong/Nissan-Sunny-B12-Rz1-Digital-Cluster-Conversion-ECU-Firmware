@@ -29,18 +29,10 @@ find_package(HAL COMPONENTS STM32F303CCT6 REQUIRED)
 find_library(GCCLIBSTDCXXNANO libstdc++_nano.a REQUIRED)
   
 
-#if(${STM32_FAMILY} STREQUAL "F3")
-    add_definitions(
-        -DSTM32_FAMILY_F3
-        -DSTM32F303xC
-    )
-#elseif(${STM32_FAMILY} STREQUAL "F4")
-#    add_definitions(
-#        -DSTM32_FAMILY_F4
-#        -DSTM32F429xx
-#    )
-#endif()
-
+add_definitions(
+    -DSTM32_FAMILY_F3
+    -DSTM32F303xC
+)
 add_definitions(
     -D_BSD_SOURCE
     -D_GCC_MULTITHREAD_FREERTOS_ENABLE
@@ -48,6 +40,12 @@ add_definitions(
     -DDEBUG
     -DUSE_HAL_DRIVER
 )
+
+if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+    add_definitions(
+        -DDEBUG
+    )
+endif()
 
 SET(PROJECT_SOURCES
     main.cpp
@@ -89,17 +87,8 @@ set_target_properties(
 
 
 add_compile_options(
-    #$<$<STREQUAL:$<TARGET_PROPERTY:LINKER_LANGUAGE>,CXX>:-std=c++14>
-    #$<$<STREQUAL:$<TARGET_PROPERTY:LINKER_LANGUAGE>,CXX>:-fno-rtti>
-    #$<$<STREQUAL:$<TARGET_PROPERTY:LINKER_LANGUAGE>,CXX>:-fno-use-cxa-atexit>
     -fno-exceptions
-    #-pedantic
-)
-
-add_definitions(
-
-    #-DDEBUG
-    #-DUSE_HAL_DRIVER
+    -pedantic
 )
 
 # global includes and libraries
@@ -116,9 +105,6 @@ link_libraries(
     CMSIS::STM32::F303CC
     STM32::Nano
 )
-
-
-
 
 link_libraries(    
     freertos

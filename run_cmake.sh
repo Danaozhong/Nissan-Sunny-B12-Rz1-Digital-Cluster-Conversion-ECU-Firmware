@@ -9,7 +9,7 @@ fi
 if [ -z ${DIR_STM32_GNU_TOOLCHAIN+x} ]
 then 
     # Build type not set, set RELEASE as default
-    DIR_STM32_GNU_TOOLCHAIN="D:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.0.0.201904181610/tools"
+    DIR_STM32_GNU_TOOLCHAIN="D:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.5.0.202011040924/tools/"
 fi
 
 if [ -z ${DIR_STM32_CUBE+x} ]

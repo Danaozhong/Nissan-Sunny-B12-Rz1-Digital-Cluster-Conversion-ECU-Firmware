@@ -32,6 +32,6 @@ fi
 
 echo "Build Type is " $BUILD_CONFIG
 echo "STM32_CHIP " $STM32_CHIP
-# Just run CMake. Make sure that both CMake and make are available in the environment vars.
-#cmake -DSTM32_CHIP=$STM32_CHIP -DSTM32Cube_DIR=$DIR_STM32_CUBE -DTOOLCHAIN_PREFIX=$DIR_STM32_GNU_TOOLCHAIN -DCMAKE_MODULE_PATH=cmake -DCMAKE_TOOLCHAIN_FILE=cmake/gcc_stm32.cmake -DCMAKE_BUILD_TYPE=$BUILD_CONFIG -G "Eclipse CDT4 - Unix Makefiles" Src
 
+# Just run CMake. Make sure that both CMake and make are available in the environment vars.
+cmake -DSTM32_CUBE_F3_PATH=$DIR_STM32_CUBE -DSTM32_TOOLCHAIN_PATH=$DIR_STM32_GNU_TOOLCHAIN -DCMAKE_BUILD_TYPE=$BUILD_CONFIG -G "Eclipse CDT4 - Unix Makefiles" Src

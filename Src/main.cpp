@@ -148,6 +148,15 @@ extern "C"
 
     int _write (int file, char * ptr, int len)
     {
+#if 0
+        int DataIdx;
+
+        for (DataIdx = 0; DataIdx < len; DataIdx++)
+        {
+            __io_putchar(*ptr++);
+        }
+        return len;
+#endif
         return len;
     #if 0
       int written = 0;

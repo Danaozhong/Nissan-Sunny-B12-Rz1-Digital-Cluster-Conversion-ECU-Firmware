@@ -45,8 +45,8 @@ add_definitions(
     -D_BSD_SOURCE
     -D_GCC_MULTITHREAD_FREERTOS_ENABLE
     -DconfigRECORD_STACK_HIGH_ADDRESS=1
-    #-DDEBUG
-    #-DUSE_HAL_DRIVER
+    -DDEBUG
+    -DUSE_HAL_DRIVER
 )
 
 SET(PROJECT_SOURCES
@@ -97,9 +97,7 @@ add_compile_options(
 )
 
 add_definitions(
-    -D_BSD_SOURCE
-    -D_GCC_MULTITHREAD_FREERTOS_ENABLE
-    -DconfigRECORD_STACK_HIGH_ADDRESS=1
+
     #-DDEBUG
     #-DUSE_HAL_DRIVER
 )

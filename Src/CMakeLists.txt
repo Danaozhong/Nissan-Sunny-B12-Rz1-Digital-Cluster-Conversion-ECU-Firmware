@@ -51,27 +51,6 @@ SET(PROJECT_SOURCES
     main.cpp
     stm32f3xx_it.c
     #system_stm32f3xx.c
-    app/console_commands/src/console_commands.cpp
-    app/fuel_gauge_input/src/fuel_gauge_input.cpp
-    app/fuel_gauge_output/src/fuel_gauge_output.cpp
-    app/lookup_table/src/lookup_table.cpp
-    app/lookup_table_editor/src/lookup_table_editor.cpp
-    app/main_application/src/main_application.cpp
-    app/speed_sensor_converter/src/speed_sensor_converter.cpp
-    app/replay_curve/src/replay_curve.cpp
-    app/dataset/src/dataset.cpp
-   
-    drivers/adc/src/stm32_adc.cpp
-    drivers/dac/src/generic_dac.cpp
-    drivers/dac/src/stm32_dac.cpp
-    drivers/pwm/src/stm32_pwm.cpp
-    drivers/pwm_ic/src/stm32_pwm_ic.cpp
-    drivers/uart/src/generic_uart.cpp
-    drivers/uart/src/stm32_uart.cpp
-    drivers/uc_ports/src/uc_ports.cpp
-    
-    midware/events/event_handler.cpp
-    midware/std_ex/ex_threads/ex_thread.cpp
 )
 
 
@@ -112,36 +91,18 @@ link_libraries(
     stdcppex)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../Inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/console_commands/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/fuel_gauge_input/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/fuel_gauge_output/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table_editor/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/main_application/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/speed_sensor_converter/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/app/replay_curve/inc
     app/dataset/inc
-        
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/adc/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/dac/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/pwm/inc
-    drivers/pwm_ic/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uart/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/uc_ports/inc
-    
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/cppstdlib
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/events
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/osservices/os_console/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/midware/std_ex/ex_threads
 )
-
-
-
 
 
 add_subdirectory(midware/osservices)
 list(APPEND EXTRA_LIBS osservices)
+
+add_subdirectory(midware/event_handler)
+list(APPEND EXTRA_LIBS event_handler)
 
 add_subdirectory(midware/util_algorithms)
 list(APPEND EXTRA_LIBS util_algorithms)
@@ -149,8 +110,23 @@ list(APPEND EXTRA_LIBS util_algorithms)
 add_subdirectory(drivers/uart)
 list(APPEND EXTRA_LIBS uart)
 
+add_subdirectory(drivers/adc)
+list(APPEND EXTRA_LIBS adc)
+
+add_subdirectory(drivers/dac)
+list(APPEND EXTRA_LIBS dac)
+
+add_subdirectory(drivers/pwm)
+list(APPEND EXTRA_LIBS pwm)
+
+add_subdirectory(drivers/pwm_ic)
+list(APPEND EXTRA_LIBS pwm_ic)
+
 add_subdirectory(drivers/eeprom)
 list(APPEND EXTRA_LIBS eeprom)
+
+add_subdirectory(drivers/uc_ports)
+list(APPEND EXTRA_LIBS uc_ports)
 
 add_subdirectory(misc/ascii_graph)
 list(APPEND EXTRA_LIBS ascii_graph)
@@ -158,15 +134,6 @@ list(APPEND EXTRA_LIBS ascii_graph)
 add_subdirectory(misc/libs/libtable)
 list(APPEND EXTRA_LIBS libtable)
 
-
-add_subdirectory(app/version_info)
-list(APPEND EXTRA_LIBS version_info)
-
-add_subdirectory(app/eol)
-list(APPEND EXTRA_LIBS eol)
-
-add_subdirectory(app/eol_command)
-list(APPEND EXTRA_LIBS eol_command)
 
 if (USE_NVDH)
     add_subdirectory(midware/nonvolatile_data)
@@ -194,17 +161,7 @@ if (USE_CAN)
     
     
     add_subdirectory(app/ima_data_provider)
-    list(APPEND EXTRA_LIBS ima_data_provider)
-    
-   #list(APPEND EXTRA_INCLUDES 
-   #     ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/Can
-   #     ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/CanIf
-   #     ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/config
-  #      ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/Det
-  #      ${CMAKE_CURRENT_SOURCE_DIR}/can_stack/shared
-  #  )
-    
-    
+    list(APPEND EXTRA_LIBS ima_data_provider)   
 endif()
 
 if (USE_NVDH)
@@ -215,6 +172,42 @@ if (USE_NVDH)
         midware/nonvolatile_data/inc
     )
 endif()
+
+add_subdirectory(app/version_info)
+list(APPEND EXTRA_LIBS version_info)
+
+add_subdirectory(app/lookup_table)
+list(APPEND EXTRA_LIBS lookup_table)
+
+add_subdirectory(app/fuel_gauge_input)
+list(APPEND EXTRA_LIBS fuel_gauge_input)
+
+add_subdirectory(app/fuel_gauge_output)
+list(APPEND EXTRA_LIBS fuel_gauge_output)
+
+add_subdirectory(app/replay_curve)
+list(APPEND EXTRA_LIBS replay_curve)
+
+add_subdirectory(app/speed_sensor_converter)
+list(APPEND EXTRA_LIBS speed_sensor_converter)
+
+add_subdirectory(app/dataset)
+list(APPEND EXTRA_LIBS dataset)
+
+add_subdirectory(app/eol)
+list(APPEND EXTRA_LIBS eol)
+
+add_subdirectory(app/eol_command)
+list(APPEND EXTRA_LIBS eol_command)
+
+add_subdirectory(app/lookup_table_editor)
+list(APPEND EXTRA_LIBS lookup_table_editor)
+
+add_subdirectory(app/main_application)
+list(APPEND EXTRA_LIBS main_application)
+
+add_subdirectory(app/console_commands)
+list(APPEND EXTRA_LIBS console_commands)
     
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC 
     HAL::STM32::F3::GPIO
@@ -232,9 +225,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC
     HAL::STM32::F3::RCC
     HAL::STM32::F3::RCCEx
     HAL::STM32::F3::CORTEX
-    #libstdc++_nano.a
-    
-    #D:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.0.0.201904181610/tools/arm-none-eabi/lib/libstdc++_nano.a
     ${EXTRA_LIBS}
 )
 
@@ -242,9 +232,7 @@ target_link_options(${CMAKE_PROJECT_NAME} PUBLIC
     -Wl,-Map=${CMAKE_BINARY_DIR}/bin_${CMAKE_BUILD_TYPE}/${CMAKE_PROJECT_NAME}.map
     -Wl,-t
     -flto
-    #-nodefaultlibs
 )
-#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
 
 
 get_target_property(OUT ${CMAKE_PROJECT_NAME} LINK_LIBRARIES)

@@ -3,17 +3,12 @@
 
 #include "generic_adc.hpp"
 #include "lookup_table.hpp"
-#include "event_handler.h"
+#include "event_handler.hpp"
 #include "ex_thread.hpp"
 
-
-/* Enable this if you want to have additional log output for the fuel sensor acquisition module */
-//#define FUEL_GAUGE_INPUT_ENABLE_LOGGING
-
-//#define FUEL_GAUGE_INPUT_USE_OWN_TASK
-
-
-#define FUEL_GAUGE_INPUT_AVERAGING_SIZE   (7u)
+#ifndef FUEL_GAUGE_INPUT_AVERAGING_SIZE
+#error "FUEL_GAUGE_INPUT_AVERAGING_SIZE is not defined. verify correct Cmake generation."
+#endif
 
 namespace app
 {

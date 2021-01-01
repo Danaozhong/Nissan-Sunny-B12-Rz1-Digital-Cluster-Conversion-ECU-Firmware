@@ -1,6 +1,6 @@
 
 #include "fuel_gauge_output.hpp"
-#include "os_console.hpp"
+
 // Ugly macros to allow debug logging
 #define FUEL_GAUGE_OUTPUT_LOG(...)
 

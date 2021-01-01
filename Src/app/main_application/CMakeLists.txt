@@ -1,0 +1,19 @@
+
+set(MODULE_SOURCES
+    src/main_application.cpp
+)
+add_library(main_application STATIC ${MODULE_SOURCES})
+
+target_link_libraries(main_application fuel_gauge_input)
+target_link_libraries(main_application fuel_gauge_output)
+target_link_libraries(main_application osservices)
+target_link_libraries(main_application lookup_table_editor)
+target_link_libraries(main_application speed_sensor_converter)
+target_link_libraries(main_application dataset)
+target_link_libraries(main_application eol)
+target_link_libraries(main_application eol_command)
+target_link_libraries(main_application console_commands)
+
+target_include_directories(main_application PUBLIC
+    inc
+)

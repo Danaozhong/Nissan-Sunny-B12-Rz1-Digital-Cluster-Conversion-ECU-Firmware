@@ -1,0 +1,1 @@
+docker run --rm -i -t -v %cd%:/home/stm32/ws cortesja/stm32-cmake:latest bash

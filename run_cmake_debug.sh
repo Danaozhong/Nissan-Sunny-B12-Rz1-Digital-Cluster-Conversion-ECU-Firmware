@@ -2,7 +2,7 @@
 if [ -z ${BUILD_CONFIG+x} ] 
 then
     # Build type not set, set RELEASE as default
-    BUILD_CONFIG=Release
+    BUILD_CONFIG=Debug
 fi
 
 if [ -z ${ARM_TOOLCHAIN+x} ]

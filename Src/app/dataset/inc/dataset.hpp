@@ -1,7 +1,7 @@
 #ifndef _DATASET_HPP_
 #define _DATASET_HPP_
 
-#include "lookup_Table.hpp"
+#include "lookup_table.hpp"
 #include "nonvolatile_data_handler.hpp"
 
 namespace app

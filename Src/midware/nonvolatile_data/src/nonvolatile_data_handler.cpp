@@ -1,6 +1,6 @@
 #include "nonvolatile_data_handler.hpp"
 #include "os_console.hpp"
-#include "excp_Handler_if.h"
+#include "excp_handler_if.h"
 #include "util_algorithms.hpp" /* for CRC calculation */
 #include "eeprom.h"
 

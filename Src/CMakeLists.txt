@@ -181,10 +181,8 @@ if (USE_TRACE)
     list(APPEND EXTRA_LIBS trace)
 endif()
 
-
 add_subdirectory(midware/excp_handler)
 list(APPEND EXTRA_LIBS excp_handler)
-
 
 if (USE_CAN)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC

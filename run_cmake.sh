@@ -8,7 +8,7 @@ fi
 if [ -z ${ARM_TOOLCHAIN+x} ]
 then 
     # Build type not set, set RELEASE as default
-    ARM_TOOLCHAIN="F:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.5.0.202011040924/tools/"
+    ARM_TOOLCHAIN="D:/Programs/STM32CubeIDE/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.5.0.202011040924/tools/"
 fi
 
 if [ -z ${STM32_FW_F3=+x} ]

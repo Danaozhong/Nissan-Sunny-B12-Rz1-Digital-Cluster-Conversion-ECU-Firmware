@@ -23,6 +23,8 @@ namespace std_ex
 {
 	void sleep_for(std::chrono::milliseconds milliceconds);
 
+	uint32_t get_timestamp_in_ms();
+
 
 #ifdef STD_EX_USE_SIMPLIFIED_THREAD
 	class thread

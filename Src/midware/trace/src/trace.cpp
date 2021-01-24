@@ -155,7 +155,7 @@ namespace midware
                         {
                             // trace data was actually lost, print a warning message.
                             char ai8_warning_str[100] = { 0 };
-                            snprintf(ai8_warning_str, 100, "\r\nWarning: Trace buffer overflow. %u byte(s) lost.\r\n", m_u8_number_of_buffer_overflows);
+                            snprintf(ai8_warning_str, 100, "\r\nWarning: Trace buffer overflow. %u message(s) lost.\r\n", m_u8_number_of_buffer_overflows);
                             p_io_interface.write_data(ai8_warning_str, strlen(ai8_warning_str));
                             m_u8_number_of_buffer_overflows = 0u;
                         }

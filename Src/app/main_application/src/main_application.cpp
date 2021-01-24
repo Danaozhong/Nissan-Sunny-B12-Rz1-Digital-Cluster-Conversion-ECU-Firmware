@@ -10,7 +10,13 @@
 #include "excp_handler.hpp"
 #include "excp_handler_console_commands.hpp"
 #include "eol_command.hpp"
+#include "trace_if.h"
 
+#define MAIN_APPLICATION_MEASURE_STARTUP_TIME
+
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+#include "libtable.h"
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
 namespace app
 {
@@ -20,8 +26,58 @@ namespace app
 	      m_i32_fuel_gauge_output_manual_value(0)
 	{}
 
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+	enum MainApplicationStartupTimePosition
+	{
+	    StartupTimeBegin = 0,
+	    StartupTimeUARTInitComplete,
+	    StartupTimeConsoleInitComplete,
+	    StartupTimeCANInitComplete,
+	    StartupTimeTraceInitComplete,
+	    StartupTimeNVDHInitComplete,
+	    StartupTimeExcpHandlerInitComplete,
+	    StartupTimeDatasetInitComplete,
+	    StartupTimeApplInitComplete,
+	    StartupTimeStartupCompleted,
+	    StartupTimeNumOfElements
+	};
+
+
+	const char* get_timestamp_name(MainApplicationStartupTimePosition position)
+	{
+	    switch (position)
+	    {
+	    case StartupTimeUARTInitComplete:
+	        return "UART initalized";
+        case StartupTimeConsoleInitComplete:
+            return "console initialized";
+        case StartupTimeCANInitComplete:
+            return "CAN initialized";
+        case StartupTimeTraceInitComplete:
+            return "Trace initialized";
+        case StartupTimeNVDHInitComplete:
+            return "NVDH initialized";
+        case StartupTimeExcpHandlerInitComplete:
+            return "excp handler initialized";
+        case StartupTimeDatasetInitComplete:
+            return "dataset loaded";
+        case StartupTimeApplInitComplete:
+            return "application initialized";
+        case StartupTimeStartupCompleted:
+            return "startup finished";
+
+	    default:
+	        return "unknown";
+	    }
+	}
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
+
 	void MainApplication::startup_from_reset()
 	{
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+	    uint32_t au32_startup_times[StartupTimeNumOfElements] = { 0 };
+	    au32_startup_times[StartupTimeBegin] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 	    // create the UART interface to be able to log low-level debug messages
 	#ifdef USE_STM32_F3_DISCO
 	    m_p_uart = std::make_shared<drivers::STM32HardwareUART>(GPIOD, GPIO_PIN_6, GPIOD, GPIO_PIN_5);
@@ -36,11 +92,16 @@ namespace app
 	#endif
 
 	    // ...open UART connection.
-	    m_p_uart->connect(9600, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
-
+	    m_p_uart->connect(115200, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+	    au32_startup_times[StartupTimeUARTInitComplete] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 	    // Create the debug console
 	    m_po_os_io_interface = new OSServices::OSConsoleUartIOInterface(m_p_uart);
 	    m_po_os_console = new OSServices::OSConsole(*m_po_os_io_interface);
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+	    au32_startup_times[StartupTimeConsoleInitComplete] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
 #ifdef USE_CAN
         /* Init the CAN interface (AUTOSAR conform) */
@@ -52,6 +113,9 @@ namespace app
 
         /* Register CAN diagnostics commands on the UART */
         m_po_os_console->register_command(new app::CommandCAN());
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+        au32_startup_times[StartupTimeCANInitComplete] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 #endif
 
 
@@ -64,11 +128,14 @@ namespace app
 
 	    // and set the trace module as the default system tracer
 	    m_po_trace->set_as_default_trace();
+
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+	    au32_startup_times[StartupTimeTraceInitComplete] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 #endif
 
         m_po_exception_handler = new midware::ExceptionHandler();
         m_po_exception_handler->set_as_default_exception_handler();
-
 
 #ifdef USE_NVDH
         // initialize non-volatile memory (uses 1 block of size 1024) TODO move config to CMake
@@ -93,13 +160,19 @@ namespace app
             ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_LOADING_FAILED, false, __FILE__, __LINE__, 0u);
         }
 
-
-
         m_po_exception_handler->set_nonvolatile_data_handler(m_po_nonvolatile_data_handler, "EXCP");
+
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+        au32_startup_times[StartupTimeNVDHInitComplete] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 #endif /* USE_NVDH */
 
         // Initialize the exception storage module, to be able to log / debug exceptions
         m_po_exception_handler->init();
+
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+        au32_startup_times[StartupTimeExcpHandlerInitComplete] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
 	    // register the command to debug the exception handler on the os console
 	    m_po_os_console->register_command(new midware::CommandListExceptions());
@@ -110,12 +183,6 @@ namespace app
         {
             ExceptionHandler_handle_exception(EXCP_MODULE_EOL, EXCP_TYPE_NONVOLATILE_DATA_LOADING_FAILED, false, __FILE__, __LINE__, 0u);
         }
-
-        // print further bootscreen info (SW version, EOL data, etc.)
-        auto p_o_command_version = new app::CommandVersion();
-        this->m_po_os_console->register_command(p_o_command_version);
-        p_o_command_version->command_main(nullptr, 0, this->get_stdio());
-
 
 #ifdef USE_NVDH
 	    // read the dataset
@@ -134,9 +201,22 @@ namespace app
         m_o_dataset.load_default_dataset();
 #endif
 
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+        au32_startup_times[StartupTimeDatasetInitComplete] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
+
         // initialization below is for the application
         init_fuel_level_converter();
         init_speed_converter();
+
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+        au32_startup_times[StartupTimeApplInitComplete] = std_ex::get_timestamp_in_ms();
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
+
+        // print further bootscreen info (SW version, EOL data, etc.)
+        auto p_o_command_version = new app::CommandVersion();
+        this->m_po_os_console->register_command(p_o_command_version);
+        p_o_command_version->command_main(nullptr, 0, this->get_stdio());
 
         // register the debug commands in the os console, so that debugging of the speed signals is possible.
         this->m_po_os_console->register_command(new app::LookupTableEditor());
@@ -144,6 +224,45 @@ namespace app
         this->m_po_os_console->register_command(new app::CommandFuel());
         this->m_po_os_console->register_command(new app::CommandDataset());
         this->m_po_os_console->register_command(new app::EOLCommand(get_eol_data()));
+
+#ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+        au32_startup_times[StartupTimeStartupCompleted] = std_ex::get_timestamp_in_ms();
+
+        /* Print out the startup times on the UART interface */
+
+        tst_lib_table table;
+        i32_lib_table_initialize_table(&table);
+
+        i32_lib_table_add_row(&table, 2, "Function", "Time");
+
+        for (uint32_t i = StartupTimeUARTInitComplete; i < StartupTimeNumOfElements; ++i)
+        {
+            char timestamp[20] = "";
+            const unsigned int current_delta_in_ms = static_cast<unsigned int>(au32_startup_times[i] - au32_startup_times[StartupTimeBegin]);
+
+            snprintf(timestamp, 20, "%u ms", current_delta_in_ms);
+            i32_lib_table_add_row(&table, 2, get_timestamp_name(static_cast<MainApplicationStartupTimePosition>(i)), timestamp);
+        }
+
+        // give the system some time to print out the current trace buffer
+        std_ex::sleep_for(std::chrono::milliseconds(100));
+
+        {
+            char buffer[128];
+            int32_t i32_ret_val = 1;
+            uint32_t u32_offet = 0u;
+            while(1 == i32_ret_val)
+            {
+
+                i32_ret_val = i32_lib_table_draw_table(&table, buffer, 128, u32_offet);
+                u32_offet += 127;
+                DEBUG_PRINTF(buffer);
+
+                // again, give the trace task some time to push the data to the UART
+                std_ex::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+#endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 	}
 
 	MainApplication& MainApplication::get()
@@ -249,7 +368,12 @@ namespace app
         }
         if (m_p_o_fuel_gauge_output != nullptr)
         {
-            m_p_o_fuel_gauge_output->set_fuel_level(i32_output_value);
+            int32_t i32_ret_val = m_p_o_fuel_gauge_output->set_fuel_level(i32_output_value);
+            if (0 != i32_ret_val)
+            {
+                ExceptionHandler_handle_exception(EXCP_MODULE_FUEL_SIGNAL_CONVERTER, EXCP_TYPE_FUEL_SIGNAL_CONVERTER_SET_OUTPUT_FAILED,
+                        false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
+            }
         }
 	}
 

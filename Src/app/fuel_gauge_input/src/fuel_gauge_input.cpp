@@ -122,9 +122,9 @@ namespace app
             }
 
             // Send a signal that the fuel level has changed
-            const int32_t i32_read_fuel_percentage = get_average_fuel_percentage();
-            FUEL_GAUGE_LOG("Current calculated fuel input level: %i\r\n", i32_read_fuel_percentage);
-            this->m_sig_fuel_level_changed(i32_read_fuel_percentage);
+            const int32_t i32_averaged_fuel_percentage = get_average_fuel_percentage();
+            FUEL_GAUGE_LOG("Current calculated fuel input level: %i\r\n", i32_averaged_fuel_percentage);
+            this->m_sig_fuel_level_changed(i32_averaged_fuel_percentage);
 
             // since we have read a valid value, reset the invalid data counter
             m_u32_invalid_read_counter = 0;

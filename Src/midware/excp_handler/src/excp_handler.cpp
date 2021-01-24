@@ -166,13 +166,18 @@ namespace midware
         itr->m_u32_occurence_count++;
         //itr->m_u64_timestamp = std::chrono::high_resolution_clock::now().; // TODO update this when a time measurement library is available
 
+        // print the exception
+        char excp_buffer[100] = {0};
+        o_excp.print(excp_buffer, 100);
+        DEBUG_PRINTF("Exception Handler: exception triggered!\r\n %s\r\n", excp_buffer);
+
         // TODO move this part into the section that will trigger the reset after timeout, or before going to sleep.
         // update the exception information in flash
         // TODO this should be done anynchronously, doing flash writes from this process is not performant
         if (OSServices::ERROR_CODE_SUCCESS != store_into_data_flash())
         {
             // don't handle an exception here, could lead to a stack overflow. Find something better
-            DEBUG_PRINTF("Exception Handler: storing the exceptions in flash failed!");
+            DEBUG_PRINTF("Exception Handler: storing the exceptions in flash failed!\n\r");
         }
 
         // Afterwards, when all information is safely stored in EEPROM, process the exception

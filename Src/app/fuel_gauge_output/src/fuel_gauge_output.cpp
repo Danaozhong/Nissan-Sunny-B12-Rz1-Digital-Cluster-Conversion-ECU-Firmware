@@ -25,10 +25,6 @@ namespace app
 
 	int32_t FuelGaugeOutput::set_fuel_level(int32_t i32_fuel_level)
 	{
-		//if (i32_fuel_level < 0.0 || d_fuel_level > 100.0)
-		//{
-		//	return -1;
-		//}
 		m_i32_set_voltage_output = m_o_fuel_output_characteristic.get_y(i32_fuel_level);
 
 		FUEL_GAUGE_OUTPUT_LOG("Setting output to voltage %i\r\n", static_cast<int>(i32_final_voltage));

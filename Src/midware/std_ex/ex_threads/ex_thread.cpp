@@ -6,6 +6,7 @@
  */
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 
 #include "ex_thread.hpp"
 
@@ -15,6 +16,11 @@ namespace std_ex
 	void sleep_for(std::chrono::milliseconds milliseconds)
 	{
 		 vTaskDelay(milliseconds.count() / portTICK_PERIOD_MS);
+	}
+
+	uint32_t get_timestamp_in_ms()
+	{
+	    return xTaskGetTickCount();
 	}
 
 #ifdef STD_EX_USE_SIMPLIFIED_THREAD

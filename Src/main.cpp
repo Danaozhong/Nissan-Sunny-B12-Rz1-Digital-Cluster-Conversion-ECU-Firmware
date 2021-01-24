@@ -307,22 +307,11 @@ void MAIN_Cycle_100ms(void)
     }
 }
 
-
 void MAIN_startup_thread(void*)
 {
     // This is the initial thread running after bootup.
     /* Configure the system clock to 64 MHz */
     SystemClock_Config();
-
-
-    /* Configure LEDs */
-#ifdef USE_STM32_F3_DISCO
-    BSP_LED_Init(LED_RED);
-    BSP_LED_Init(LED_GREEN);
-    BSP_LED_Init(LED_BLUE);
-#elif defined USE_STM32F3XX_NUCLEO_32
-    BSP_LED_Init(LED_GREEN);
-#endif
 
     // create our main application.
     app::MainApplication& o_application = app::MainApplication::get();
@@ -337,17 +326,16 @@ void MAIN_startup_thread(void*)
     while (true)
     {
         // Check for data on the UART
-
         if (nullptr != po_uart)
         {
             po_uart->uart_process_cycle();
         }
 
-
         // load balancing
         std_ex::sleep_for(std::chrono::milliseconds(10));
 
     }
+
     vTaskDelete(NULL);
 }
 
@@ -365,13 +353,11 @@ int main(void)
      */
     HAL_Init();
 
-
-
     // first thread still needs to be created with xTaskCreate, only after the scheduler has started, std::thread can be used.
     TaskHandle_t xHandle = NULL;
     xTaskCreate( MAIN_startup_thread,
                  "MAIN_startup_thread",
-                 0xA00,
+                 0x800,
                  NULL,
                  3u,
                  &xHandle );

@@ -268,7 +268,7 @@ namespace drivers
         m_u32_rx_buffer_usage = 0;
 #ifdef DRIVER_UART_HAS_OWN_TASK
         auto main_func = std::bind(&STM32HardwareUART::uart_main, this);
-        m_p_uart_buffer_thread = new std_ex::thread(main_func, "UART_RxThread", 1u, 0x800);
+        m_p_uart_buffer_thread = new std_ex::thread(main_func, "UART_RxThread", 1u, 0x600);
 #endif
     }
     void STM32HardwareUART::disconnect()

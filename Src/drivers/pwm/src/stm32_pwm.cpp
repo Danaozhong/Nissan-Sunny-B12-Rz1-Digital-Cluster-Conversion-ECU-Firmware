@@ -105,7 +105,7 @@ namespace drivers
 	    HAL_GPIO_Init(m_pt_gpio_block, &GPIO_InitStruct);
 
 	    // set GPIO to high
-	    HAL_GPIO_WritePin(m_pt_gpio_block, m_u16_gpio_pin, GPIO_PIN_SET);
+	    HAL_GPIO_WritePin(m_pt_gpio_block, m_u16_gpio_pin, GPIO_PIN_RESET);
 	    return 0;
 	}
 

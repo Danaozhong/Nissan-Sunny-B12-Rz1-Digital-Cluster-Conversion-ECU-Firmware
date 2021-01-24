@@ -215,7 +215,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC
     HAL::STM32::F3::TIMEx
     HAL::STM32::F3::ADC
     HAL::STM32::F3::ADCEx
-    HAL::STM32::F3::DAC
+    HAL::STM32::F3::DACEx
     HAL::STM32::F3::CAN
     HAL::STM32::F3::DMA
     HAL::STM32::F3::UART

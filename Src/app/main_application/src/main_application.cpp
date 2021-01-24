@@ -224,6 +224,7 @@ namespace app
         this->m_po_os_console->register_command(new app::CommandFuel());
         this->m_po_os_console->register_command(new app::CommandDataset());
         this->m_po_os_console->register_command(new app::EOLCommand(get_eol_data()));
+        this->m_po_os_console->register_command(new app::CommandTrace());
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
         au32_startup_times[StartupTimeStartupCompleted] = std_ex::get_timestamp_in_ms();
@@ -291,7 +292,7 @@ namespace app
     {
         if (nullptr != m_p_o_fuel_gauge_input)
         {
-            m_p_o_fuel_gauge_input->process_cycle();
+            m_p_o_fuel_gauge_input->cycle_100ms();
         }
 
         if (nullptr != m_po_speed_sensor_converter)
@@ -440,7 +441,7 @@ namespace app
             m_p_o_fuel_gauge_input->m_sig_fuel_level_changed.connect(event_handler);
 
             // trigger one reading cycle, to immediately display a fuel value after startup.
-            m_p_o_fuel_gauge_input->process_cycle();
+            m_p_o_fuel_gauge_input->cycle_100ms();
             return OSServices::ERROR_CODE_SUCCESS;
         }
     }

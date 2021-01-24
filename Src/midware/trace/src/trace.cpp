@@ -32,6 +32,24 @@ namespace
 
 namespace midware
 {
+
+    TraceContext::TraceContext(const char* context, TraceLogLevel log_level)
+        :m_context_name(""), m_en_log_level(log_level)
+    {
+        std::strncpy(m_context_name, context, TRACE_CONTEXT_STR_LEN - 1);
+        m_context_name[TRACE_CONTEXT_STR_LEN - 1] = '\0';
+    }
+
+    void TraceContext::set_log_level(TraceLogLevel log_level)
+    {
+        m_en_log_level = log_level;
+    }
+
+    TraceLogLevel TraceContext::get_log_level() const
+    {
+        return m_en_log_level;
+    }
+
     int32_t Trace::init()
     {
         if (nullptr != m_po_io_thread)
@@ -61,6 +79,7 @@ namespace midware
             return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
         }
 
+        m_ao_trace_contexts.clear();
 
         // check if we are he default tracer:
         if (m_p_system_default_trace == this)
@@ -73,8 +92,64 @@ namespace midware
         m_po_io_thread->join();
         delete m_po_io_thread;
         m_po_io_thread = nullptr;
+
         return OSServices::ERROR_CODE_SUCCESS;
     }
+
+    /** Creates a new context */
+    int32_t Trace::declare_context(const char* context)
+    {
+        if (find_context(context) != m_ao_trace_contexts.end())
+        {
+            // context already exists
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        m_ao_trace_contexts.push_back(TraceContext(context, get_default_log_level()));
+        return OSServices::ERROR_CODE_SUCCESS;
+    }
+
+    /** Sets the log level for a specific context. */
+    int32_t Trace::set_log_level(const char* context, TraceLogLevel log_level)
+    {
+        auto itr = find_context(context);
+        if (itr == m_ao_trace_contexts.end())
+        {
+            // context not found
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        itr->set_log_level(log_level);
+        return OSServices::ERROR_CODE_SUCCESS;
+    }
+
+    /**
+     *
+     */
+    void Trace::log(const char* context, TraceLogLevel log_level,const char* format_str, va_list args)
+    {
+
+        auto itr = find_context(context);
+        if (itr == m_ao_trace_contexts.end())
+        {
+            // context not found
+            return;
+        }
+
+        // filter by log level
+        if (log_level >= itr->get_log_level())
+        {
+            debug_printf("[%s] [%s] ", itr->m_context_name, TraceHelper::loglevel_to_string(log_level));
+            debug_printf_internal(format_str, args);
+        }
+    }
+
+    void Trace::log(const char* context, TraceLogLevel log_level, const char * format_str, ...)
+    {
+        va_list args;
+        va_start(args, format_str);
+        log(context, log_level, format_str, args);
+        va_end(args);
+    }
+
 
     void Trace::debug_printf(const char * format_str, ...)
     {
@@ -131,6 +206,36 @@ namespace midware
         return m_p_system_default_trace;
     }
 
+    TraceLogLevel Trace::get_default_log_level() const
+    {
+        return LOGLEVEL_INFO;
+    }
+
+    std::vector<TraceContext>::iterator Trace::find_context(const char* context)
+    {
+        for(auto itr = m_ao_trace_contexts.begin(); itr != m_ao_trace_contexts.end(); ++itr)
+        {
+            if (std::strcmp(context, itr->m_context_name) == 0)
+            {
+                return itr;
+            }
+        }
+        return m_ao_trace_contexts.end();
+    }
+
+    std::vector<TraceContext>::const_iterator Trace::find_context(const char* context) const
+    {
+        for(auto itr = m_ao_trace_contexts.begin(); itr != m_ao_trace_contexts.end(); ++itr)
+        {
+            // TODO check str length for context name
+            if (std::strcmp(context, itr->m_context_name) == 0)
+            {
+                return itr;
+            }
+        }
+        return m_ao_trace_contexts.end();
+    }
+
     void Trace::trace_main()
     {
         while(false == m_bo_terminate_thread)
@@ -173,6 +278,54 @@ namespace midware
             std_ex::sleep_for(std::chrono::milliseconds(100));
         }
     }
+
+    namespace TraceHelper
+    {
+        TraceLogLevel loglevel_from_string(const char* loglevel)
+        {
+            if (strcmp(loglevel, "DEBUG") == 0)
+            {
+                return LOGLEVEL_DEBUG;
+            }
+            else if (strcmp(loglevel, "INFO") == 0)
+            {
+                return LOGLEVEL_INFO;
+            }
+            else if (strcmp(loglevel, "WARN") == 0)
+            {
+                return LOGLEVEL_WARNING;
+            }
+            else if (strcmp(loglevel, "ERROR") == 0)
+            {
+                return LOGLEVEL_ERROR;
+            }
+            else
+            {
+                return LOGLEVEL_FATAL;
+            }
+        }
+
+        const char* loglevel_to_string(TraceLogLevel log_level)
+        {
+            switch (log_level)
+            {
+            case LOGLEVEL_DEBUG:
+                return "DEBUG";
+            case LOGLEVEL_INFO:
+                return "INFO";
+            case LOGLEVEL_WARNING:
+                return "WARN";
+            case LOGLEVEL_ERROR:
+                return "ERROR";
+            case LOGLEVEL_FATAL:
+                return "FATAL";
+            default:
+                return "unknown";
+
+            }
+        }
+    }
+
 }
 
 /* Below are the C interface functions */
@@ -190,4 +343,39 @@ extern "C"
             va_end(args);
         }
     }
+
+
+    int32_t Trace_declare_context(const char* context)
+    {
+        midware::Trace* po_default_trace = midware::Trace::get_default_trace();
+        if (po_default_trace != nullptr)
+        {
+            return po_default_trace->declare_context(context);
+        }
+        return OSServices::ERROR_CODE_PARAMETER_WRONG;
+    }
+
+    /** Sets the log level for a specific context. */
+    int32_t Trace_set_log_level(const char* context, TraceLogLevel log_level)
+    {
+        midware::Trace* po_default_trace = midware::Trace::get_default_trace();
+        if (po_default_trace != nullptr)
+        {
+            return po_default_trace->set_log_level(context, log_level);
+        }
+        return OSServices::ERROR_CODE_PARAMETER_WRONG;
+    }
+
+    void Trace_log(const char* context, TraceLogLevel log_level, const char * format_str, ...)
+    {
+        midware::Trace* po_default_trace = midware::Trace::get_default_trace();
+        if (po_default_trace != nullptr)
+        {
+            va_list args;
+            va_start(args, format_str);
+            m_p_system_default_trace->log(context, log_level, format_str, args);
+            va_end(args);
+        }
+    }
+
 }

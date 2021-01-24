@@ -8,17 +8,45 @@
 
 #include "ex_thread.hpp"
 #include "os_console.hpp"
+#include "trace_if.h"
 
 #define TRACE_BUFFER_LENGTH (512)
+#define TRACE_CONTEXT_STR_LEN (5u)
 
 namespace midware
 {
+
+    class TraceContext
+    {
+    public:
+        TraceContext(const char* context, TraceLogLevel log_level);
+
+        void set_log_level(TraceLogLevel log_level);
+        TraceLogLevel get_log_level() const;
+
+        char m_context_name[TRACE_CONTEXT_STR_LEN];
+        TraceLogLevel m_en_log_level;
+    };
+
     class Trace
     {
     public:
         int32_t init();
 
         int32_t deinit();
+
+        /** Creates a new context */
+        int32_t declare_context(const char* context);
+
+        /** Sets the log level for a specific context. */
+        int32_t set_log_level(const char* context, TraceLogLevel log_level);
+
+        /**
+         *
+         */
+        void log(const char* context, TraceLogLevel log_level,const char* format_str, va_list args);
+
+        void log(const char* context, TraceLogLevel log_level, const char *, ...);
 
         /** This should be called by the application to print debug logs. traces are print out
          * asynchronously to not impact performance.
@@ -38,7 +66,15 @@ namespace midware
         static Trace* get_default_trace();
 
     private:
+        TraceLogLevel get_default_log_level() const;
+
+        std::vector<TraceContext>::iterator find_context(const char* context);
+        std::vector<TraceContext>::const_iterator find_context(const char* context) const;
+
+
         void trace_main();
+
+        std::vector<TraceContext> m_ao_trace_contexts;
 
         /** All the IO interfaces that are used to send out trace data */
         std::vector<OSServices::OSConsole*> m_ao_trace_io_interfaces;
@@ -66,6 +102,13 @@ namespace midware
 
         std::atomic<bool> m_bo_terminate_thread;
     };
+
+    namespace TraceHelper
+    {
+        TraceLogLevel loglevel_from_string(const char* loglevel);
+
+        const char* loglevel_to_string(TraceLogLevel);
+    }
 }
 
 

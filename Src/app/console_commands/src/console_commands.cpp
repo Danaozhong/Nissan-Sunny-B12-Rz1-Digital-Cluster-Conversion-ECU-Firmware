@@ -3,7 +3,7 @@
 #include <cstring>
 #include <ctime>   // localtime
 #include "version_info.hpp"
-
+#include "trace_if.h"
 #include "ascii_graph.hpp"
 
 using namespace OSServices;
@@ -185,7 +185,10 @@ namespace app
             int i_inut_adc_voltage = o_application.m_p_o_fuel_gauge_input->get_adc_voltage();
             int i_inut_fuel_resistor_value = o_application.m_p_o_fuel_gauge_input->get_fuel_sensor_resistor_value();
 
-            int i32_average_fuel_level_sensor = o_application.m_i32_fuel_sensor_read_value;
+            int i32_calculated_fuel_level_sensor = o_application.m_p_o_fuel_gauge_input->get_fuel_sensor_value();
+            int i32_average_fuel_level_sensor = o_application.m_p_o_fuel_gauge_input->get_current_averaged_fuel_sensor_value();
+            int i32_raw_fuel_level_sensor = o_application.m_p_o_fuel_gauge_input->get_current_raw_fuel_sensor_value();
+
             int i32_manually_set_fuel_level = o_application.m_i32_fuel_gauge_output_manual_value;
             int i32_voltage_cluster = o_application.m_p_o_fuel_gauge_output->get_voltage_output();
             int i32_voltage_dac = o_application.m_p_o_fuel_gauge_output->get_voltage_dac();
@@ -196,7 +199,9 @@ namespace app
                     "\n\r"
                     "  ADC voltage: %i.%02iV\n\r"
                     "  Input fuel sensor resistance: %i.%02iOhm\n\r"
-                    "  Input fuel sensor level:  %i%%\n\r"
+                    "  Input fuel sensor calculated level:  %i%%\n\r"
+                    "  Input fuel sensor averaged level:  %i%%\n\r"
+                    "  Input fuel sensor raw level:  %i%%\n\r"
                     "  Manually set fuel sensor level: %i%%\n\r"
                     "  Simulated sensor voltage: %i.%02iV\n\r"
                     "  Output voltage DAC: %i.%02iV\n\r"
@@ -205,7 +210,9 @@ namespace app
                     (i_inut_adc_voltage % 1000) / 10,
                     i_inut_fuel_resistor_value / 1000,
                     (i_inut_fuel_resistor_value % 1000) / 10,
+                    i32_calculated_fuel_level_sensor / 100,
                     i32_average_fuel_level_sensor / 100,
+                    i32_raw_fuel_level_sensor / 100,
                     i32_manually_set_fuel_level / 100,
                     i32_voltage_cluster / 1000,
                     (i32_voltage_cluster % 1000) / 10,
@@ -356,5 +363,23 @@ namespace app
         }
         return OSServices::ERROR_CODE_SUCCESS;
    }
+
+    int32_t CommandTrace::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
+    {
+        if (u32_num_of_params > 0)
+        {
+            if (0 == strcmp(params[0], "loglevel"))
+            {
+                if (u32_num_of_params != 3)
+                {
+                    return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+                }
+                const TraceLogLevel log_level = midware::TraceHelper::loglevel_from_string(params[2]);
+                return Trace_set_log_level(params[1], log_level);
+            }
+        }
+        return OSServices::ERROR_CODE_SUCCESS;
+   }
+
 }
 

@@ -4,10 +4,13 @@
 #include "generic_adc.hpp"
 #include "lookup_table.hpp"
 #include "event_handler.hpp"
-#include "ex_thread.hpp"
 
 #ifndef FUEL_GAUGE_INPUT_AVERAGING_SIZE
 #error "FUEL_GAUGE_INPUT_AVERAGING_SIZE is not defined. verify correct Cmake generation."
+#endif
+
+#ifndef FUEL_GAUGE_INPUT_NUM_OF_AVERAGES
+#error "FUEL_GAUGE_INPUT_NUM_OF_AVERAGES is not defined!"
 #endif
 
 namespace app
@@ -42,6 +45,22 @@ namespace app
 		int32_t m_i32_supply_voltage;
 	};
 
+	/** These are the states of the input fuel sensor state machine.
+	 * FuelGaugeInputSMStarting: The fuel sensor is initializing, and will make a first estimation on the fuel level
+	 * FuelGaugeInputSMNormalOperation: In this mode, only new fuel readings less than the current one will be accepted.
+	 * FuelGaugeInputSMRefillDetected: Triggered when the sensor value is suddenly higher than before, i.e. a refill
+	 * has been detected.
+	 * FuelGaugeInputSMErrorRecovery: Triggered when the sensor value is suddenly less than before. That would indicate
+	 * an error, and a reinitialization is triggered.
+	 */
+	enum FuelGaugeInputSMState
+	{
+	    FuelGaugeInputSMStarting,
+	    FuelGaugeInputSMNormalOperation,
+	    FuelGaugeInputSMRefillDetected,
+	    FuelGaugeInputSMErrorRecovery
+	};
+
 	class FuelGaugeInputFromADC
 	{
 	public:
@@ -52,40 +71,51 @@ namespace app
 		/// Signal triggered when a new value from the fuel sensor was retrieved
 		boost::signals2::signal<int32_t> m_sig_fuel_level_changed;
 
-		void process_cycle();
+		/** Every 100ms, a new fuel sensor value is read. It is also used at startup to find the average value for the fuel sensor */
+		void cycle_100ms();
 
-		int32_t get_average_fuel_percentage() const;
+		int32_t get_fuel_sensor_value() const;
+
+		int32_t get_current_averaged_fuel_sensor_value() const;
+
+		int32_t get_current_raw_fuel_sensor_value() const;
 
 		/** Returns the voltage read at the ADC */
 		int32_t get_adc_voltage() const;
 
-		/** Reaturns the calculated fuel resistor value */
+		/** Returns the calculated fuel resistor value */
 		int32_t get_fuel_sensor_resistor_value() const;
 
     private:
-#ifdef FUEL_GAUGE_INPUT_USE_OWN_TASK
-        void thread_main(void);
-        // data acquisition thread
-        std_ex::thread* m_po_data_acquisition_thread;
-#endif
+		void set_fuel_sensor_value(int32_t i23_fuel_value);
+
 		/// The ADC used to retrieve data
 		drivers::GenericADC* m_p_adc;
 
-		int32_t m_ai32_last_read_fuel_percentages[FUEL_GAUGE_INPUT_AVERAGING_SIZE]; /* in percent * 100 */
-		uint32_t m_u32_buffer_counter;
+		/// The actual last readings from the fuel sensor
+		std::vector<int32_t> m_ai32_raw_last_read_fuel_percentages; /* in percent * 100 */
 
-		bool m_bo_initialized;
-		bool m_bo_terminate_thread;
-		uint32_t m_u32_invalid_read_counter;
+		/// The last averaged input values
+		std::vector<std::pair<int32_t, int32_t>> m_ai32_averaged_fuel_readings_buffer; /* in percent * 100, min/max variation (%*100) */
 
+		/// in which state the state machine is.
+		FuelGaugeInputSMState m_en_state;
+
+		uint32_t m_u32_input_unexpected_higher_error_counter;
+        uint32_t m_u32_input_unexpected_lower_error_counter;
+
+		int32_t m_i32_current_fuel_value;
+
+		/// lookup table used to convert from the ADC value to a percentage
 		const app::CharacteristicCurve<int32_t, int32_t>& m_o_fuel_input_characteristic;
 
-        // the voltage divider is supplied by 5V, and has a 220Ohm resistor on top,
-        // and a 330Ohm resistor in parallel to the fuel gauge.
+        /// the voltage divider used at the hardware side on the ADC to measure the fuel sensor.
         VoltageDivider m_o_voltage_divider;
 
-        // some variables to store
+        /// the actual ADC voltage.
         int32_t m_i32_adc_pin_voltage;
+
+        /// The resistor value of the fuel sensor.
         int32_t m_i32_fuel_sensor_resistor_value;
 
 

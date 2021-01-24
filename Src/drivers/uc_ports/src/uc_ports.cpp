@@ -126,26 +126,43 @@ namespace drivers
         PA1     ------> TIM2_CH2
         PA2     ------> TIM2_CH3
         */
+#if 1
 #if 0
         GPIO_InitStruct.Pin =  GPIO_PIN_12;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_PULLUP;
+        GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF10_TIM4;
         HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+#endif
+
+        /* reconfigure the pin to output / push pull */
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+        GPIO_InitStruct.Pin = GPIO_PIN_12;
+        GPIO_InitStruct.Alternate = GPIO_AF10_TIM4;
+        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+        // set GPIO to high
 
 
 
         /* Clemens 2020-11-01 Tested and works*/
         GPIO_InitStruct.Pin = GPIO_PIN_11;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF10_TIM4;
         HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 #endif
 
 
-
+#if 0
         /* Clemens 2020-11-01 this doesnt seem to work */
         GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -154,7 +171,7 @@ namespace drivers
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF10_TIM4;
         HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
+#endif
 
 /*
         GPIO_InitStruct.Pin = GPIO_PIN_12;

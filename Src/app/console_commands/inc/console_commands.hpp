@@ -63,6 +63,19 @@ namespace app
 
         virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, OSServices::OSConsoleGenericIOInterface& p_o_io_interface);
     };
+
+    /**
+    * This command is used to configure the trace log levels for certain modules
+    */
+   class CommandTrace : public OSServices::Command
+   {
+   public:
+       CommandTrace() : Command("trace") {}
+
+       virtual ~CommandTrace() {};
+
+       virtual int32_t command_main(const char** params, uint32_t u32_num_of_params, OSServices::OSConsoleGenericIOInterface& p_o_io_interface);
+   };
 }
 
 #endif

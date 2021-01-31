@@ -6,7 +6,11 @@
 #include <vector>
 #include <cstddef>
 
+//#define TRACE_USE_OWN_THREAD
+
+#ifdef TRACE_USE_OWN_THREAD
 #include "ex_thread.hpp"
+#endif
 #include "os_console.hpp"
 #include "trace_if.h"
 
@@ -65,25 +69,29 @@ namespace midware
         /** Returns the system default tracer. */
         static Trace* get_default_trace();
 
+        void cycle();
+
     private:
         TraceLogLevel get_default_log_level() const;
 
         std::vector<TraceContext>::iterator find_context(const char* context);
         std::vector<TraceContext>::const_iterator find_context(const char* context) const;
 
-
+#ifdef TRACE_USE_OWN_THREAD
         void trace_main();
-
+#endif
         std::vector<TraceContext> m_ao_trace_contexts;
 
         /** All the IO interfaces that are used to send out trace data */
         std::vector<OSServices::OSConsole*> m_ao_trace_io_interfaces;
 
+#ifdef TRACE_USE_OWN_THREAD
         /** This thread is low priority, and whenever active, will take the buffered trace data to send
          * it out over the IO interfaces asynchronously. That way performance of the calling module is
          * not affected.
          * This is a normal pointer to save memory. */
         std_ex::thread* m_po_io_thread;
+#endif
 
         /** This buffer will buffer trace messages from the moment the application issues a trace
         log, until the moment of time when the trace task has time to run and can send out all the

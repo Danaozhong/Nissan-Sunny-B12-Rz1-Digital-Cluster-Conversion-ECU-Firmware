@@ -52,6 +52,7 @@ namespace midware
 
     int32_t Trace::init()
     {
+#ifdef TRACE_USE_OWN_THREAD
         if (nullptr != m_po_io_thread)
         {
             // module already initialized
@@ -59,25 +60,31 @@ namespace midware
         }
 
         // clear all variables
+
         m_bo_terminate_thread = false;
+#endif
         m_u8_number_of_buffer_overflows = 0u;
         m_u_buffer_usage = 0u;
         memset(m_pa_out_buffer, 0u, TRACE_BUFFER_LENGTH);
 
+#ifdef TRACE_USE_OWN_THREAD
         auto main_func = std::bind(&Trace::trace_main, this);
 
         // create the thread which will asynchronously send out all the messages
         m_po_io_thread = new std_ex::thread(main_func, "TRACE_DebugPrint", 1, 1024);
+#endif
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
     int32_t Trace::deinit()
     {
+#ifdef TRACE_USE_OWN_THREAD
         if (nullptr == m_po_io_thread)
         {
             // module already deinitialized
             return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
         }
+#endif
 
         m_ao_trace_contexts.clear();
 
@@ -88,10 +95,12 @@ namespace midware
         }
 
         // wait for the thread to terminate
+#ifdef TRACE_USE_OWN_THREAD
         m_bo_terminate_thread = true;
         m_po_io_thread->join();
         delete m_po_io_thread;
         m_po_io_thread = nullptr;
+#endif
 
         return OSServices::ERROR_CODE_SUCCESS;
     }
@@ -206,6 +215,44 @@ namespace midware
         return m_p_system_default_trace;
     }
 
+    void Trace::cycle()
+    {
+        if (m_u_buffer_usage > 0)
+        {
+            bool bo_data_printed = false;
+
+            // some application has written trace logs into our buffer, print them out.
+            std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
+            for (auto itr = m_ao_trace_io_interfaces.begin(); itr != m_ao_trace_io_interfaces.end(); ++itr)
+            {
+                auto& p_io_interface = (*itr)->get_io_interface();
+                if (false == (*itr)->console_blocked())
+                {
+                    // if the data can at least be output on one interface, that's good enough for us
+                    bo_data_printed = true;
+                    p_io_interface.write_data(m_pa_out_buffer, m_u_buffer_usage);
+
+                    // check if trace messages were lost
+                    if (m_u8_number_of_buffer_overflows > 0u)
+                    {
+                        // trace data was actually lost, print a warning message.
+                        char ai8_warning_str[100] = { 0 };
+                        snprintf(ai8_warning_str, 100, "\r\nWarning: Trace buffer overflow. %u message(s) lost.\r\n", m_u8_number_of_buffer_overflows);
+                        p_io_interface.write_data(ai8_warning_str, strlen(ai8_warning_str));
+                        m_u8_number_of_buffer_overflows = 0u;
+                    }
+                }
+            }
+            // only clear the buffer if at least one interface could print out the data. Others won't have received it.
+            if (bo_data_printed)
+            {
+                // finally, clear the buffer and reset usage to 0.
+                memset(m_pa_out_buffer, 0u, TRACE_BUFFER_LENGTH);
+                m_u_buffer_usage = 0;
+            }
+        }
+    }
+
     TraceLogLevel Trace::get_default_log_level() const
     {
         return LOGLEVEL_INFO;
@@ -236,48 +283,17 @@ namespace midware
         return m_ao_trace_contexts.end();
     }
 
+#ifdef TRACE_USE_OWN_THREAD
     void Trace::trace_main()
     {
         while(false == m_bo_terminate_thread)
         {
-            if (m_u_buffer_usage > 0)
-            {
-                bool bo_data_printed = false;
-
-                // some application has written trace logs into our buffer, print them out.
-                std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
-                for (auto itr = m_ao_trace_io_interfaces.begin(); itr != m_ao_trace_io_interfaces.end(); ++itr)
-                {
-                    auto& p_io_interface = (*itr)->get_io_interface();
-                    if (false == (*itr)->console_blocked())
-                    {
-                        // if the data can at least be output on one interface, that's good enough for us
-                        bo_data_printed = true;
-                        p_io_interface.write_data(m_pa_out_buffer, m_u_buffer_usage);
-
-                        // check if trace messages were lost
-                        if (m_u8_number_of_buffer_overflows > 0u)
-                        {
-                            // trace data was actually lost, print a warning message.
-                            char ai8_warning_str[100] = { 0 };
-                            snprintf(ai8_warning_str, 100, "\r\nWarning: Trace buffer overflow. %u message(s) lost.\r\n", m_u8_number_of_buffer_overflows);
-                            p_io_interface.write_data(ai8_warning_str, strlen(ai8_warning_str));
-                            m_u8_number_of_buffer_overflows = 0u;
-                        }
-                    }
-                }
-                // only clear the buffer if at least one interface could print out the data. Others won't have received it.
-                if (bo_data_printed)
-                {
-                    // finally, clear the buffer and reset usage to 0.
-                    memset(m_pa_out_buffer, 0u, TRACE_BUFFER_LENGTH);
-                    m_u_buffer_usage = 0;
-                }
-            }
+            cycle();
             // load balancing
             std_ex::sleep_for(std::chrono::milliseconds(100));
         }
     }
+#endif
 
     namespace TraceHelper
     {

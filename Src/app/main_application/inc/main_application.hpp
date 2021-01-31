@@ -76,6 +76,8 @@ namespace app
 		/** Cyclic container to be executed every 1 second */
 		void cycle_1000ms();
 
+		void console_thread();
+
 #ifdef USE_NVDH
         std::shared_ptr<midware::NonvolatileDataHandler> get_nonvolatile_data_handler() const;
 #endif

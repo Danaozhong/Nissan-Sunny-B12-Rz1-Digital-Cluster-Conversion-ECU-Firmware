@@ -2,6 +2,7 @@
 #define _SPEED_SENSOR_CONVERTER_HPP_
 
 #include <atomic>
+#include <chrono>
 #include <mutex>
 
 #include "ex_thread.hpp"
@@ -21,6 +22,39 @@ namespace app
         OUTPUT_MODE_CONVERSION,
         OUTPUT_MODE_MANUAL,
         OUTPUT_MODE_REPLAY
+    };
+
+    /** The PWM IC is switched to a different prescaler, depending on the vehicle speed.
+     *
+     */
+    enum SpeedInputCaptureMode
+    {
+       SPEED_INPUT_CAPTURE_MODE_LOW_SPEED = 0,
+       SPEED_INPUT_CAPTURE_MODE_HIGH_SPEED,
+       SPEED_INPUT_CAPTURE_NUM_OF_MODES
+    };
+
+    struct SpeedInputCaptureConfiguration
+    {
+        uint32_t u32_vehicle_speed_mph_lower_threshold;
+        SpeedInputCaptureMode en_lower_capture_mode;
+
+        uint32_t u32_vehicle_speed_mph_upper_threshold;
+        SpeedInputCaptureMode en_higher_capture_mode;
+
+        uint16_t u16_pwm_ic_prescaler;
+    };
+
+    namespace SpeedSensorConverterHelper
+    {
+        extern SpeedInputCaptureConfiguration pwm_ic_state_machine[SPEED_INPUT_CAPTURE_NUM_OF_MODES];
+    }
+
+    struct SpeedSensorMeasurement
+    {
+        uint32_t u32_frequency;
+        uint32_t u32_duty_cycle;
+        std::chrono::time_point<std::chrono::system_clock> o_timestamp;
     };
 
     class SpeedSensorConverter
@@ -51,18 +85,26 @@ namespace app
 
         /** Returns the current vehicle speed in m/h, as read from the sensor */
         uint32_t get_current_vehicle_speed() const;
-
-
-        /** polls the PWM for the last read value */
-        void poll_vehicle_speed();
+        
+        
+        
+        uint32_t get_input_pulses_per_kmph_in_mili_hertz() const;
+        void set_input_pulses_per_kmph_in_mili_hertz(uint32_t value);
+        
+        
+        uint32_t get_output_pulses_per_kmph_in_mili_hertz() const;
+        void set_output_pulses_per_kmph_in_mili_hertz(uint32_t value);
 
         /** callback executed when the PWM IC reads a frequency */
-        void pwm_input_capture_callback(int32_t i32_read_frequency_in_mHz);
+        void pwm_input_capture_callback(uint32_t u32_read_frequency_in_mHz, uint32_t u32_duty_cycle);
 
 
         /** one single data processing cycle. Called cyclically from speed_sensor_converter_main */
         void cycle();
     private:
+        void clear_measured_data();
+        
+        void process_pwm_ic_state_machine();
 
         bool check_if_speed_is_valid(int32_t i32_speed_value_in_kmph);
 
@@ -84,8 +126,8 @@ namespace app
         /** the currently calculated vehicle speed in m/h */
         uint32_t m_u32_current_vehicle_speed_mph;
 
-        /** Array of frequencies read from the PWM IC pin */
-        uint32_t m_au32_input_frequency_mHz[SPEED_SENSOR_READINGS_BUFFER_LENGTH];
+        /** Array of last few measurements from the PWM IC pin */
+        SpeedSensorMeasurement m_ast_measured_frequencies[SPEED_SENSOR_READINGS_BUFFER_LENGTH];
 
         /** Specifies which position is currently being written to in the m_au32_input_frequency_mHz array */
         uint8_t m_u8_input_array_position;
@@ -93,10 +135,10 @@ namespace app
         uint32_t m_u32_new_output_frequency_mHz;
 
         /** Unit is mili Hertz mHz */
-        const uint32_t m_u32_input_pulses_per_kmph_mHz;
+        uint32_t m_u32_input_pulses_per_kmph_mHz;
 
         /** Unit is mili Hertz mHz */
-        const uint32_t m_u32_output_pulses_per_kmph_mHz;
+        uint32_t m_u32_output_pulses_per_kmph_mHz;
 
         /// This mutex protects the m_au32_input_frequency_mHz and m_u8_input_array_position objects
         //std::mutex m_pwm_capture_data_mutex;
@@ -106,6 +148,13 @@ namespace app
 
         /// how many captures of the PWM were already processed
         uint32_t m_u32_num_of_processed_pwm_captures;
+
+        std::chrono::milliseconds m_task_cycle_time;
+        
+        /// if a reading is older than this, it can be removed
+        std::chrono::milliseconds m_maximum_reading_validity;
+
+        SpeedInputCaptureMode m_en_pwm_ic_state_machine_state;
 
 #ifdef SPEED_CONVERTER_USE_OWN_TASK
         void speed_sensor_converter_main();

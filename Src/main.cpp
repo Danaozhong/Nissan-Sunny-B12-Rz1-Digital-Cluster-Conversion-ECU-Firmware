@@ -141,6 +141,8 @@ extern "C"
         return;
     }
 
+    extern void *pxCurrentTCB;
+
     int _getpid(void)
     {
         return -1;
@@ -154,8 +156,13 @@ extern "C"
         return -1;
       }
 
-      DEBUG_PRINTF(ptr);
-      return len;
+      char print_buffer[100];
+      const uint32_t u32_length =  std::min(len, 100 - 1);
+      std::memcpy(print_buffer, ptr, u32_length);
+      print_buffer[u32_length] = '\0';
+
+      DEBUG_PRINTF(print_buffer);
+      return u32_length;
       /*
       for (; len != 0; --len) {
         if (usart_serial_putchar(&stdio_uart_module, (uint8_t)*ptr++)) {
@@ -187,11 +194,16 @@ extern "C"
 
     int _gettimeofday( struct timeval *tv, void *tzvp )
     {
+        if (nullptr == tv)
+        {
+            return -1;
+        }
+
         const uint64_t tickFrequency = static_cast<uint64_t>(HAL_GetTickFreq()); /* unit is Hz */
 
-        uint64_t t = static_cast<uint64_t>(HAL_GetTick()) * 1000 * 1000 * 1000 / tickFrequency;  // get uptime in nanoseconds
-        tv->tv_sec = t / 1000000000;  // convert to seconds
-        tv->tv_usec = ( t % 1000000000 ) / 1000;  // get remaining microseconds
+        uint64_t t = (static_cast<uint64_t>(HAL_GetTick()) * 1000 * 1000) / tickFrequency;  // get uptime in nanoseconds
+        tv->tv_sec = t / 1'000'000'000;  // convert to seconds
+        tv->tv_usec = ( t % 1'000'000'000 ) / 1000;  // get remaining microseconds
         return 0;  // return non-zero for error
     } // end _gettimeofday()
 
@@ -282,14 +294,15 @@ extern "C"
 
 void MAIN_Cycle_100ms(void)
 {
+    using namespace std::chrono;
     app::MainApplication& o_application = app::MainApplication::get();
     int32_t counter = 0;
 
+    std::chrono::time_point<std::chrono::system_clock> ts_last_activation = system_clock::now();
+
     while(true)
     {
-        auto start_time = std::chrono::system_clock::now();
-
-        o_application.cycle_10ms();
+        auto start_time = system_clock::now();
 
         o_application.cycle_100ms();
         counter++;
@@ -299,12 +312,52 @@ void MAIN_Cycle_100ms(void)
             o_application.cycle_1000ms();
         }
 
-        auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - std::chrono::system_clock::now());
-        auto sleep_delta = std::min(std::chrono::milliseconds(0), std::chrono::milliseconds(100) - delta);
+        const auto delta = duration_cast<std::chrono::milliseconds>(system_clock::now() - start_time);
+        auto sleep_delta = std::max(milliseconds(0), duration_cast<milliseconds>(milliseconds(100) - delta));
         //std_ex::sleep_for(std::chrono::milliseconds(100));
-        std_ex::sleep_for(std::max(std::chrono::milliseconds(10), sleep_delta));
+        sleep_delta = std::max(milliseconds(10), sleep_delta);
+
+        const auto actual_cycle_time = duration_cast<std::chrono::milliseconds>(start_time - ts_last_activation);
+
+        ts_last_activation = start_time;
+        TRACE_LOG("SCHD", LOGLEVEL_DEBUG, "100ms sched. cycle duration %u, sleep time %u, last activation %u\n\r",
+                static_cast<unsigned int>(delta.count()),
+                static_cast<unsigned int>(sleep_delta.count()),
+                static_cast<unsigned int>(actual_cycle_time.count()));
+
+        std_ex::sleep_for(sleep_delta);
 
     }
+}
+
+void MAIN_Cycle_LowPrio_10ms(void)
+{
+    using namespace std::chrono;
+
+    app::MainApplication& o_application = app::MainApplication::get();
+    drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
+    while(true)
+    {
+        auto start_time = std::chrono::system_clock::now();
+
+
+        o_application.cycle_10ms();
+
+        // Check for data on the UART
+        if (nullptr != po_uart)
+        {
+            po_uart->uart_process_cycle();
+        }
+        const auto delta = duration_cast<milliseconds>(system_clock::now() - start_time);
+        auto sleep_delta = std::max(milliseconds(0), duration_cast<milliseconds>(milliseconds(10) - delta));
+        sleep_delta = std::max(milliseconds(10), sleep_delta);
+
+        TRACE_LOG("SCHD", LOGLEVEL_DEBUG, "10ms sched. cycle duration %u, sleep time %u\n\r",
+                static_cast<unsigned int>(delta.count()),
+                static_cast<unsigned int>(sleep_delta.count()));
+        std_ex::sleep_for(sleep_delta);
+    }
+
 }
 
 void MAIN_startup_thread(void*)
@@ -317,20 +370,18 @@ void MAIN_startup_thread(void*)
     app::MainApplication& o_application = app::MainApplication::get();
     o_application.startup_from_reset();
 
+    TRACE_DECLARE_CONTEXT("SCHD");
+
     // start the cyclic thread(s)
-    std_ex::thread* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
+    auto* cycle_100ms_thread = new std_ex::thread(&MAIN_Cycle_100ms, "Cycle100ms", 2u, 0x800);
     cycle_100ms_thread->detach();
 
-    drivers::STM32HardwareUART* po_uart = static_cast<drivers::STM32HardwareUART*>(o_application.m_p_uart);
+    auto* m_po_io_thread = new std_ex::thread(MAIN_Cycle_LowPrio_10ms, "Cycle_LowPrio_10ms", 1u, 1024);
+
 
     while (true)
     {
-        // Check for data on the UART
-        if (nullptr != po_uart)
-        {
-            po_uart->uart_process_cycle();
-        }
-
+        o_application.console_thread();
         // load balancing
         std_ex::sleep_for(std::chrono::milliseconds(10));
 

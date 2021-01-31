@@ -13,6 +13,7 @@ target_link_libraries(main_application dataset)
 target_link_libraries(main_application eol)
 target_link_libraries(main_application eol_command)
 target_link_libraries(main_application console_commands)
+target_link_libraries(main_application pwm_tester)
 
 target_include_directories(main_application PUBLIC
     inc

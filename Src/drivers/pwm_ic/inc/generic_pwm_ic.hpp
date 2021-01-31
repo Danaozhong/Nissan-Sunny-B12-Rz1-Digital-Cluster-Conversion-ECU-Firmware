@@ -21,6 +21,9 @@ namespace drivers
 
         /** Set a function callback */
         virtual int32_t set_capture_callback(void(*p_callback)(GenericPWM_IC*, uint32_t, uint32_t)) = 0;
+
+        /** sets the prescaler for this PWM IC */
+        virtual int32_t set_prescaler(uint16_t u16_prescaler) = 0;
     };
 }
 

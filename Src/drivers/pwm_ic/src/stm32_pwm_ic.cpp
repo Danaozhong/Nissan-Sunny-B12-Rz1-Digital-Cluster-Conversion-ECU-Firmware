@@ -3,6 +3,9 @@
 
 #include <map>
 
+/** Specifies how long to wait for a capture callback until assuming that there is no input data anymore. */
+#define STM32_IC_MAXIMUM_TIME_WITHOUT_READING (200u)
+
 namespace
 {
     std::map<const TIM_HandleTypeDef*, drivers::STM32PWM_IC*> map_tim_handles_to_object;
@@ -11,12 +14,12 @@ namespace
 namespace drivers
 {
 
-    //STM32PWM_IC::STM32PWM_IC(TIM_TypeDef* pt_timer_unit, uint32_t u32_prescaler, uint8_t u16_arr)
-    STM32PWM_IC::STM32PWM_IC(TIM_TypeDef* pt_timer_unit, uint32_t u32_first_channel, uint32_t u32_second_channel, uint32_t u32_prescaler, uint16_t u16_arr)
+    //STM32PWM_IC::STM32PWM_IC(TIM_TypeDef* pt_timer_unit, uint32_t u16pre_scaler, uint8_t u16_arr)
+    STM32PWM_IC::STM32PWM_IC(TIM_TypeDef* pt_timer_unit, uint32_t u32_first_channel, uint32_t u32_second_channel, uint16_t u16_prescaler, uint16_t u16_arr)
         : m_pt_timer_unit(pt_timer_unit),
           m_u32_first_channel(u32_first_channel),
           m_u32_second_channel(u32_second_channel),
-          m_u32_prescaler(u32_prescaler),
+          m_u16_prescaler(u16_prescaler),
           m_u16_arr(u16_arr),
           m_bo_initialized(false),
           m_p_callback(nullptr)
@@ -24,8 +27,6 @@ namespace drivers
         memset(&m_timer_handle, 0, sizeof(m_timer_handle));
 
         m_o_last_input_capture_timestamp = 0u;
-
-        map_tim_handles_to_object[&m_timer_handle] = this;
 
         int32_t i32_timer_id = -1;
         if (TIM1 == pt_timer_unit)
@@ -48,29 +49,41 @@ namespace drivers
         {
             i32_timer_id = 8;
         }
-        map_timer_id_to_tim_handle[i32_timer_id] = &m_timer_handle;
+        
+        if(i32_timer_id >= 0)
+        {
+            // the map_tim_handles_to_object maps from pointers of class members to the class instance
+            map_tim_handles_to_object[&m_timer_handle] = this;
+        
+            map_timer_id_to_tim_handle[i32_timer_id] = &m_timer_handle;
+        }
     }
 
     int32_t STM32PWM_IC::init()
     {
-        /* USER CODE BEGIN TIM2_Init 0 */
+        /* Check if the driver is already initialized */
         if (m_bo_initialized)
         {
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
+        
+        /* make sure the parameters make sense */
+        if(0 == m_u16_arr || 0 == m_u16_prescaler || nullptr == m_pt_timer_unit)
+        {
+            return OSServices::ERROR_CODE_PARAMETER_WRONG;
+        }
+        m_o_last_input_capture_timestamp = 0u;
+        
         /* USER CODE END TIM2_Init 0 */
 
         TIM_SlaveConfigTypeDef sSlaveConfig = {0};
         TIM_MasterConfigTypeDef sMasterConfig = {0};
         TIM_IC_InitTypeDef sConfigIC = {0};
 
-        /* USER CODE BEGIN TIM2_Init 1 */
-
-        /* USER CODE END TIM2_Init 1 */
         m_timer_handle.Instance = m_pt_timer_unit;
-        m_timer_handle.Init.Prescaler = m_u32_prescaler;
+        m_timer_handle.Init.Prescaler = m_u16_prescaler;
         m_timer_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
-        m_timer_handle.Init.Period = 0xffff-1; //m_u16_arr - 1;
+        m_timer_handle.Init.Period = m_u16_arr - 1;
         m_timer_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
         m_timer_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
         if (HAL_TIM_Base_Init(&m_timer_handle) != HAL_OK)
@@ -115,11 +128,6 @@ namespace drivers
         }
 #endif
 
-        /* USER CODE BEGIN TIM2_Init 2 */
-
-        /* USER CODE END TIM2_Init 2 */
-        //HAL_TIM_Base_Start(&m_timer_handle);
-
         // start the input capture in interrupt mode
         if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_first_channel) != HAL_OK)
         {
@@ -152,7 +160,7 @@ namespace drivers
             return OSServices::ERROR_CODE_UNINITIALIZED;
         }
 
-        if (HAL_GetTick() - m_o_last_input_capture_timestamp < 500u)
+        if (HAL_GetTick() - m_o_last_input_capture_timestamp < STM32_IC_MAXIMUM_TIME_WITHOUT_READING)
         {
             u32_frequency_in_milihz = m_u32_frequency_in_milihz;
             u32_duty_cycle_permil = m_u32_duty_cycle_permil;
@@ -169,12 +177,112 @@ namespace drivers
     int32_t STM32PWM_IC::set_capture_callback(void(*p_callback)(GenericPWM_IC*, uint32_t, uint32_t))
     {
         m_p_callback = p_callback;
-        return 0;
+        return OSServices::ERROR_CODE_SUCCESS;
+    }
+
+    int32_t STM32PWM_IC::set_prescaler(uint16_t u16_prescaler)
+    {
+        if (m_u16_prescaler != u16_prescaler)
+        {
+            m_u16_prescaler = u16_prescaler;
+
+
+            // start the input capture in interrupt mode
+            if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_first_channel) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+            if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_second_channel) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+            if (HAL_TIM_IC_DeInit(&m_timer_handle) != HAL_OK)
+            {
+
+            }
+
+            if (HAL_TIM_Base_DeInit(&m_timer_handle) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+
+            TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+            TIM_MasterConfigTypeDef sMasterConfig = {0};
+            TIM_IC_InitTypeDef sConfigIC = {0};
+
+            m_timer_handle.Instance = m_pt_timer_unit;
+            m_timer_handle.Init.Prescaler = m_u16_prescaler;
+            m_timer_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+            m_timer_handle.Init.Period = m_u16_arr - 1;
+            m_timer_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+            m_timer_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+            if (HAL_TIM_Base_Init(&m_timer_handle) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+            if (HAL_TIM_IC_Init(&m_timer_handle) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+
+            sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING; //TIM_INPUTCHANNELPOLARITY_FALLING;
+            sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI; //TIM_ICSELECTION_DIRECTTI;
+            sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+            sConfigIC.ICFilter = 0;
+            if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_first_channel) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+            sConfigIC.ICPolarity =TIM_INPUTCHANNELPOLARITY_FALLING;// TIM_INPUTCHANNELPOLARITY_RISING;
+            sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI; //TIM_ICSELECTION_DIRECTTI;
+            if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_second_channel) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+
+            sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+            sSlaveConfig.InputTrigger = TIM_TS_TI1FP1; //TIM_TS_TI2FP2;
+            sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
+            sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
+            sSlaveConfig.TriggerFilter = 0;
+            if (HAL_TIM_SlaveConfigSynchro(&m_timer_handle, &sSlaveConfig) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+            // start the input capture in interrupt mode
+            if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_first_channel) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+            if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_second_channel) != HAL_OK)
+            {
+                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //TIM4->PSC = m_u16_prescaler;
+
+            /* Generate an update event to reload the Prescaler
+             and the repetition counter(only for TIM1 and TIM8) value immediatly */
+            //TIM4->EGR = TIM_EGR_UG;
+        }
+        return OSServices::ERROR_CODE_SUCCESS;
     }
 
     void STM32PWM_IC::process_capture_callback(TIM_HandleTypeDef *htim)
     {
-        // HAL_TIM_ACTIVE_CHANNEL_2
+        // check from which timer unit this callback is coming.
         HAL_TIM_ActiveChannel en_expected_channel = HAL_TIM_ACTIVE_CHANNEL_1;
         switch (m_u32_first_channel)
         {
@@ -187,6 +295,9 @@ namespace drivers
         case TIM_CHANNEL_3:
             en_expected_channel = HAL_TIM_ACTIVE_CHANNEL_3;
             break;
+        default:
+            // unexpected channel used!
+            return;
         }
 
         if (htim->Channel == en_expected_channel)  // rising edge interrupt
@@ -203,12 +314,8 @@ namespace drivers
                 m_u32_duty_cycle_permil = (IC_Val2*1000/IC_Val1);
 
                 // calculate frequency
-
-                m_u32_frequency_in_milihz = ((2000ull*static_cast<uint64_t>(HAL_RCC_GetPCLK1Freq())) / (static_cast<uint64_t>(IC_Val1) * static_cast<uint64_t>(this->m_u32_prescaler + 1u)));
-                // As my timer2 clock is 2X the PCLK1 CLOCK that's why X2.
-                //TIM_ClearFlag(TIM4, TIM_IT_CC1);
-                //TIM_ClearFlag(TIM4, TIM_IT_CC2);
-
+                // As my timer clock is 2X the PCLK1 CLOCK that's why X2.
+                m_u32_frequency_in_milihz = ((2000ull*static_cast<uint64_t>(HAL_RCC_GetPCLK1Freq())) / (static_cast<uint64_t>(IC_Val1) * (static_cast<uint64_t>(this->m_u16_prescaler) + 1ull)));
             }
             else
             {
@@ -224,15 +331,6 @@ namespace drivers
 
             // save a timestamp when the last input capture was done
             m_o_last_input_capture_timestamp = HAL_GetTick();
-        }
-    }
-
-    void STM32PWM_IC::Error_Handler(void)
-    {
-        /* User may add here some code to deal with this error */
-        while(1)
-        {
-          HAL_Delay(1000);
         }
     }
 }

@@ -11,6 +11,7 @@
 #include "excp_handler_console_commands.hpp"
 #include "eol_command.hpp"
 #include "trace_if.h"
+#include "pwm_tester.hpp"
 
 #define MAIN_APPLICATION_MEASURE_STARTUP_TIME
 
@@ -20,35 +21,34 @@
 
 namespace app
 {
-
-	MainApplication::MainApplication()
-	    : m_en_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION),
-	      m_i32_fuel_gauge_output_manual_value(0)
-	{}
+    MainApplication::MainApplication()
+        : m_en_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION),
+          m_i32_fuel_gauge_output_manual_value(0)
+    {}
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-	enum MainApplicationStartupTimePosition
-	{
-	    StartupTimeBegin = 0,
-	    StartupTimeUARTInitComplete,
-	    StartupTimeConsoleInitComplete,
-	    StartupTimeCANInitComplete,
-	    StartupTimeTraceInitComplete,
-	    StartupTimeNVDHInitComplete,
-	    StartupTimeExcpHandlerInitComplete,
-	    StartupTimeDatasetInitComplete,
-	    StartupTimeApplInitComplete,
-	    StartupTimeStartupCompleted,
-	    StartupTimeNumOfElements
-	};
+    enum MainApplicationStartupTimePosition
+    {
+        StartupTimeBegin = 0,
+        StartupTimeUARTInitComplete,
+        StartupTimeConsoleInitComplete,
+        StartupTimeCANInitComplete,
+        StartupTimeTraceInitComplete,
+        StartupTimeNVDHInitComplete,
+        StartupTimeExcpHandlerInitComplete,
+        StartupTimeDatasetInitComplete,
+        StartupTimeApplInitComplete,
+        StartupTimeStartupCompleted,
+        StartupTimeNumOfElements
+    };
 
 
-	const char* get_timestamp_name(MainApplicationStartupTimePosition position)
-	{
-	    switch (position)
-	    {
-	    case StartupTimeUARTInitComplete:
-	        return "UART initalized";
+    const char* get_timestamp_name(MainApplicationStartupTimePosition position)
+    {
+        switch (position)
+        {
+        case StartupTimeUARTInitComplete:
+            return "UART initalized";
         case StartupTimeConsoleInitComplete:
             return "console initialized";
         case StartupTimeCANInitComplete:
@@ -66,41 +66,41 @@ namespace app
         case StartupTimeStartupCompleted:
             return "startup finished";
 
-	    default:
-	        return "unknown";
-	    }
-	}
+        default:
+            return "unknown";
+        }
+    }
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
-	void MainApplication::startup_from_reset()
-	{
+    void MainApplication::startup_from_reset()
+    {
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-	    uint32_t au32_startup_times[StartupTimeNumOfElements] = { 0 };
-	    au32_startup_times[StartupTimeBegin] = std_ex::get_timestamp_in_ms();
+        uint32_t au32_startup_times[StartupTimeNumOfElements] = { 0 };
+        au32_startup_times[StartupTimeBegin] = std_ex::get_timestamp_in_ms();
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
-	    // create the UART interface to be able to log low-level debug messages
-	#ifdef USE_STM32_F3_DISCO
-	    m_p_uart = std::make_shared<drivers::STM32HardwareUART>(GPIOD, GPIO_PIN_6, GPIOD, GPIO_PIN_5);
-	#elif defined USE_STM32F3XX_NUCLEO_32
-	    m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
-	#elif defined STM32F303xC
-	    m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
+        // create the UART interface to be able to log low-level debug messages
+    #ifdef USE_STM32_F3_DISCO
+        m_p_uart = std::make_shared<drivers::STM32HardwareUART>(GPIOD, GPIO_PIN_6, GPIOD, GPIO_PIN_5);
+    #elif defined USE_STM32F3XX_NUCLEO_32
+        m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
+    #elif defined STM32F303xC
+        m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_2);
 #elif defined STM32F429xx
-	    m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_10, GPIOA, GPIO_PIN_9);
+        m_p_uart = new drivers::STM32HardwareUART(GPIOA, GPIO_PIN_10, GPIOA, GPIO_PIN_9);
 #else
 #error "No valid pin configuration for UART this MCU set!"
-	#endif
+    #endif
 
-	    // ...open UART connection.
-	    m_p_uart->connect(115200, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
+        // ...open UART connection.
+        m_p_uart->connect(115200, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-	    au32_startup_times[StartupTimeUARTInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeUARTInitComplete] = std_ex::get_timestamp_in_ms();
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
-	    // Create the debug console
-	    m_po_os_io_interface = new OSServices::OSConsoleUartIOInterface(m_p_uart);
-	    m_po_os_console = new OSServices::OSConsole(*m_po_os_io_interface);
+        // Create the debug console
+        m_po_os_io_interface = new OSServices::OSConsoleUartIOInterface(m_p_uart);
+        m_po_os_console = new OSServices::OSConsole(*m_po_os_io_interface);
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-	    au32_startup_times[StartupTimeConsoleInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeConsoleInitComplete] = std_ex::get_timestamp_in_ms();
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
 #ifdef USE_CAN
@@ -120,17 +120,17 @@ namespace app
 
 
 #ifdef USE_TRACE
-	    // Initialize the trace module
-	    m_po_trace = new midware::Trace();
+        // Initialize the trace module
+        m_po_trace = new midware::Trace();
         m_po_trace->init();
-	    // Enable trace logging via the OS console
-	    m_po_trace->add_trace_io_interface(m_po_os_console);
+        // Enable trace logging via the OS console
+        m_po_trace->add_trace_io_interface(m_po_os_console);
 
-	    // and set the trace module as the default system tracer
-	    m_po_trace->set_as_default_trace();
+        // and set the trace module as the default system tracer
+        m_po_trace->set_as_default_trace();
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-	    au32_startup_times[StartupTimeTraceInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeTraceInitComplete] = std_ex::get_timestamp_in_ms();
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 #endif
 
@@ -174,8 +174,8 @@ namespace app
         au32_startup_times[StartupTimeExcpHandlerInitComplete] = std_ex::get_timestamp_in_ms();
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
-	    // register the command to debug the exception handler on the os console
-	    m_po_os_console->register_command(new midware::CommandListExceptions());
+        // register the command to debug the exception handler on the os console
+        m_po_os_console->register_command(new midware::CommandListExceptions());
 
 
         m_o_eol_data.set_nonvolatile_data_handler(m_po_nonvolatile_data_handler, "EOL");
@@ -185,19 +185,19 @@ namespace app
         }
 
 #ifdef USE_NVDH
-	    // read the dataset
-	    if (OSServices::ERROR_CODE_SUCCESS != m_o_dataset.load_dataset(*m_po_nonvolatile_data_handler))
-	    {
-	        ExceptionHandler_handle_exception(EXCP_MODULE_DATASET, EXCP_TYPE_DATASET_LOADING_FAILED, false, __FILE__, __LINE__, 0u);
-	        // load default dataset
-	        m_o_dataset.load_default_dataset();
+        // read the dataset
+        if (OSServices::ERROR_CODE_SUCCESS != m_o_dataset.load_dataset(*m_po_nonvolatile_data_handler))
+        {
+            ExceptionHandler_handle_exception(EXCP_MODULE_DATASET, EXCP_TYPE_DATASET_LOADING_FAILED, false, __FILE__, __LINE__, 0u);
+            // load default dataset
+            m_o_dataset.load_default_dataset();
 
-	        // overwrite corrupted dataset in flash
-	        m_o_dataset.write_dataset(*m_po_nonvolatile_data_handler);
-	    }
+            // overwrite corrupted dataset in flash
+            m_o_dataset.write_dataset(*m_po_nonvolatile_data_handler);
+        }
 
 #else
-	    // load default dataset
+        // load default dataset
         m_o_dataset.load_default_dataset();
 #endif
 
@@ -225,6 +225,13 @@ namespace app
         this->m_po_os_console->register_command(new app::CommandDataset());
         this->m_po_os_console->register_command(new app::EOLCommand(get_eol_data()));
         this->m_po_os_console->register_command(new app::CommandTrace());
+
+#if 1
+        /* Test code to verify the functionality of the PWM tester */
+        auto* pwm_tester_command = new app::CommandPWMTester();
+        pwm_tester_command->set_speed_sensor_converter(m_po_speed_sensor_converter);
+        this->m_po_os_console->register_command(pwm_tester_command);
+#endif
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
         au32_startup_times[StartupTimeStartupCompleted] = std_ex::get_timestamp_in_ms();
@@ -264,29 +271,27 @@ namespace app
             }
         }
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
-	}
-
-	MainApplication& MainApplication::get()
-	{
-		// singleton will be instantiated when first called.
-		static MainApplication o_main_application;
-		return o_main_application;
-	}
-
-	SpeedSensorConverter* MainApplication::get_speed_sensor_converter() const
-    {
-	    return m_po_speed_sensor_converter;
     }
 
-	void MainApplication::cycle_10ms()
-	{
-        // check for debug input
-	    auto p_console = get_os_console();
-	    if (nullptr != p_console)
-	    {
-	        p_console->run();
-	    }
-	}
+    MainApplication& MainApplication::get()
+    {
+        // singleton will be instantiated when first called.
+        static MainApplication o_main_application;
+        return o_main_application;
+    }
+
+    SpeedSensorConverter* MainApplication::get_speed_sensor_converter() const
+    {
+        return m_po_speed_sensor_converter;
+    }
+
+    void MainApplication::cycle_10ms()
+    {
+        if (nullptr != m_po_trace)
+        {
+            m_po_trace->cycle();
+        }
+    }
 
     void MainApplication::cycle_100ms()
     {
@@ -308,6 +313,15 @@ namespace app
         get_nonvolatile_data_handler()->store();
     }
 
+    void MainApplication::console_thread()
+    {
+        // check for debug input
+        auto p_console = get_os_console();
+        if (nullptr != p_console)
+        {
+            p_console->run();
+        }
+    }
 
 
 #ifdef USE_NVDH
@@ -318,9 +332,9 @@ namespace app
 #endif
 
     OSServices::OSConsole* MainApplication::get_os_console()
-	{
-	    return this->m_po_os_console;
-	}
+    {
+        return this->m_po_os_console;
+    }
 
     OSServices::OSConsoleGenericIOInterface& MainApplication::get_stdio()
     {
@@ -354,15 +368,15 @@ namespace app
         return m_o_eol_data;
     }
 
-	void MainApplication::fuel_sensor_input_received(int32_t i32_value)
-	{
-	    m_i32_fuel_sensor_read_value = i32_value;
-	    update_fuel_sensor_output();
-	}
+    void MainApplication::fuel_sensor_input_received(int32_t i32_value)
+    {
+        m_i32_fuel_sensor_read_value = i32_value;
+        update_fuel_sensor_output();
+    }
 
-	void MainApplication::update_fuel_sensor_output()
-	{
-	    int32_t i32_output_value = m_i32_fuel_sensor_read_value;
+    void MainApplication::update_fuel_sensor_output()
+    {
+        int32_t i32_output_value = m_i32_fuel_sensor_read_value;
         if (FUEL_GAUGE_OUTPUT_MODE_MANUAL == m_en_fuel_gauge_output_mode)
         {
             i32_output_value = m_i32_fuel_gauge_output_manual_value;
@@ -376,17 +390,17 @@ namespace app
                         false, __FILE__, __LINE__, static_cast<uint32_t>(i32_ret_val));
             }
         }
-	}
+    }
 
-	int32_t MainApplication::init_speed_converter()
+    int32_t MainApplication::init_speed_converter()
     {
         // TODO this is the configuration for the STM32 discovery, change to support the small board
 #ifdef STM32F429xx
-	    m_p_pwm = new drivers::STM32PWM(TIM5, TIM_CHANNEL_4, GPIOA, GPIO_PIN_3);
-	    m_p_pwm_ic = new drivers::STM32PWM_IC(TIM2, TIM_CHANNEL_2, TIM_CHANNEL_3, 1u, 65536u);
+        m_p_pwm = new drivers::STM32PWM(TIM5, TIM_CHANNEL_4, GPIOA, GPIO_PIN_3);
+        m_p_pwm_ic = new drivers::STM32PWM_IC(TIM2, TIM_CHANNEL_2, TIM_CHANNEL_3, 1u, 65535u);
 #else
         m_p_pwm = new drivers::STM32PWM(TIM3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_6);
-        m_p_pwm_ic = new drivers::STM32PWM_IC(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 1023u, 65536u); // Pins PA11 PA12 1023u prescaler?? TODO
+        m_p_pwm_ic = new drivers::STM32PWM_IC(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 1023u, 65535u);
 #endif
 
         int32_t i32_ret_val = m_p_pwm_ic->init();
@@ -409,7 +423,7 @@ namespace app
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
-	int32_t MainApplication::init_fuel_level_converter()
+    int32_t MainApplication::init_fuel_level_converter()
     {
         // create the low-level hardware interfaces
         m_p_adc = new drivers::STM32ADC(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);

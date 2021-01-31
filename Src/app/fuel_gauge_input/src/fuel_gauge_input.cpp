@@ -105,7 +105,7 @@ namespace app
                     FUEL_GAUGE_INPUT_READINGS_MAX_DISTANCE);
 
             int i_average_value = static_cast<int>(std::get<0>(averaged_value) / 100);
-            TRACE_LOG("FLIN", LOGLEVEL_INFO,"newly averaged fuel value calculated: %i%%, min/max diff%i%%\r\n", i_average_value, std::get<1>(averaged_value) / 100);
+            TRACE_LOG("FLIN", LOGLEVEL_DEBUG,"newly averaged fuel value calculated: %i%%, min/max diff%i%%\r\n", i_average_value, std::get<1>(averaged_value) / 100);
 
             // check if the value makes sense. Only allow up to x% deviation in the values
             if (std::get<1>(averaged_value) <= FUEL_GAUGE_INPUT_READINGS_INVALID_DATA_DISTANCE)

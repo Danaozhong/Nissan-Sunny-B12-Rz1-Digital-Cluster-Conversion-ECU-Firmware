@@ -44,6 +44,7 @@ typedef enum
 /** This function will printout a trace log over the standard debug interface */
 void Trace_debug_printf(const char *, ...);
 
+
 int32_t Trace_declare_context(const char* context);
 
 /** Sets the log level for a specific context. */

@@ -203,6 +203,9 @@ list(APPEND EXTRA_LIBS eol_command)
 add_subdirectory(app/lookup_table_editor)
 list(APPEND EXTRA_LIBS lookup_table_editor)
 
+add_subdirectory(app/pwm_tester)
+list(APPEND EXTRA_LIBS pwm_tester)
+
 add_subdirectory(app/main_application)
 list(APPEND EXTRA_LIBS main_application)
 

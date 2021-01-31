@@ -2,23 +2,47 @@
 #include "os_console.hpp"
 #include "excp_handler_if.h"
 #include "trace_if.h"
+#include <algorithm>
 
 #include <cmath>
 
 
-
-
-    app::SpeedSensorConverter* po_speed_sensor_converter_instance = nullptr;
-    void speed_sensor_pwm_input_capture_callback(drivers::GenericPWM_IC* p_ic_obj, uint32_t u32_read_frequency, uint32_t u32_read_duty_cyclce)
+app::SpeedSensorConverter* po_speed_sensor_converter_instance = nullptr;
+void speed_sensor_pwm_input_capture_callback(drivers::GenericPWM_IC* p_ic_obj, uint32_t u32_read_frequency, uint32_t u32_read_duty_cyclce)
+{
+    /* TODO you could do a mapping here, but let's be simple */
+    if (nullptr != po_speed_sensor_converter_instance)
     {
-        /* TODO you could do a mapping here, but let's be simple */
-        if (nullptr != po_speed_sensor_converter_instance)
-        {
-            po_speed_sensor_converter_instance->pwm_input_capture_callback(u32_read_frequency);
-        }
+        po_speed_sensor_converter_instance->pwm_input_capture_callback(u32_read_frequency, u32_read_duty_cyclce);
     }
-    namespace app
+}
+
+namespace app
+{
+
+
+    namespace SpeedSensorConverterHelper
     {
+
+        SpeedInputCaptureConfiguration pwm_ic_state_machine[SPEED_INPUT_CAPTURE_NUM_OF_MODES] =
+        {
+            {
+                .u32_vehicle_speed_mph_lower_threshold = 0, /* not used */
+                .en_lower_capture_mode =SPEED_INPUT_CAPTURE_NUM_OF_MODES,
+                .u32_vehicle_speed_mph_upper_threshold = 50*1000, /* at 50km/h, switch to high speed mode. */
+                .en_higher_capture_mode = SPEED_INPUT_CAPTURE_MODE_HIGH_SPEED,
+                .u16_pwm_ic_prescaler = 2048 - 1/* will deliver good results from 1km/h to about 80km/h */
+            },
+            {
+                .u32_vehicle_speed_mph_lower_threshold = 40*1000, /* dropping below 50km/h, activate low speed mode */
+                .en_lower_capture_mode =SPEED_INPUT_CAPTURE_MODE_LOW_SPEED,
+                .u32_vehicle_speed_mph_upper_threshold = 0, /* not used */
+                .en_higher_capture_mode = SPEED_INPUT_CAPTURE_NUM_OF_MODES,
+                .u16_pwm_ic_prescaler = 128 - 1 /* will deliver good results from 20km/h to about >300km/h */
+            }
+        };
+    }
+
 
     SpeedSensorConverter::SpeedSensorConverter(drivers::GenericPWM* p_output_pwm,
                 drivers::GenericPWM_IC* p_output_pwm_input_capture,
@@ -26,13 +50,16 @@
                 uint32_t u32_output_pulses_per_kmph_mHz)
     : m_p_output_pwm(p_output_pwm), m_p_output_pwm_input_capture(p_output_pwm_input_capture),
       m_en_current_speed_output_mode(OUTPUT_MODE_CONVERSION),
-      m_i32_manual_speed(75), m_au32_input_frequency_mHz( { 0 } ), m_u8_input_array_position(0u),
+      m_i32_manual_speed(75), m_u8_input_array_position(0u),
       m_u32_current_vehicle_speed_mph(0u),
       m_u32_input_pulses_per_kmph_mHz(u32_input_pulses_per_kmph_mHz),
       m_u32_output_pulses_per_kmph_mHz(u32_output_pulses_per_kmph_mHz),
-      m_u32_num_of_pwm_captures(0u), m_u32_num_of_processed_pwm_captures(0u)
+      m_u32_num_of_pwm_captures(0u), m_u32_num_of_processed_pwm_captures(0u),
+      m_en_pwm_ic_state_machine_state(SPEED_INPUT_CAPTURE_MODE_LOW_SPEED)
     {
         static_assert(SPEED_SENSOR_READINGS_BUFFER_LENGTH > 0);
+
+        TRACE_DECLARE_CONTEXT("SPD");
 
         // Create a dummy replay curve
         std::pair<int32_t, int32_t> replay_curve_data[] =
@@ -53,18 +80,13 @@
             std::make_pair(28000, 40),
             std::make_pair(35000, 55)
         };
-
+        
+        clear_measured_data();
+        m_maximum_reading_validity = std::chrono::milliseconds(800);
 
         app::CharacteristicCurve<int32_t, int32_t> replay_dataset(replay_curve_data, sizeof(replay_curve_data) / sizeof(replay_curve_data[0]));
 
         m_o_replay_curve.load_data(replay_dataset);
-
-#ifdef SPEED_CONVERTER_USE_OWN_TASK
-        m_bo_terminate_thread = false;
-        // Create the thread which cyclically converts the speed sensor signals
-        auto o_main_func = std::bind(&SpeedSensorConverter::speed_sensor_converter_main, this);
-        m_p_data_conversion_thread = new std_ex::thread(o_main_func, "Speed_Conv", 1u, 0x800);
-#endif
 
         po_speed_sensor_converter_instance = this;
         if (nullptr != m_p_output_pwm_input_capture)
@@ -79,19 +101,9 @@
     {
         if (nullptr != m_p_output_pwm_input_capture)
         {
-            //m_p_output_pwm_input_capture->set_capture_callback(nullptr);
+            m_p_output_pwm_input_capture->set_capture_callback(nullptr);
         }
-        //po_speed_sensor_converter_instance = nullptr;
-#ifdef SPEED_CONVERTER_USE_OWN_TASK
-        // notify the data thread that the object is destroyed
-        m_bo_terminate_thread = true;
-        if (nullptr != this->m_p_data_conversion_thread)
-        {
-            // wait for the thread to finish
-            this->m_p_data_conversion_thread->join();
-            delete this->m_p_data_conversion_thread;
-        }
-#endif
+        po_speed_sensor_converter_instance = nullptr;
         // everything else is cleaned up automatically
     }
 
@@ -147,51 +159,78 @@
         return m_u32_current_vehicle_speed_mph;
     }
 
-    void SpeedSensorConverter::poll_vehicle_speed()
+    uint32_t SpeedSensorConverter::get_input_pulses_per_kmph_in_mili_hertz() const
     {
-        if ( nullptr == m_p_output_pwm_input_capture)
+        return m_u32_input_pulses_per_kmph_mHz;
+    }
+    void SpeedSensorConverter::set_input_pulses_per_kmph_in_mili_hertz(uint32_t value)
+    {
+        m_u32_input_pulses_per_kmph_mHz = value;
+    }
+    
+    
+    uint32_t SpeedSensorConverter::get_output_pulses_per_kmph_in_mili_hertz() const
+    {
+        return m_u32_output_pulses_per_kmph_mHz;
+    }
+    
+    void SpeedSensorConverter::set_output_pulses_per_kmph_in_mili_hertz(uint32_t value)
+    {
+        m_u32_output_pulses_per_kmph_mHz = value;
+    }
+    
+    void SpeedSensorConverter::pwm_input_capture_callback(uint32_t u32_read_frequency_in_mHz, uint32_t u32_duty_cycle)
+    {
+        const uint32_t u32_vehicle_speed = (u32_read_frequency_in_mHz * 1000) / m_u32_input_pulses_per_kmph_mHz;
+        if(false == check_if_speed_is_valid(u32_vehicle_speed / 1000))
         {
-            ExceptionHandler_handle_exception(EXCP_MODULE_SPEED_SENSOR_CONVERTER, EXCP_TYPE_NULLPOINTER, false, __FILE__, __LINE__, 0u);
             return;
         }
+        uint32_t u32_duty_cycle_threshold = 100; // standard range accept 40%-60% duty cycle
 
+        if (u32_vehicle_speed < 20000) // at low speeds, the frequency is so low that the duty cycle has an impact.
         {
-            //std::lock_guard<std::mutex> lock(m_pwm_capture_data_mutex);
+            u32_duty_cycle_threshold = 250; //allow 25 - 75% duty cycle
+        }
 
-            // read the current frequency from the speed sensor
-            uint32_t input_duty_cylce = 0u;
+        // only accept values with a valid duty cycle
+        if (u32_duty_cycle > 500 - u32_duty_cycle_threshold && u32_duty_cycle < 500 + u32_duty_cycle_threshold)
+        {
+            SpeedSensorMeasurement new_measurement;
+            new_measurement.u32_frequency = u32_read_frequency_in_mHz;
+            new_measurement.u32_duty_cycle = u32_duty_cycle;
+            new_measurement.o_timestamp = std::chrono::system_clock::now();
 
-            if (OSServices::ERROR_CODE_SUCCESS != m_p_output_pwm_input_capture->read_frequency_and_duty_cycle(
-                    m_au32_input_frequency_mHz[m_u8_input_array_position++], input_duty_cylce))
+
+            m_ast_measured_frequencies[m_u8_input_array_position++] = new_measurement;
+            m_u8_input_array_position %= SPEED_SENSOR_READINGS_BUFFER_LENGTH;
+
+            m_u32_num_of_pwm_captures++;
+            if (u32_vehicle_speed < 6000)
             {
-                ExceptionHandler_handle_exception(EXCP_MODULE_SPEED_SENSOR_CONVERTER, EXCP_TYPE_SPEED_SENSOR_CONVERTER_PWM_READ_FAILED, false, __FILE__, __LINE__, 0u);
-                return;
+                // avoid too much logs - only print for speeds < 3km/h
+                TRACE_LOG("SPD", LOGLEVEL_DEBUG, "IC cb %u m/h\n\r", (new_measurement.u32_frequency * 1000) / m_u32_input_pulses_per_kmph_mHz);
             }
-            m_u32_num_of_pwm_captures++;
-            m_u8_input_array_position %= SPEED_SENSOR_READINGS_BUFFER_LENGTH;
         }
-    }
-
-    void SpeedSensorConverter::pwm_input_capture_callback(int32_t i32_read_frequency_in_mHz)
-    {
+        else
         {
-        //std::lock_guard<std::mutex> lock(m_pwm_capture_data_mutex);
-            m_au32_input_frequency_mHz[m_u8_input_array_position++] = i32_read_frequency_in_mHz;
-            m_u8_input_array_position %= SPEED_SENSOR_READINGS_BUFFER_LENGTH;
-            m_u32_num_of_pwm_captures++;
-        }
+            TRACE_LOG("SPD", LOGLEVEL_ERROR, "IC cb %u m/h, incorrect duty cycle: %u\n\r",
+                    u32_read_frequency_in_mHz,
+                    static_cast<unsigned int>((u32_read_frequency_in_mHz * 1000) / m_u32_input_pulses_per_kmph_mHz),
+                    u32_duty_cycle);
 
-        DEBUG_PRINTF("Measured frequency: %i, measured speed: %i m/h\n\r", i32_read_frequency_in_mHz, (i32_read_frequency_in_mHz * 1000) / m_u32_input_pulses_per_kmph_mHz);
+        }
     }
 
     void SpeedSensorConverter::cycle()
     {
+        using namespace std::chrono;
+
         if (nullptr == m_p_output_pwm)
         {
             ExceptionHandler_handle_exception(EXCP_MODULE_SPEED_SENSOR_CONVERTER, EXCP_TYPE_NULLPOINTER, false, __FILE__, __LINE__, 0u);
             return;
         }
-
 
         if (0u != m_u32_input_pulses_per_kmph_mHz)
         {
@@ -200,33 +239,107 @@
             uint32_t u32_num_of_new_readings = 0u;
 
             // unit is m/h
-            uint32_t au32_measured_vehicle_speeds[SPEED_SENSOR_READINGS_BUFFER_LENGTH];
-            uint8_t u8_start_position = 0u;
+            std::vector<uint32_t> au32_measured_vehicle_speeds;
+
+            u32_num_of_pwm_captures = m_u32_num_of_pwm_captures;
+
+            /*
+            first check if we have received any new readings at all, but maximize to not take more
+            than what fits into the read buffer.
+            */
+            u32_num_of_new_readings = std::min<uint32_t>(
+                    SPEED_SENSOR_READINGS_BUFFER_LENGTH,
+                    u32_num_of_pwm_captures - m_u32_num_of_processed_pwm_captures);
+            m_u32_num_of_processed_pwm_captures = u32_num_of_pwm_captures;
+
+            auto convert_to_vehicle_speed = [&] (uint32_t u32_frequency) -> uint32_t
             {
-                //std::lock_guard<std::mutex> lock(m_pwm_capture_data_mutex);
-                u32_num_of_pwm_captures = m_u32_num_of_pwm_captures;
-
-                /*
-                first check if we have received any new readings at all, but maximize to not take more
-                than what fits into the read buffer.
-                */
-                u32_num_of_new_readings = std::min<uint32_t>(
-                        SPEED_SENSOR_READINGS_BUFFER_LENGTH,
-                        u32_num_of_pwm_captures - m_u32_num_of_processed_pwm_captures);
-                m_u32_num_of_processed_pwm_captures = u32_num_of_pwm_captures;
-
-                // calculate the array index position from where to read the first value
-                u8_start_position = (m_u8_input_array_position + SPEED_SENSOR_READINGS_BUFFER_LENGTH - u32_num_of_new_readings) % SPEED_SENSOR_READINGS_BUFFER_LENGTH;
-                for (uint8_t u8_i = 0; u8_i < u32_num_of_new_readings; u8_i++)
+                return (u32_frequency * 1000) / m_u32_input_pulses_per_kmph_mHz;
+            };
+                
+#if 0
+                // if not enough readings are available, capture instead all readings that still have a valid timestamp
+                if (u32_num_of_new_readings > 2)
                 {
-                    // read the value and copy to the new list. New list starts with index 0
-                    au32_measured_vehicle_speeds[u8_i] =
-                            (m_au32_input_frequency_mHz[(u8_start_position + u8_i) % SPEED_SENSOR_READINGS_BUFFER_LENGTH] * 1000)
-                            / m_u32_input_pulses_per_kmph_mHz;
+                    // calculate the array index position from where to read the first value
+                    u8_start_position = (m_u8_input_array_position + SPEED_SENSOR_READINGS_BUFFER_LENGTH - u32_num_of_new_readings) % SPEED_SENSOR_READINGS_BUFFER_LENGTH;
+                    for (uint8_t u8_i = 0; u8_i < u32_num_of_new_readings; u8_i++)
+                    {
+                        // read the value and copy to the new list. New list starts with index 0
+                        au32_measured_vehicle_speeds.push_back(
+                                convert_to_vehicle_speed(m_ast_measured_frequencies[(u8_start_position + u8_i) % SPEED_SENSOR_READINGS_BUFFER_LENGTH].u32_frequency));
+                    }
                 }
-            }
+                else
+                {
+#endif 
+            // take all readings into account from the recent few timestamps
+            const auto current_timestamp = system_clock::now();
 
-            // mutex lock is released now, now we can spend more effort on doing the actual calculations.
+            std::vector<SpeedSensorMeasurement> o_input_data(m_ast_measured_frequencies, m_ast_measured_frequencies + SPEED_SENSOR_READINGS_BUFFER_LENGTH);
+            
+            // remove all data which are anyway too old
+            o_input_data.erase(std::remove_if(o_input_data.begin(), o_input_data.end(), [&] (const SpeedSensorMeasurement& data)
+            {
+                return (duration_cast<milliseconds>(current_timestamp - data.o_timestamp) > m_maximum_reading_validity);
+            }), o_input_data.end());
+
+            // then sort by their timestamp
+            std::sort(o_input_data.begin(), o_input_data.end(), [](const SpeedSensorMeasurement& a, const SpeedSensorMeasurement& b)
+            {
+                return a.o_timestamp > b.o_timestamp;
+            });
+            
+
+            // filter the remaining data based on the most recent data
+            if (o_input_data.size() > 0)
+            {
+                /* calculate the expected vehicle speed. Depending on the vehicle speed, the number of data
+                 *  taken into account is limited */
+                const uint32_t cu32_measured_vehicle_speed = convert_to_vehicle_speed(o_input_data.begin()->u32_frequency);
+
+                /* depending on the vehicle speed, the number of recent readings needed is calculated. Roughly one reading
+                 per 5km/h speed is expected */
+                const uint32_t u32_num_of_readings_to_take_into_account = (cu32_measured_vehicle_speed / 5000) + 1;
+                //u32_num_of_readings_to_take_into_account = std::min(u32_num_of_readings_to_take_into_account, static_cast<uint32_t>(o_input_data.size()));
+
+                /* based on the most recent data element, go back up to x periods to search for new data */
+                const uint32_t cu32_search_for_data_within_period = u32_num_of_readings_to_take_into_account + 1;
+                const uint32_t cu32_reading_period_ms = (1000u*1000u) / o_input_data.begin()->u32_frequency;
+                milliseconds o_maximum_delay_in_ms (cu32_search_for_data_within_period * cu32_reading_period_ms);
+                o_maximum_delay_in_ms = std::min(o_maximum_delay_in_ms, m_maximum_reading_validity);
+
+                /* filter all the data which does not lie within the recent x periods */
+                o_input_data.erase(std::remove_if(o_input_data.begin(), o_input_data.end(), [&] (const SpeedSensorMeasurement& data)
+                {
+                    return (duration_cast<milliseconds>(current_timestamp - data.o_timestamp) > o_maximum_delay_in_ms);
+                }), o_input_data.end());
+
+                // whatever is left from the data will now be taken into account, based on the number of expected readings needed.
+                for(auto itr = o_input_data.begin(); itr != o_input_data.end(); ++itr)
+                {
+                    const uint32_t cu32_measured_vehicle_speed = convert_to_vehicle_speed(itr->u32_frequency);
+                    au32_measured_vehicle_speeds.push_back(cu32_measured_vehicle_speed);
+                    
+                    if (au32_measured_vehicle_speeds.size() >= u32_num_of_readings_to_take_into_account)
+                    {
+                        break;
+                    }
+                }
+
+                TRACE_LOG("SPD", LOGLEVEL_DEBUG, "filter settings: expected speed %u m/h, num of periods: %u, search range: %u ms, expected data points: %u, actual data points: %u\n\r",
+                        cu32_measured_vehicle_speed,
+                        u32_num_of_readings_to_take_into_account,
+                        static_cast<unsigned int>(o_maximum_delay_in_ms.count()),
+                        u32_num_of_readings_to_take_into_account,
+                        au32_measured_vehicle_speeds.size()
+                );
+            }
+            else
+            {
+                TRACE_LOG("SPD", LOGLEVEL_DEBUG, "no data after filtering by recent timestamps!\n\r");
+            }
+            u32_num_of_new_readings = au32_measured_vehicle_speeds.size();
 
             // by default, set vehicle speed to 0.Only if the input makes sense, it will be updated.
             m_u32_current_vehicle_speed_mph = 0u;
@@ -235,17 +348,17 @@
             {
                 char debug_str[100] = "";
                 snprintf(debug_str, 99, "%u, %u, %u, %u, %u, %u, %u, %u, %u, %u",
-                        au32_measured_vehicle_speeds[0],
-                        au32_measured_vehicle_speeds[1],
-                        au32_measured_vehicle_speeds[2],
-                        au32_measured_vehicle_speeds[3],
-                        au32_measured_vehicle_speeds[4],
-                        au32_measured_vehicle_speeds[5],
-                        au32_measured_vehicle_speeds[6],
-                        au32_measured_vehicle_speeds[7],
-                        au32_measured_vehicle_speeds[8],
-                        au32_measured_vehicle_speeds[9]);
-                DEBUG_PRINTF("%s buffer content, %u new values read\n\r", debug_str, u32_num_of_new_readings);
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[0]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[1]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[2]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[3]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[4]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[5]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[6]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[7]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[8]),
+                    static_cast<unsigned int>(au32_measured_vehicle_speeds[9]));
+                 TRACE_LOG("SPD", LOGLEVEL_DEBUG, "%s buffer content, %u new values read\n\r", debug_str, u32_num_of_new_readings);
 
                 // calculate average
                 uint32_t u32_avg = 0u;
@@ -283,7 +396,7 @@
                     if (false == stats_printed)
                     {
                         stats_printed = true;
-                        DEBUG_PRINTF("Avg: %u, Min: %u, Max: %u\n\r", u32_avg, u32_min, u32_max);
+                         TRACE_LOG("SPD", LOGLEVEL_DEBUG, "Avg: %u, Min: %u, Max: %u\n\r", u32_avg, u32_min, u32_max);
                     }
 
 
@@ -309,9 +422,9 @@
                 }
 
                 // in case the gap would be extremely huge, we probably have a completely wrong reading.
-                if (u32_gap > 10000) // 10 km/h delta within 10ms
+                if (u32_gap > 5000) // 5 km/h delta within 100ms
                 {
-                    DEBUG_PRINTF("Unexplicable high gap in the data, data does not make any sense! Gap is %u\n\r", u32_gap);
+                     TRACE_LOG("SPD", LOGLEVEL_ERROR, "Unexplicable high gap in the data, data does not make any sense! Gap is %u\n\r", u32_gap);
                     m_u32_current_vehicle_speed_mph = 0;
                 }
                 else
@@ -320,7 +433,23 @@
                     m_u32_current_vehicle_speed_mph = u32_avg;
                 }
             }
+            else
+            {
+                clear_measured_data();
+                TRACE_LOG("SPD", LOGLEVEL_DEBUG, "No new reading received, switching back to 0\n\r");
+            }
         }
+
+        // post filter vehicle speed
+        
+        // limit very small readings
+        if (m_u32_current_vehicle_speed_mph < 1000)
+        {
+            m_u32_current_vehicle_speed_mph = 0;
+        }
+        
+        // process the PWM IC capture state machine, to adapt the PWM IC prescaler to to the perfect one for this vehicle speed
+        process_pwm_ic_state_machine();
 
         // convert to the output pulses
         int32_t i32_set_speed = m_u32_current_vehicle_speed_mph / 1000;
@@ -351,6 +480,54 @@
         }
     }
 
+    void SpeedSensorConverter::clear_measured_data()
+    {
+        for (uint32_t u32_i = 0u; u32_i != SPEED_SENSOR_READINGS_BUFFER_LENGTH; u32_i++)
+        {
+            m_ast_measured_frequencies[u32_i].u32_frequency = 0;
+            m_ast_measured_frequencies[u32_i].o_timestamp = std::chrono::time_point<std::chrono::system_clock>::min();
+        }
+    }
+    
+    void SpeedSensorConverter::process_pwm_ic_state_machine()
+    {
+        auto activate_new_state = [&] (SpeedInputCaptureMode new_state)
+        {
+            // change state machine to new state
+            m_en_pwm_ic_state_machine_state = new_state;
+            if (nullptr != m_p_output_pwm_input_capture)
+            {
+                // also update the PWM IC to update to the new frequency.
+                int32_t i32_ret_val = m_p_output_pwm_input_capture->set_prescaler(SpeedSensorConverterHelper::pwm_ic_state_machine[new_state].u16_pwm_ic_prescaler);
+                if (i32_ret_val != OSServices::ERROR_CODE_SUCCESS)
+                {
+                    TRACE_LOG("SPD", LOGLEVEL_ERROR, "Setting PWM IC prescaler failed! %i\n\r", static_cast<int>(i32_ret_val));
+                }
+            }
+            TRACE_LOG("SPD", LOGLEVEL_INFO, "Switched to PWM IC capture mode %u\n\r", static_cast<unsigned int>(new_state));
+        };
+
+        const auto current_state = SpeedSensorConverterHelper::pwm_ic_state_machine[m_en_pwm_ic_state_machine_state];
+        const uint32_t cu32_current_vehicle_speed = get_current_vehicle_speed();
+
+        if (current_state.u32_vehicle_speed_mph_lower_threshold != 0u)
+        {
+            if (cu32_current_vehicle_speed < current_state.u32_vehicle_speed_mph_lower_threshold)
+            {
+                // change to the lower setting.
+                activate_new_state(current_state.en_lower_capture_mode);
+            }
+        }
+        if (current_state.u32_vehicle_speed_mph_upper_threshold != 0u)
+        {
+            if (cu32_current_vehicle_speed > current_state.u32_vehicle_speed_mph_upper_threshold)
+            {
+                // change to the higher setting.
+                activate_new_state(current_state.en_higher_capture_mode);
+            }
+        }
+    }
+
     bool SpeedSensorConverter::check_if_speed_is_valid(int32_t i32_speed_value_in_kmph)
     {
         if (i32_speed_value_in_kmph > 250 || i32_speed_value_in_kmph < -50)
@@ -359,17 +536,4 @@
         }
         return true;
     }
-
-#ifdef SPEED_CONVERTER_USE_OWN_TASK
-    void SpeedSensorConverter::speed_sensor_converter_main()
-    {
-        while(false == m_bo_terminate_thread)
-        {
-            this->cycle();
-
-            // suspend the task fro 250ms
-            std_ex::sleep_for(std::chrono::milliseconds(250));
-        }
-    }
-#endif
-}
+} /* namespace app */

@@ -11,6 +11,7 @@
 #include "stm32_uart.hpp"
 #include <functional>
 #include <map>
+#include "trace_if.h"
 
 
 #define HAS_STD_MUTEX
@@ -32,10 +33,12 @@ namespace drivers
     STM32HardwareUART::STM32HardwareUART(GPIO_TypeDef* pt_rx_gpio_block,  uint16_t u16_rx_pin, \
             GPIO_TypeDef* pt_tx_gpio_block,  uint16_t u16_tx_pin)
     {
+        TRACE_DECLARE_CONTEXT("UART");
+        
         UartReady = RESET;
         m_uart_rx_interrupt_status = RESET;
         m_o_uart_handle = {};
-
+        
         // add to map
         map_uart_handles_to_object.emplace(&this->m_o_uart_handle, this);
         // Configure pins
@@ -497,6 +500,10 @@ extern "C"
       /* Turn LED5 on: Transfer in reception process is correct */
       //BSP_LED_On(LED5);
 
+    }
+    void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
+    {
+        TRACE_LOG("UART", LOGLEVEL_ERROR, "Hardware Error reported on UART!");
     }
 
     void USART1_IRQHandler(void)

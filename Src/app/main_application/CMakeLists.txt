@@ -4,16 +4,19 @@ set(MODULE_SOURCES
 )
 add_library(main_application STATIC ${MODULE_SOURCES})
 
-target_link_libraries(main_application fuel_gauge_input)
-target_link_libraries(main_application fuel_gauge_output)
-target_link_libraries(main_application osservices)
-target_link_libraries(main_application lookup_table_editor)
-target_link_libraries(main_application speed_sensor_converter)
-target_link_libraries(main_application dataset)
-target_link_libraries(main_application eol)
-target_link_libraries(main_application eol_command)
-target_link_libraries(main_application console_commands)
-target_link_libraries(main_application pwm_tester)
+target_link_libraries(main_application PUBLIC
+    fuel_gauge_input
+    fuel_gauge_output
+    osservices
+    lookup_table_editor
+    speed_sensor_converter
+    dataset
+    eol
+    eol_command
+    console_commands
+    pwm_tester
+    os_threads
+)
 
 target_include_directories(main_application PUBLIC
     inc

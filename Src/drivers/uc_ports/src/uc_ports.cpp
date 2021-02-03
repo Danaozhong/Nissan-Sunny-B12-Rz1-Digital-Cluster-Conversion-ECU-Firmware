@@ -45,6 +45,10 @@ namespace drivers
     }
     STM32F303CCT6UcPorts::STM32F303CCT6UcPorts() {}
 
+    void STM32F303CCT6UcPorts::configure()
+    {
+    }
+
     int32_t STM32F303CCT6UcPorts::init_ports_can()
     {
 #ifdef USE_CAN

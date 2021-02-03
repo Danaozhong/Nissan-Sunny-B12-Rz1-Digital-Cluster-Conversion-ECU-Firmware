@@ -10,9 +10,11 @@
 #include "speed_sensor_converter.hpp"
 
 #include "os_console.hpp"
-#include "excp_handler.hpp"
-#include "main.h"
 
+#include "cyclic_thread_100ms.hpp"
+#include "cyclic_thread_low_prio_100ms.hpp"
+
+#include "excp_handler.hpp"
 
 #include "stm32_dac.hpp"
 #include "stm32_adc.hpp"
@@ -41,49 +43,50 @@ namespace app
         FUEL_GAUGE_OUTPUT_MODE_MANUAL
     };
 
-	class MainApplication
-	{
-	public:
-		/** Constructor */
-		MainApplication();
+    class MainApplication
+    {
+    public:
+        /** Constructor */
+        MainApplication();
 
-		void startup_from_reset();
+        void startup_from_reset();
 
-		void startup_from_wakeup();
+        void startup_from_wakeup();
 
-		void go_to_sleep();
+        void go_to_sleep();
 
-		void init_hardware();
+        void init_hardware();
 
-		void deinit_hardware();
+        void deinit_hardware();
 
-		/** Callback used when the fuel sensor input has detected an input level change */
-		void fuel_sensor_input_received(int32_t i32_value);
+        /** Callback used when the fuel sensor input has detected an input level change */
+        void fuel_sensor_input_received(int32_t i32_value);
 
-		void update_fuel_sensor_output();
+        void update_fuel_sensor_output();
 
-		/** Singleton accessor */
-		static MainApplication& get();
+        /** Singleton accessor */
+        static MainApplication& get();
 
-		SpeedSensorConverter* get_speed_sensor_converter() const;
+        SpeedSensorConverter* get_speed_sensor_converter() const;
 
-		/** Cyclic container to be executed every 10ms */
-		void cycle_10ms();
+        /** Cyclic container to be executed every 100ms, under a low task priority */
+        void cycle_low_prio_100ms();
 
-		/** Cyclic container to be executed every 100ms */
-		void cycle_100ms();
+        /** Cyclic container to be executed every 100ms */
+        void cycle_100ms();
 
-		/** Cyclic container to be executed every 1 second */
-		void cycle_1000ms();
+        /** Cyclic container to be executed every 1 second */
+        void cycle_1000ms();
 
-		void console_thread();
+        /** this thread will take care of user I/O interface, and user commands */
+        void console_thread();
 
 #ifdef USE_NVDH
         std::shared_ptr<midware::NonvolatileDataHandler> get_nonvolatile_data_handler() const;
 #endif
-		OSServices::OSConsole* get_os_console();
+        OSServices::OSConsole* get_os_console();
 
-		OSServices::OSConsoleGenericIOInterface& get_stdio();
+        OSServices::OSConsoleGenericIOInterface& get_stdio();
 
 
 
@@ -123,31 +126,35 @@ namespace app
         midware::Trace* m_po_trace;
 #endif
 
-		drivers::GenericADC* m_p_adc;
-		drivers::GenericDAC* m_p_dac;
+        drivers::GenericADC* m_p_adc;
+        drivers::GenericDAC* m_p_dac;
 
-		/// the PWM output used to simulate the JDM speed sensor to the cluster
-		drivers::GenericPWM* m_p_pwm;
+        /// the PWM output used to simulate the JDM speed sensor to the cluster
+        drivers::GenericPWM* m_p_pwm;
 
-		/// The PWM Input Capture driver to read the PWM from the vehicle's speed sensor
-		drivers::GenericPWM_IC* m_p_pwm_ic;
+        /// The PWM Input Capture driver to read the PWM from the vehicle's speed sensor
+        drivers::GenericPWM_IC* m_p_pwm_ic;
 
-		app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
-		app::FuelGaugeOutput* m_p_o_fuel_gauge_output;
+        app::FuelGaugeInputFromADC* m_p_o_fuel_gauge_input;
+        app::FuelGaugeOutput* m_p_o_fuel_gauge_output;
 
-		FuelGaugeOutputMode m_en_fuel_gauge_output_mode;
-		SpeedSensorConverter* m_po_speed_sensor_converter;
+        FuelGaugeOutputMode m_en_fuel_gauge_output_mode;
+        SpeedSensorConverter* m_po_speed_sensor_converter;
 
-		app::Dataset m_o_dataset;
+        CyclicThreadLowPrio100ms m_o_cyclic_thread_low_prio_100ms;
+        CyclicThreadLowPrio100ms m_o_cyclic_thread_100ms;
+        
+        
+        app::Dataset m_o_dataset;
 
-		app::EOLData m_o_eol_data;
+        app::EOLData m_o_eol_data;
 
-	    int32_t m_i32_fuel_sensor_read_value;
-	    int32_t m_i32_fuel_gauge_output_manual_value;
+        int32_t m_i32_fuel_sensor_read_value;
+        int32_t m_i32_fuel_gauge_output_manual_value;
 #ifdef USE_NVDH
-		std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
+        std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
 #endif /* USE_NVDH */
-	};
+    };
 
 
 }

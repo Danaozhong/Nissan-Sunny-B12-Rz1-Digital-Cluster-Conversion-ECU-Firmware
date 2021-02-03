@@ -24,5 +24,6 @@ target_include_directories(freertos PUBLIC
 )
 
 target_link_libraries(freertos PUBLIC
+    stm32_peripherals
     HAL::STM32::F3::CORTEX
 )

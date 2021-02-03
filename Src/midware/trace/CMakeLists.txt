@@ -6,11 +6,13 @@ SET(MODULE_SOURCES
 
 add_library(trace STATIC ${MODULE_SOURCES})
 
-target_link_libraries(trace uart)
-target_link_libraries(trace osservices)  # Requires information about the status of the OS console (outputting is enabled / disabled )
+target_link_libraries(trace PUBLIC
+    uart
+    osservices # Requires information about the status of the OS console (outputting is enabled / disabled )
+)  
 
 target_compile_definitions(trace PUBLIC
-    -DUSE_TRACE
+    USE_TRACE
 )
 
 target_compile_definitions(trace PUBLIC

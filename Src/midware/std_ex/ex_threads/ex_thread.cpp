@@ -147,15 +147,15 @@ namespace std_ex
 
     	if (pdPASS !=xTaskCreate(
     		  fp,                       /* Task function. */
-			  m_task_name,   			/* name of task. */
+			  m_task_name,              /* name of task. */
 			  m_u_stack_size,           /* Stack size of task */
 #ifdef REDUCE_CODE_FLASH_SIZE
-			  ptr,               	/* parameter of the task */
+			  ptr,                      /* parameter of the task */
 #else
-    	      this,               	/* parameter of the task */
+    	      this,                     /* parameter of the task */
 #endif
 			  m_u_task_priority,        /* priority of the task */
-    	      &m_task_handle)          /* Task handle to keep track of created task */
+    	      &m_task_handle)           /* Task handle to keep track of created task */
     			)
     	{
     		// task creation has failed!

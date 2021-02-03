@@ -23,8 +23,11 @@ namespace app
 {
     MainApplication::MainApplication()
         : m_en_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION),
-          m_i32_fuel_gauge_output_manual_value(0)
+          m_i32_fuel_gauge_output_manual_value(0),
+          m_o_cyclic_thread_low_prio_100ms("CycLow100ms", 1, 0x400, std::chrono::milliseconds(100)),
+          m_o_cyclic_thread_100ms("Cyc100ms", 2, 0x800, std::chrono::milliseconds(100))
     {}
+
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
     enum MainApplicationStartupTimePosition
@@ -96,6 +99,12 @@ namespace app
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
         au32_startup_times[StartupTimeUARTInitComplete] = std_ex::get_timestamp_in_ms();
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
+
+        // start the cyclic tasks
+        TRACE_DECLARE_CONTEXT("SPD");
+        m_o_cyclic_thread_low_prio_100ms.start();
+        m_o_cyclic_thread_100ms.start();
+        
         // Create the debug console
         m_po_os_io_interface = new OSServices::OSConsoleUartIOInterface(m_p_uart);
         m_po_os_console = new OSServices::OSConsole(*m_po_os_io_interface);
@@ -285,8 +294,18 @@ namespace app
         return m_po_speed_sensor_converter;
     }
 
-    void MainApplication::cycle_10ms()
+    void MainApplication::cycle_low_prio_100ms()
     {
+        // Check for data on the UART
+        if (nullptr != m_p_uart)
+        {
+            drivers::STM32HardwareUART* p_stm32_uart = dynamic_cast<drivers::STM32HardwareUART*>(m_p_uart);
+            if (p_stm32_uart != nullptr)
+            {
+                p_stm32_uart->uart_process_cycle();
+            }
+        }
+        
         if (nullptr != m_po_trace)
         {
             m_po_trace->cycle();
@@ -315,11 +334,16 @@ namespace app
 
     void MainApplication::console_thread()
     {
-        // check for debug input
-        auto p_console = get_os_console();
-        if (nullptr != p_console)
+        while (true)
         {
-            p_console->run();
+            // check for user input
+            auto p_console = get_os_console();
+            if (nullptr != p_console)
+            {
+                p_console->run();
+            }
+            // load balancing
+            std_ex::sleep_for(std::chrono::milliseconds(10));
         }
     }
 

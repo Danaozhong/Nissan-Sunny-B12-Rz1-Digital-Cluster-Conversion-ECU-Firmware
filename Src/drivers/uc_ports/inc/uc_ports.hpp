@@ -12,6 +12,8 @@ namespace drivers
         UcPorts();
         virtual ~UcPorts() {}
 
+        virtual void configure() { }
+        
         virtual int32_t init_ports_can() { return 0; }
         virtual int32_t deinit_ports_can() { return 0; }
         virtual int32_t init_ports_adc() { return 0; }
@@ -26,6 +28,9 @@ namespace drivers
     {
     public:
         STM32F303CCT6UcPorts();
+        
+        virtual void configure();
+        
         virtual int32_t init_ports_can();
         virtual int32_t deinit_ports_can();
         virtual int32_t init_ports_adc();

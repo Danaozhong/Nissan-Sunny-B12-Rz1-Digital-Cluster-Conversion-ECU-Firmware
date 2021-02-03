@@ -73,22 +73,26 @@ add_compile_options(
 # global includes and libraries
 include_directories(
     midware/cppstdlib/cpp11_gcc  # This include directory must come first, so that the freertos cpp11 libs work.
-    ../Inc/ # This includes the STM32 configuration headers.
 )
+add_subdirectory(drivers/stm32_peripherals)
+
 
 add_subdirectory(midware/cppstdlib)
 add_subdirectory(midware/FreeRTOS)
 add_subdirectory(midware/std_ex)
+add_subdirectory(midware/stdlib)
 
 link_libraries(
+    stm32_peripherals
     CMSIS::STM32::F303CC
     STM32::Nano
 )
 
-link_libraries(    
+link_libraries(
     freertos
     cppstdlib
-    stdcppex)
+    stdcppex
+    stdlib)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/app/lookup_table_editor/inc
@@ -97,9 +101,22 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     app/dataset/inc
 )
 
+add_subdirectory(drivers/sysclock)
+list(APPEND EXTRA_LIBS sysclock)
+
+if (USE_TRACE)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
+        -DUSE_TRACE
+    )
+    add_subdirectory(midware/trace)
+    list(APPEND EXTRA_LIBS trace)
+endif()
 
 add_subdirectory(midware/osservices)
 list(APPEND EXTRA_LIBS osservices)
+
+add_subdirectory(midware/osservices/os_threads)
+list(APPEND EXTRA_LIBS os_threads)
 
 add_subdirectory(midware/event_handler)
 list(APPEND EXTRA_LIBS event_handler)
@@ -140,13 +157,6 @@ if (USE_NVDH)
     list(APPEND EXTRA_LIBS nonvolatile_data_handler)
 endif()
 
-if (USE_TRACE)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
-        -DUSE_TRACE
-    )
-    add_subdirectory(midware/trace)
-    list(APPEND EXTRA_LIBS trace)
-endif()
 
 add_subdirectory(midware/excp_handler)
 list(APPEND EXTRA_LIBS excp_handler)

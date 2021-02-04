@@ -356,7 +356,7 @@ namespace midware
             remaining_size_to_write =- cu32_current_block_size;
 
             // read the current block from EEPROM
-            uint32_t au32_buffer[m_u32_flash_block_size / 4];
+            std::vector<uint32_t> au32_buffer(m_u32_flash_block_size / 4);
             /* make sure to always read sufficient data */
             uint32_t u32_block_size_in_words = cu32_current_block_size / 4;
             if (0 != cu32_current_block_size % 4)
@@ -364,14 +364,14 @@ namespace midware
                 u32_block_size_in_words++;
             }
 
-           if (false == EE_Reads(0, u32_block_size_in_words, au32_buffer)) /* _EEPROM_FLASH_PAGE_SIZE is missing here TODO */
+           if (false == EE_Reads(0, u32_block_size_in_words, au32_buffer.data())) /* _EEPROM_FLASH_PAGE_SIZE is missing here TODO */
            {
                ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_READ_FAILED, false, __FILE__, __LINE__, 0u);
                return OSServices::ERROR_CODE_INTERNAL_ERROR;
            }
 
            // make a comparison to check if the flash block really needs to be rewritten
-           if (0 != std::memcmp(au32_buffer, m_au8_data_shadow.data() + current_read_index, cu32_current_block_size))
+           if (0 != std::memcmp(au32_buffer.data(), m_au8_data_shadow.data() + current_read_index, cu32_current_block_size))
            {
                // data of this flash block is different to what we see, rewrite
                if (false == EE_ErasePage(u16_block))

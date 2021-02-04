@@ -75,69 +75,7 @@ namespace drivers
         m_o_last_input_capture_timestamp = 0u;
         
         /* USER CODE END TIM2_Init 0 */
-
-        TIM_SlaveConfigTypeDef sSlaveConfig = {0};
-        TIM_MasterConfigTypeDef sMasterConfig = {0};
-        TIM_IC_InitTypeDef sConfigIC = {0};
-
-        m_timer_handle.Instance = m_pt_timer_unit;
-        m_timer_handle.Init.Prescaler = m_u16_prescaler;
-        m_timer_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
-        m_timer_handle.Init.Period = m_u16_arr - 1;
-        m_timer_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-        m_timer_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-        if (HAL_TIM_Base_Init(&m_timer_handle) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-        if (HAL_TIM_IC_Init(&m_timer_handle) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-
-        sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING; //TIM_INPUTCHANNELPOLARITY_FALLING;
-        sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI; //TIM_ICSELECTION_DIRECTTI;
-        sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-        sConfigIC.ICFilter = 0;
-        if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_first_channel) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-        sConfigIC.ICPolarity =TIM_INPUTCHANNELPOLARITY_FALLING;// TIM_INPUTCHANNELPOLARITY_RISING;
-        sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI; //TIM_ICSELECTION_DIRECTTI;
-        if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_second_channel) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-
-        sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
-        sSlaveConfig.InputTrigger = TIM_TS_TI1FP1; //TIM_TS_TI2FP2;
-        sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
-        sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
-        sSlaveConfig.TriggerFilter = 0;
-        if (HAL_TIM_SlaveConfigSynchro(&m_timer_handle, &sSlaveConfig) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-#if 0
-        sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-        sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-        if (HAL_TIMEx_MasterConfigSynchronization(&m_timer_handle, &sMasterConfig) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-#endif
-
-        // start the input capture in interrupt mode
-        if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_first_channel) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-        if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_second_channel) != HAL_OK)
-        {
-            return OSServices::ERROR_CODE_INTERNAL_ERROR;
-        }
-
+        set_prescaler(m_u16_prescaler);
 
         m_bo_initialized = true;
         return OSServices::ERROR_CODE_SUCCESS;
@@ -185,29 +123,22 @@ namespace drivers
         if (m_u16_prescaler != u16_prescaler)
         {
             m_u16_prescaler = u16_prescaler;
-
-
-            // start the input capture in interrupt mode
-            if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_first_channel) != HAL_OK)
+    
+            if (true == m_bo_initialized)
             {
-                return OSServices::ERROR_CODE_INTERNAL_ERROR;
-            }
-            if (HAL_TIM_IC_Start_IT(&m_timer_handle, m_u32_second_channel) != HAL_OK)
-            {
-                return OSServices::ERROR_CODE_INTERNAL_ERROR;
-            }
-            if (HAL_TIM_IC_DeInit(&m_timer_handle) != HAL_OK)
-            {
+                // deinitialize the current configuration
+                if (HAL_TIM_IC_DeInit(&m_timer_handle) != HAL_OK)
+                {
+                    return OSServices::ERROR_CODE_INTERNAL_ERROR;
+                }
 
-            }
-
-            if (HAL_TIM_Base_DeInit(&m_timer_handle) != HAL_OK)
-            {
-                return OSServices::ERROR_CODE_INTERNAL_ERROR;
+                if (HAL_TIM_Base_DeInit(&m_timer_handle) != HAL_OK)
+                {
+                    return OSServices::ERROR_CODE_INTERNAL_ERROR;
+                }
             }
 
             TIM_SlaveConfigTypeDef sSlaveConfig = {0};
-            TIM_MasterConfigTypeDef sMasterConfig = {0};
             TIM_IC_InitTypeDef sConfigIC = {0};
 
             m_timer_handle.Instance = m_pt_timer_unit;
@@ -225,23 +156,23 @@ namespace drivers
                 return OSServices::ERROR_CODE_INTERNAL_ERROR;
             }
 
-            sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING; //TIM_INPUTCHANNELPOLARITY_FALLING;
-            sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI; //TIM_ICSELECTION_DIRECTTI;
+            sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+            sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
             sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
             sConfigIC.ICFilter = 0;
             if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_first_channel) != HAL_OK)
             {
                 return OSServices::ERROR_CODE_INTERNAL_ERROR;
             }
-            sConfigIC.ICPolarity =TIM_INPUTCHANNELPOLARITY_FALLING;// TIM_INPUTCHANNELPOLARITY_RISING;
-            sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI; //TIM_ICSELECTION_DIRECTTI;
+            sConfigIC.ICPolarity =TIM_INPUTCHANNELPOLARITY_FALLING;
+            sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI;
             if (HAL_TIM_IC_ConfigChannel(&m_timer_handle, &sConfigIC, m_u32_second_channel) != HAL_OK)
             {
                 return OSServices::ERROR_CODE_INTERNAL_ERROR;
             }
 
             sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
-            sSlaveConfig.InputTrigger = TIM_TS_TI1FP1; //TIM_TS_TI2FP2;
+            sSlaveConfig.InputTrigger = TIM_TS_TI1FP1;
             sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
             sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
             sSlaveConfig.TriggerFilter = 0;
@@ -258,24 +189,6 @@ namespace drivers
             {
                 return OSServices::ERROR_CODE_INTERNAL_ERROR;
             }
-
-
-
-
-
-
-
-
-
-
-
-
-
-            //TIM4->PSC = m_u16_prescaler;
-
-            /* Generate an update event to reload the Prescaler
-             and the repetition counter(only for TIM1 and TIM8) value immediatly */
-            //TIM4->EGR = TIM_EGR_UG;
         }
         return OSServices::ERROR_CODE_SUCCESS;
     }

@@ -45,21 +45,14 @@ class STM32HardwareUART : public GenericUART
         virtual size_t write(const uint8_t *a_u8_buffer, size_t size);
 
         void uart_process_cycle();
-#ifdef DRIVER_UART_HAS_OWN_TASK
-        void uart_main();
-#endif
     private:
         uint8_t m_au8_rx_buffer[STM32UART_BUFFER_SIZE];
 
         uint32_t m_u32_rx_buffer_usage;
 
-#ifdef DRIVER_UART_HAS_OWN_TASK
-        std_ex::thread* m_p_uart_buffer_thread;
-#endif
-        std::atomic<bool> m_bo_connected;
+        bool m_bo_initialized;
         std::mutex m_o_interrupt_mutex;
 
-        void Error_Handler(void) const;
     public:
         UART_HandleTypeDef m_o_uart_handle;
 

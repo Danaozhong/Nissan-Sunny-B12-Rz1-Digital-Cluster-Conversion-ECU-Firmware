@@ -69,8 +69,6 @@ extern "C"
 
     int _write (int file, char * ptr, int len)
     {
-        int written = 0;
-
         if ((file != 1) && (file != 2) && (file != 3)) 
         {
             return -1;

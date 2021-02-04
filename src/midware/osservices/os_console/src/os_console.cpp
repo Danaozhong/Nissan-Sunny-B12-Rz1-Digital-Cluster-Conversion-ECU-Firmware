@@ -28,10 +28,10 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         /* Allocate an array index for each task.  NOTE!  if
         configSUPPORT_DYNAMIC_ALLOCATION is set to 0 then pvPortMalloc() will
         equate to NULL. */
-        TaskStatus_t pxTaskStatusArray[uxArraySize];
+        std::vector<TaskStatus_t> pxTaskStatusArray(uxArraySize);
 
         /* Generate the (binary) data. */
-        uxArraySize = uxTaskGetSystemState( pxTaskStatusArray, uxArraySize, NULL );
+        uxArraySize = uxTaskGetSystemState( pxTaskStatusArray.data(), uxArraySize, NULL );
 
         /* Create a human readable table from the binary data. */
 
@@ -353,6 +353,8 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 
     int32_t read_bool_input(OSConsoleGenericIOInterface& po_io_interface, bool &ret_val)
     {
+        const char ESC_KEY = 27;
+        
         bool valid_input_given = false;
         while (false == valid_input_given)
         {
@@ -367,7 +369,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
                 ret_val = false;
                 return OSServices::ERROR_CODE_SUCCESS;
             }
-            else if ('\e' == input)
+            else if (ESC_KEY == input)
             {
                 valid_input_given = false;
             }
@@ -393,6 +395,13 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         {
             return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
         }
+        
+        // check valid input
+        if ( i32_month < 1 || i32_month > 12)
+        {
+            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
+        }
+        
         po_io_interface << "Please enter the year:\r\n";
         if (OSServices::ERROR_CODE_SUCCESS != read_int32(po_io_interface, i32_year))
         {
@@ -408,11 +417,11 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         {
             return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
         }
-
+            
         // query complete, convert to time_t struct
         std::tm timeinfo = {0};
-        timeinfo.tm_year = i32_year - 1900; // + tmUtil::tm_yearCorrection;
-        timeinfo.tm_mon = i32_month - 1; // + tmUtil::tm_monthCorrection; // TODO Check boundary
+        timeinfo.tm_year = i32_year - 1900;
+        timeinfo.tm_mon = i32_month - 1; // TODO Check boundary
         timeinfo.tm_mday = i32_day;
         timeinfo.tm_hour = i32_hour;
         timeinfo.tm_min = i32_minute;
@@ -423,8 +432,6 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 
 
         // verify from user again
-
-
         // write the timestamp of the EOL data write
         std::tm* ptm = std::localtime(&timestamp);
         char timestamp_buffer[32];
@@ -436,7 +443,6 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         {
             return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
         }
-
         return OSServices::ERROR_CODE_SUCCESS;
     }
 

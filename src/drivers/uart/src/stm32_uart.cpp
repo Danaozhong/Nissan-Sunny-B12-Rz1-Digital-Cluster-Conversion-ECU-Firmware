@@ -35,6 +35,7 @@ namespace drivers
     {
         TRACE_DECLARE_CONTEXT("UART");
         
+        m_bo_initialized = false;
         UartReady = RESET;
         m_uart_rx_interrupt_status = RESET;
         m_o_uart_handle = {};
@@ -201,56 +202,69 @@ namespace drivers
     STM32HardwareUART::~STM32HardwareUART()
     {}
 
+//#define STM32_UART_SUPPORTS_WORD_LENGTH_7BIT
+#define STM32_UART_SUPPORTS_STOP_BIT_2
+#define STM32_UART_SUPPORTS_STOP_BIT_1_5
+
 
     void STM32HardwareUART::connect(uint64_t u64_baud, UARTSignalWordLength en_word_length, UARTSignalStopBits en_stop_bits, \
             UARTSignalFlowControl en_flow_control, bool invert)
     {
-      /*##-1- Configure the UART peripheral ######################################*/
-      /* Put the USART peripheral in the Asynchronous mode (UART Mode) */
-      /* UART configured as follows:
-          - Word Length = 8 Bits
-          - Stop Bit = One Stop bit
-          - Parity = None
-          - BaudRate = 9600 baud
-          - Hardware flow control disabled (RTS and CTS signals) */
-
+        if (m_bo_initialized)
+        {
+            return;
+        }
+        
         m_o_uart_handle.Init.BaudRate = u64_baud;
         switch (en_word_length)
         {
+#ifdef STM32_UART_SUPPORTS_WORD_LENGTH_7BIT
+        case UART_WORD_LENGTH_7BIT:
+            m_o_uart_handle.Init.WordLength = UART_WORDLENGTH_7B;
+            break;
+#endif
         case UART_WORD_LENGTH_8BIT:
             m_o_uart_handle.Init.WordLength = UART_WORDLENGTH_8B;
-        break;
+            break;
+        default:
+            // not supported configuration
+            return;
         }
 
         switch (en_stop_bits)
         {
+#ifdef STM32_UART_SUPPORTS_WORD_LENGTH_7BIT
         case UART_STOP_BITS_2:
-#ifndef STM32_FAMILY_F3
-        m_o_uart_handle.Init.StopBits     = UART_STOPBITS_2;
-        break;
+            m_o_uart_handle.Init.StopBits = UART_STOPBITS_2;
+            break;
 #endif
+#ifdef STM32_UART_SUPPORTS_STOP_BIT_1_5
         case UART_STOP_BITS_1_5:
-#ifndef STM32_FAMILY_F4
-            m_o_uart_handle.Init.StopBits     = UART_STOPBITS_1_5;
+
+            m_o_uart_handle.Init.StopBits = UART_STOPBITS_1_5;
             break;
 #endif
         case UART_STOP_BITS_1:
-        default:
-            m_o_uart_handle.Init.StopBits     = UART_STOPBITS_1;
+            m_o_uart_handle.Init.StopBits  = UART_STOPBITS_1;
             break;
+        default:
+            // not supported configuration
+            return;
         }
 
-        // TODO this is just wrong
+#if 0
+        // Flow control is not yet supported
         switch (en_flow_control)
         {
         case UART_FLOW_CONTROL_NONE:
-            m_o_uart_handle.Init.Parity       = UART_PARITY_NONE;
             break;
         case UART_FLOW_CONTROL_HARDWARE:
         default:
             break;
-
         }
+#endif 
+        
+        m_o_uart_handle.Init.Parity = UART_PARITY_NONE;
 
         m_o_uart_handle.Init.Mode         = UART_MODE_TX_RX;
         m_o_uart_handle.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -258,25 +272,30 @@ namespace drivers
         m_o_uart_handle.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 #endif
 
-
         if(HAL_UART_DeInit(&m_o_uart_handle) != HAL_OK)
         {
-            Error_Handler();
+            return;
         }
         if(HAL_UART_Init(&m_o_uart_handle) != HAL_OK)
         {
-            Error_Handler();
+            return;
         }
 
         m_u32_rx_buffer_usage = 0;
-#ifdef DRIVER_UART_HAS_OWN_TASK
-        auto main_func = std::bind(&STM32HardwareUART::uart_main, this);
-        m_p_uart_buffer_thread = new std_ex::thread(main_func, "UART_RxThread", 1u, 0x600);
-#endif
+        m_bo_initialized = true;
     }
     void STM32HardwareUART::disconnect()
     {
-        // TODO
+        if (m_bo_initialized == false)
+        {
+            return;
+        }
+        
+        if(HAL_UART_DeInit(&m_o_uart_handle) != HAL_OK)
+        {
+            return;
+        }
+        m_bo_initialized = false;
     }
 
     void STM32HardwareUART::update_baud_rate(uint64_t u64_baud)
@@ -287,7 +306,6 @@ namespace drivers
     int STM32HardwareUART::available(void) const
     {
         return m_u32_rx_buffer_usage;
-        //return m_o_uart_handle.RxXferCount;
     }
 
     int STM32HardwareUART::available_for_write(void) const
@@ -297,20 +315,11 @@ namespace drivers
 
     int STM32HardwareUART::peek(void) const
     {
-        //return m_o_uart_handle.RxXferCount;
         return m_u32_rx_buffer_usage;
     }
 
     int STM32HardwareUART::read(void)
     {
-#if 0
-        int retval = -1;
-        char ai8_buffer[10];
-        if(HAL_UART_Receive(&m_o_uart_handle, reinterpret_cast<uint8_t*>(ai8_buffer), 1, 100) == HAL_OK)
-        {
-            return static_cast<int>(ai8_buffer[0]);
-        }
-#else
         int retval = -1;
         if (m_u32_rx_buffer_usage > 0)
         {
@@ -320,7 +329,6 @@ namespace drivers
             memmove(m_au8_rx_buffer, m_au8_rx_buffer + 1, m_u32_rx_buffer_usage);
         }
         return retval;
-#endif
     }
 
     void STM32HardwareUART::flush(void)
@@ -345,7 +353,8 @@ namespace drivers
 #endif
             if(HAL_UART_Transmit_IT(&m_o_uart_handle, const_cast<uint8_t*>(a_u8_buffer), size) != HAL_OK)
             {
-                Error_Handler();
+                UartReady = RESET;
+                return 0u;
             }
 
             while (UartReady != SET)
@@ -375,7 +384,6 @@ namespace drivers
 
             if (HAL_OK == ret_val)
             {
-
                 if(m_u32_rx_buffer_usage < STM32UART_BUFFER_SIZE)
                 {
                     m_au8_rx_buffer[m_u32_rx_buffer_usage] = ai8_buffer[0];
@@ -385,91 +393,7 @@ namespace drivers
             }
         }
     }
-
-#ifdef DRIVER_UART_HAS_OWN_TASK
-    void STM32HardwareUART::uart_main()
-    {
-        while(true)
-        {
-            uart_process_cycle();
-            // load balancing
-            std_ex::sleep_for(std::chrono::milliseconds(100));
-        }
-        //DEBUG_PRINTF("UART thread will terminate now.");
-    }
-#endif
-
-    void STM32HardwareUART::Error_Handler(void) const
-    {
-      /* User may add here some code to deal with this error */
-      while(1)
-      {
-#ifdef USE_STM32_F3_DISCO
-          BSP_LED_Toggle(LED_RED);
-#elif defined USE_STM32F3XX_NUCLEO_32
-          //BSP_LED_Toggle(LED_GREEN);
-#endif
-        HAL_Delay(1000);
-      }
-    }
-}
-
-
-#if 0
-extern "C"
-{
-    void HAL_UART_MspInit(UART_HandleTypeDef *huart)
-    {
-      GPIO_InitTypeDef  GPIO_InitStruct;
-
-      /*##-1- Enable peripherals and GPIO Clocks #################################*/
-      /* Enable GPIO TX/RX clock */
-      USARTx_TX_GPIO_CLK_ENABLE();
-      USARTx_RX_GPIO_CLK_ENABLE();
-
-
-      /* Enable USARTx clock */
-      USARTx_CLK_ENABLE();
-
-      /*##-2- Configure peripheral GPIO ##########################################*/
-      /* UART TX GPIO pin configuration  */
-      GPIO_InitStruct.Pin       = USARTx_TX_PIN;
-      GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-      GPIO_InitStruct.Pull      = GPIO_PULLUP;
-      GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_HIGH;
-      GPIO_InitStruct.Alternate = USARTx_TX_AF;
-
-      HAL_GPIO_Init(USARTx_TX_GPIO_PORT, &GPIO_InitStruct);
-
-      /* UART RX GPIO pin configuration  */
-      GPIO_InitStruct.Pin = USARTx_RX_PIN;
-      GPIO_InitStruct.Alternate = USARTx_RX_AF;
-
-      HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
-    }
-
-    /**
-      * @brief UART MSP De-Initialization
-      *        This function frees the hardware resources used in this example:
-      *          - Disable the Peripheral's clock
-      *          - Revert GPIO configuration to their default state
-      * @param huart: UART handle pointer
-      * @retval None
-      */
-    void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
-    {
-      /*##-1- Reset peripherals ##################################################*/
-      USARTx_FORCE_RESET();
-      USARTx_RELEASE_RESET();
-
-      /*##-2- Disable peripherals and GPIO Clocks #################################*/
-      /* Configure USART2 Tx as alternate function  */
-      HAL_GPIO_DeInit(USARTx_TX_GPIO_PORT, USARTx_TX_PIN);
-      /* Configure USART2 Rx as alternate function  */
-      HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN);
-    }
-}
-#endif
+} /* namespace drivers */
 
 extern "C"
 {
@@ -477,28 +401,16 @@ extern "C"
     {
       /* Set transmission flag: transfer complete */
         drivers::map_uart_handles_to_object[UartHandle]->UartReady = SET;
-        //UartReady = SET;
-
-      /* Turn LED3 on: Transfer in transmission process is correct */
-      //BSP_LED_On(LED3);
-
     }
 
     /**
       * @brief  Rx Transfer completed callback
       * @param  UartHandle: UART handle
-      * @note   This example shows a simple way to report end of DMA Rx transfer, and
-      *         you can add your own implementation.
-      * @retval None
       */
     void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
     {
       /* Set transmission flag: transfer complete */
         drivers::map_uart_handles_to_object[UartHandle]->m_uart_rx_interrupt_status = SET;
-        //UartReady = SET;
-
-      /* Turn LED5 on: Transfer in reception process is correct */
-      //BSP_LED_On(LED5);
 
     }
     void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)

@@ -76,7 +76,7 @@ namespace midware
         memcpy(&pu8_memory[20], &m_u64_timestamp, 8);
         memcpy(&pu8_memory[28], m_ai8_file, 16);
         // when changing, make sure to adapt the assertion below as well
-        static_assert(28 + 16 < required_memory);
+        static_assert(28 + 16 < required_memory, "not enough buffer");
 
         // everything was written successfully!
         written_size = required_memory;
@@ -225,7 +225,7 @@ namespace midware
             snprintf(ac_excp_id, 10, "%u", static_cast<unsigned int>(itr->m_en_exception_id));
             snprintf(ac_misc, 10, "%i", static_cast<int>(itr->m_i32_misc));
             snprintf(ac_count, 10, "%u", static_cast<unsigned int>(itr->m_u32_occurence_count));
-            snprintf(ac_timestamp, 10, "%ul", static_cast<unsigned long>(itr->m_u64_timestamp));
+            snprintf(ac_timestamp, 10, "%lu", static_cast<unsigned long>(itr->m_u64_timestamp));
             snprintf(ac_line, 10, "%u", static_cast<unsigned int>(itr->m_u32_line));
 
             i32_lib_table_add_row(&table, 7, ac_module_id, ac_excp_id, ac_misc, ac_count, ac_timestamp, ac_line, itr->m_ai8_file);

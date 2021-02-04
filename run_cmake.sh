@@ -31,5 +31,11 @@ echo "Build Type is " $BUILD_CONFIG
 echo "STM32_CHIP " $STM32_CHIP
 echo "STM32F3 firmware is " $STM32_FW_F3
 
+# Create out of source build directory
+mkdir bin_rel
+pushd bin_rel
+
 # Just run CMake. Make sure that both CMake and make are available in the environment vars.
-cmake -DSTM32_CUBE_F3_PATH=$STM32_FW_F3 -DSTM32_TOOLCHAIN_PATH=$ARM_TOOLCHAIN -DCMAKE_BUILD_TYPE=$BUILD_CONFIG -G "Eclipse CDT4 - Unix Makefiles" src
+cmake -DSTM32_CUBE_F3_PATH=$STM32_FW_F3 -DSTM32_TOOLCHAIN_PATH=$ARM_TOOLCHAIN -DCMAKE_BUILD_TYPE=$BUILD_CONFIG -G "Eclipse CDT4 - Unix Makefiles" ../src
+
+popd

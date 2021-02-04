@@ -4,4 +4,4 @@
 docker build -t ${IMAGE_NAME} .
 
 # run the docker image, mount the code, and build everything
-docker run -v /${PWD}:/home/stm32/ws ${IMAGE_NAME} bash -c "./buildall.sh"
+docker run -v /${PWD}:/home/stm32/ws ${IMAGE_NAME} bash -c "chmod +x ./buildall.sh && chmod +x ./run_cmake.sh && chmod +x ./run_cmake_debug.sh &&./buildall.sh"

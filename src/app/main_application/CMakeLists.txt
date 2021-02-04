@@ -1,6 +1,8 @@
 
 set(MODULE_SOURCES
     src/main_application.cpp
+    src/cyclic_thread_100ms.cpp
+    src/cyclic_thread_low_prio_100ms.cpp
 )
 add_library(main_application STATIC ${MODULE_SOURCES})
 

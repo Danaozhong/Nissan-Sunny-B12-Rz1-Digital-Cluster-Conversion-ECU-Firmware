@@ -8,8 +8,6 @@ namespace drivers
     class SysClock
     {
     public:
-        SysClock();
-        
         void configure();
         
         uint32_t u32_get_sysclock() const;
@@ -23,9 +21,6 @@ namespace drivers
 #elif define STM32F429xx
         void SystemClock_Config_STM32F429xx();
 #endif
-
-        
     };
-    
 }
 #endif

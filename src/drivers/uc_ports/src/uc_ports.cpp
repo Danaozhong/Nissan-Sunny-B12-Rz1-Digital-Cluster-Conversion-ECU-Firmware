@@ -40,13 +40,13 @@ namespace
 namespace drivers
 {
     UcPorts::UcPorts()
-    {
-        ::po_port_configuration = this;
-    }
+    {}
+
     STM32F303CCT6UcPorts::STM32F303CCT6UcPorts() {}
 
     void STM32F303CCT6UcPorts::configure()
     {
+        ::po_port_configuration = this;
     }
 
     int32_t STM32F303CCT6UcPorts::init_ports_can()

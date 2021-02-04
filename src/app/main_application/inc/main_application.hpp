@@ -142,7 +142,7 @@ namespace app
         SpeedSensorConverter* m_po_speed_sensor_converter;
 
         CyclicThreadLowPrio100ms m_o_cyclic_thread_low_prio_100ms;
-        CyclicThreadLowPrio100ms m_o_cyclic_thread_100ms;
+        CyclicThread100ms m_o_cyclic_thread_100ms;
         
         
         app::Dataset m_o_dataset;

@@ -1,9 +1,9 @@
 #include "cyclic_thread_100ms.hpp"
-#include "main_application.cpp"
+#include "main_application.hpp"
 
 namespace app
 {
-    CyclicThread100ms::process()
+    void CyclicThread100ms::process()
     {
         app::MainApplication& o_application = app::MainApplication::get();
         static int32_t counter = 0;

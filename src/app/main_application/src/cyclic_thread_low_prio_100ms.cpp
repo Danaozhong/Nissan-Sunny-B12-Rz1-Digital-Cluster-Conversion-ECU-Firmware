@@ -1,9 +1,9 @@
 #include "cyclic_thread_low_prio_100ms.hpp"
-#include "main_application.cpp"
+#include "main_application.hpp"
 
 namespace app
 {
-    CyclicThreadLowPrio100ms::process()
+    void CyclicThreadLowPrio100ms::process()
     {
         app::MainApplication& o_application = app::MainApplication::get();
         

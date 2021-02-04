@@ -148,8 +148,8 @@ int main(void)
     system_clock.configure();
     
     // create the port configuration object
-    drivers::STM32F303CCT6UcPorts po_uc_port_configuration;
-    po_uc_port_configuration.configure();
+    drivers::STM32F303CCT6UcPorts* po_uc_port_configuration = new drivers::STM32F303CCT6UcPorts();
+    po_uc_port_configuration->configure();
     
     HAL_Init();
 

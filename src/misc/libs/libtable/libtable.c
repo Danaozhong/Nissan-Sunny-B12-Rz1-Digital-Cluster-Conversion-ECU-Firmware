@@ -372,7 +372,7 @@ int32_t i32_lib_table_change_cell_width(tst_lib_table *ptst_table, uint16_t u16_
     const char *pi8_current_cell_content = pi8_lib_table_get_cell_content(ptst_table, u16_col, u16_row)
         + u8_lib_table_get_cell_length(ptst_table, u16_col, u16_row);
 
-    const char* pi8_last_cell_content = pi8_lib_table_get_cell_content(ptst_table, ptst_table->u16_num_of_cols - 1, ptst_table->u16_num_of_rows - 1)
+    char* pi8_last_cell_content = pi8_lib_table_get_cell_content(ptst_table, ptst_table->u16_num_of_cols - 1, ptst_table->u16_num_of_rows - 1)
         + u8_lib_table_get_cell_length(ptst_table, ptst_table->u16_num_of_cols - 1, ptst_table->u16_num_of_rows - 1);
 
     // calculate the newly needed size

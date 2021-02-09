@@ -19,11 +19,8 @@ void speed_sensor_pwm_input_capture_callback(drivers::GenericPWM_IC* p_ic_obj, u
 
 namespace app
 {
-
-
     namespace SpeedSensorConverterHelper
     {
-
         SpeedInputCaptureConfiguration pwm_ic_state_machine[SPEED_INPUT_CAPTURE_NUM_OF_MODES] =
         {
             {
@@ -50,14 +47,17 @@ namespace app
                 uint32_t u32_output_pulses_per_kmph_mHz)
     : m_p_output_pwm(p_output_pwm), m_p_output_pwm_input_capture(p_output_pwm_input_capture),
       m_en_current_speed_output_mode(OUTPUT_MODE_CONVERSION),
-      m_i32_manual_speed(75), m_u8_input_array_position(0u),
+      m_i32_manual_speed(0), 
       m_u32_current_vehicle_speed_mph(0u),
+      m_u8_input_array_position(0u),
+      m_u32_new_output_frequency_mHz(0u),
       m_u32_input_pulses_per_kmph_mHz(u32_input_pulses_per_kmph_mHz),
       m_u32_output_pulses_per_kmph_mHz(u32_output_pulses_per_kmph_mHz),
       m_u32_num_of_pwm_captures(0u), m_u32_num_of_processed_pwm_captures(0u),
+      m_maximum_reading_validity(std::chrono::milliseconds(800)),
       m_en_pwm_ic_state_machine_state(SPEED_INPUT_CAPTURE_MODE_LOW_SPEED)
     {
-        static_assert(SPEED_SENSOR_READINGS_BUFFER_LENGTH > 0);
+        static_assert(SPEED_SENSOR_READINGS_BUFFER_LENGTH > 0, "Buffer length for the sensor data readings must be at least 1.");
 
         TRACE_DECLARE_CONTEXT("SPD");
 
@@ -82,8 +82,7 @@ namespace app
         };
         
         clear_measured_data();
-        m_maximum_reading_validity = std::chrono::milliseconds(800);
-
+        
         app::CharacteristicCurve<int32_t, int32_t> replay_dataset(replay_curve_data, sizeof(replay_curve_data) / sizeof(replay_curve_data[0]));
 
         m_o_replay_curve.load_data(replay_dataset);

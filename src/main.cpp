@@ -49,25 +49,6 @@
 #include "main_application.hpp"
 
 
-/** @addtogroup STM32F3xx_HAL_Examples
-  * @{
-  */
-
-/* Private define ------------------------------------------------------------*/
-#define ADCCONVERTEDVALUES_BUFFER_SIZE 256                 /* Size of array aADCxConvertedValues[] */
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-
-
-/* ADC handler declaration */
-
-
-/* Variable containing ADC conversions results */
-__IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
-
-/* Private function prototypes -----------------------------------------------*/
-
-
 static void Error_Handler(void);
 //static void ADC_Config(void);
 
@@ -147,7 +128,7 @@ int main(void)
     drivers::SysClock system_clock;
     system_clock.configure();
     
-    // create the port configuration object
+    // create the port configuration object, and configure the potzs
     drivers::STM32F303CCT6UcPorts* po_uc_port_configuration = new drivers::STM32F303CCT6UcPorts();
     po_uc_port_configuration->configure();
     
@@ -177,54 +158,6 @@ int main(void)
 
 
 
-#ifdef HAL_ADC_MODULE_ENABLED
-/**
-  * @brief  Conversion complete callback in non blocking mode
-  * @param  AdcHandle : AdcHandle handle
-  * @note   This example shows a simple way to report end of conversion
-  *         and get conversion result. You can add your own implementation.
-  * @retval None
-  */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *AdcHandle)
-{
-
-}
-
-/**
-  * @brief  Conversion DMA half-transfer callback in non blocking mode
-  * @param  hadc: ADC handle
-  * @retval None
-  */
-void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
-{
-
-}
-
-/**
-  * @brief  Analog watchdog callback in non blocking mode.
-  * @note:  In case of several analog watchdog enabled, if needed to know
-            which one triggered and on which ADCx, check Analog Watchdog flag
-            ADC_FLAG_AWD1/2/3 into HAL_ADC_LevelOutOfWindowCallback() function.
-            For example:"if (__HAL_ADC_GET_FLAG(hadc1, ADC_FLAG_AWD1) != RESET)"
-  * @param  hadc: ADC handle
-  * @retval None
-  */
-  void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc)
-{
-}
-
-/**
-  * @brief  ADC error callback in non blocking mode
-  *        (ADC conversion with interruption or transfer by DMA)
-  * @param  hadc: ADC handle
-  * @retval None
-  */
-void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
-{
-  /* In case of ADC error, call main error handler */
-  Error_Handler();
-}
-#endif
 
 
 /**

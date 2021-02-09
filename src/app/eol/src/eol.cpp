@@ -299,7 +299,7 @@ namespace app
         this->m_cu8_serial_no[EOL_SERIAL_NO_STR_LEN - 1] = '\0';
 
         // read the timestamp of EOL write (pos 36 - 52)
-        static_assert(sizeof(time_t) <= EOL_TIMESTAMP_LEN);
+        static_assert(sizeof(time_t) <= EOL_TIMESTAMP_LEN, "The allocated size for a timestamp is too small. Increase the memory region in the EOL data allocated for the timestamp.");
         std::memcpy(&this->m_o_time_of_eol_write, buffer.data() + 36, sizeof(time_t));
 
         return OSServices::ERROR_CODE_SUCCESS;

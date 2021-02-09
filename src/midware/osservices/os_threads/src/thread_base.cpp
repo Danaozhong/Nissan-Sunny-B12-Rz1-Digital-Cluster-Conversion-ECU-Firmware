@@ -16,6 +16,8 @@ namespace os_services
     {
         std::strncpy(m_name, name, OS_SERVICES_THREAD_NAME_STR_LENGTH);
         m_name[OS_SERVICES_THREAD_NAME_STR_LENGTH - 1] = '\0';
+        
+        TRACE_DECLARE_CONTEXT("SCHD");
     }
     
     CyclicThread::~CyclicThread()

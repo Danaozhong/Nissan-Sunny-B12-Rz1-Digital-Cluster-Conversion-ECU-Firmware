@@ -140,19 +140,14 @@ namespace app
         /** Unit is mili Hertz mHz */
         uint32_t m_u32_output_pulses_per_kmph_mHz;
 
-        /// This mutex protects the m_au32_input_frequency_mHz and m_u8_input_array_position objects
-        //std::mutex m_pwm_capture_data_mutex;
-
         /// count how many times the PWM capture has been triggered */
         uint32_t m_u32_num_of_pwm_captures;
 
         /// how many captures of the PWM were already processed
         uint32_t m_u32_num_of_processed_pwm_captures;
 
-        std::chrono::milliseconds m_task_cycle_time;
-        
         /// if a reading is older than this, it can be removed
-        std::chrono::milliseconds m_maximum_reading_validity;
+        const std::chrono::milliseconds m_maximum_reading_validity;
 
         SpeedInputCaptureMode m_en_pwm_ic_state_machine_state;
 

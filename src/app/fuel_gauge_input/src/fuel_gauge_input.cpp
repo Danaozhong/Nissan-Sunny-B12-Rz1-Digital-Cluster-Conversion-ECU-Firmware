@@ -1,78 +1,83 @@
 
 #include "fuel_gauge_input.hpp"
 #include "excp_handler_if.h"
-#include <functional> // for std::bind
 #include "os_console.hpp"
 #include "trace_if.h"
 #include "util_algorithms.hpp"
 
 // allow up to 10% deviation of the values
-#define FUEL_GAUGE_INPUT_READINGS_MAX_DISTANCE 1000 // % * 100
-#define FUEL_GAUGE_INPUT_READINGS_INVALID_DATA_DISTANCE 2500 // % * 100
+#define FUEL_GAUGE_INPUT_READINGS_MAX_DISTANCE (1000) // % * 100
+#define FUEL_GAUGE_INPUT_READINGS_INVALID_DATA_DISTANCE (2500) // % * 100
 
-#define FUEL_GAUGE_INPUT_PERCENTAGE_THRESHOLD_UP 500 // % * 100
-#define FUEL_GAUGE_INPUT_PERCENTAGE_THRESHOLD_DOWN 500 // % * 100
+// specified the max. distance of the current reading from the current set value to consider the reading invalid
+#define FUEL_GAUGE_INPUT_PERCENTAGE_THRESHOLD_UP (1000) // % u* 100
+#define FUEL_GAUGE_INPUT_PERCENTAGE_THRESHOLD_DOWN (1000) // % * 100
 
-#define FUEL_GAUGE_INPUT_PERCENTAGE_UPDATE_THRESHOLD 50 // the threshold in 100*%, when the fuel value should be updated
 
+// If the averaged fuel reading is differing by more than the threshold below from the displayed value, update the displayed value
+#define FUEL_GAUGE_INPUT_PERCENTAGE_UPDATE_THRESHOLD (50) // the threshold in 100*%, when the fuel value should be updated
+
+// after how many seconds the reading should not be tolerated anymore
 #define FUEL_GAUGE_INPUT_ERROR_COUNTER_THRESHOLD  (30) // seconds
 
 using namespace midware;
 
 namespace app
 {
-	VoltageDivider::VoltageDivider(uint32_t u32_resistor_1, int32_t i32_supply_voltage)
-		: m_u32_resistor_1(u32_resistor_1), m_i32_supply_voltage(i32_supply_voltage)
-	{}
+    VoltageDivider::VoltageDivider(uint32_t u32_resistor_1, int32_t i32_supply_voltage)
+        : m_u32_resistor_1(u32_resistor_1), m_i32_supply_voltage(i32_supply_voltage)
+    {}
 
-	uint32_t VoltageDivider::get_resistor_2_value(int32_t i32_resistor_2_voltage) const
-	{
-		// R2 = R1/(U - U2) / U - R1
-		return (m_u32_resistor_1 * m_i32_supply_voltage) / (m_i32_supply_voltage - i32_resistor_2_voltage ) - m_u32_resistor_1;
-	}
+    uint32_t VoltageDivider::get_resistor_2_value(int32_t i32_resistor_2_voltage) const
+    {
+        // R2 = R1/(U - U2) / U - R1
+        return (m_u32_resistor_1 * m_i32_supply_voltage) / (m_i32_supply_voltage - i32_resistor_2_voltage ) - m_u32_resistor_1;
+    }
 
-	int32_t VoltageDivider::get_resistor_2_voltage(uint32_t u32_resistor_2_value) const
-	{
-		// currently noone cares
-		return 0;
-	}
+    int32_t VoltageDivider::get_resistor_2_voltage(uint32_t u32_resistor_2_value) const
+    {
+        // currently noone cares
+        return 0;
+    }
 
-	int32_t VoltageDivider::get_supply_voltage() const
-	{
-	    return m_i32_supply_voltage;
-	}
+    int32_t VoltageDivider::get_supply_voltage() const
+    {
+        return m_i32_supply_voltage;
+    }
 
-	ParallelVoltageDivider::ParallelVoltageDivider(uint32_t d_resistor_1, uint32_t d_resistor_2_parallel, int32_t d_supply_voltage)
-	: m_u32_resistor_1(d_resistor_1), m_i32_supply_voltage(d_supply_voltage), m_u32_resistor_2_parallel(d_resistor_2_parallel),
-			m_voltage_divider(d_resistor_1, d_supply_voltage)
-	{}
+    ParallelVoltageDivider::ParallelVoltageDivider(uint32_t d_resistor_1, uint32_t d_resistor_2_parallel, int32_t d_supply_voltage)
+    : m_voltage_divider(d_resistor_1, d_supply_voltage), 
+    m_u32_resistor_1(d_resistor_1), m_u32_resistor_2_parallel(d_resistor_2_parallel), m_i32_supply_voltage(d_supply_voltage)
+    {}
 
-	uint32_t ParallelVoltageDivider::get_resistor_2_value(int32_t i32_resistor_2_voltage) const
-	{
-		uint32_t resistor_total = m_voltage_divider.get_resistor_2_value(i32_resistor_2_voltage);
-		// r*r2/(r2 - r) = r1
-		return resistor_total * m_u32_resistor_2_parallel / (m_u32_resistor_2_parallel - resistor_total);
-	}
+    uint32_t ParallelVoltageDivider::get_resistor_2_value(int32_t i32_resistor_2_voltage) const
+    {
+        uint32_t resistor_total = m_voltage_divider.get_resistor_2_value(i32_resistor_2_voltage);
+        // r*r2/(r2 - r) = r1
+        return resistor_total * m_u32_resistor_2_parallel / (m_u32_resistor_2_parallel - resistor_total);
+    }
 
 
-	FuelGaugeInputFromADC::FuelGaugeInputFromADC(drivers::GenericADC* p_adc,
-			const app::CharacteristicCurve<int32_t, int32_t>& o_fuel_input_characteristic)
-	 : m_p_adc(p_adc), m_o_fuel_input_characteristic(o_fuel_input_characteristic),
+    FuelGaugeInputFromADC::FuelGaugeInputFromADC(drivers::GenericADC* p_adc,
+            const app::CharacteristicCurve<int32_t, int32_t>& o_fuel_input_characteristic)
+     : m_p_adc(p_adc),
        m_en_state(FuelGaugeInputSMStarting),
        m_u32_input_unexpected_higher_error_counter(0u),
        m_u32_input_unexpected_lower_error_counter(0u),
+       m_i32_current_fuel_value(0),
+       m_o_fuel_input_characteristic(o_fuel_input_characteristic),
       m_o_voltage_divider(100000, 3300), // 100 Ohm (value representation is in mOhm), 3V3 supply
       m_i32_adc_pin_voltage(0),
       m_i32_fuel_sensor_resistor_value(0)
-	{
-	    TRACE_DECLARE_CONTEXT("FLIN");
-	}
+    {
+        TRACE_DECLARE_CONTEXT("FLIN");
+    }
 
-	FuelGaugeInputFromADC::~FuelGaugeInputFromADC()
-	{
+    FuelGaugeInputFromADC::~FuelGaugeInputFromADC()
+    {
 
-	    // disconnecting the signal handler should not be necessary, will we done automatically during deletion
-	}
+        // disconnecting the signal handler should not be necessary, will we done automatically during deletion
+    }
 
 
     void FuelGaugeInputFromADC::cycle_100ms()
@@ -182,7 +187,7 @@ namespace app
                     (m_ai32_averaged_fuel_readings_buffer.begin(), m_ai32_averaged_fuel_readings_buffer.end()));
 
                     // check if the fuel value should be updated
-                    if (get_fuel_sensor_value() < averaged_weighted_fuel_input + FUEL_GAUGE_INPUT_PERCENTAGE_UPDATE_THRESHOLD && get_fuel_sensor_value() > averaged_weighted_fuel_input)
+                    if (get_fuel_sensor_value() > averaged_weighted_fuel_input + FUEL_GAUGE_INPUT_PERCENTAGE_UPDATE_THRESHOLD)
                     {
                         // there is a slight distance between the currently set fuel sensor value and what is expected, update fuel sensor value
                         TRACE_LOG("FLIN", LOGLEVEL_INFO,"Fuel reading is slightly reduced, set to %i\r\n", averaged_weighted_fuel_input);
@@ -269,6 +274,9 @@ namespace app
                     m_en_state = FuelGaugeInputSMStarting;
                     break;
                 }
+            case FuelGaugeInputSMStarting:
+            default:
+                TRACE_LOG("FLIN", LOGLEVEL_ERROR, "Unexpected state!");
             }
         }
     }
@@ -284,7 +292,7 @@ namespace app
         {
             return std::get<0>(m_ai32_averaged_fuel_readings_buffer.back());
         }
-        return 0;
+        return -1;
     }
 
     int32_t FuelGaugeInputFromADC::get_current_raw_fuel_sensor_value() const
@@ -293,6 +301,7 @@ namespace app
         {
             return m_ai32_raw_last_read_fuel_percentages.back();
         }
+        return -1;
     }
 
     int32_t FuelGaugeInputFromADC::get_adc_voltage() const
@@ -310,6 +319,4 @@ namespace app
         m_i32_current_fuel_value = i32_fuel_value;
         this->m_sig_fuel_level_changed(i32_fuel_value);
     }
-
-
 }

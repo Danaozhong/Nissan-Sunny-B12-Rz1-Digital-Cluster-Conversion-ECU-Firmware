@@ -144,9 +144,9 @@ namespace app
             if (0 == strcmp(params[1], "manual"))
             {
                 o_application.set_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_MANUAL);
-                //char pi8_buffer[128];
+
                 p_o_io_interface << "Fuel signal set to manual conversion, fuel value is"
-                        << o_application.m_i32_fuel_gauge_output_manual_value
+                        << o_application.get_manual_fuel_gauge_output_value()
                         << ".";
             }
             else if (0 == strcmp(params[1], "conversion"))
@@ -176,22 +176,22 @@ namespace app
             o_application.set_manual_fuel_gauge_output_value(i32_fuel_value);
 
             char pi8_buffer[128];
-            snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", static_cast<int>(o_application.m_i32_fuel_gauge_output_manual_value));
+            snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", static_cast<int>(o_application.get_manual_fuel_gauge_output_value()));
             p_o_io_interface << pi8_buffer;
         }
         else if (0 == strcmp(params[0], "show"))
         {
             // print all the parameters
-            int i_inut_adc_voltage = o_application.m_p_o_fuel_gauge_input->get_adc_voltage();
-            int i_inut_fuel_resistor_value = o_application.m_p_o_fuel_gauge_input->get_fuel_sensor_resistor_value();
+            int i_inut_adc_voltage = o_application.get_fuel_gauge_input()->get_adc_voltage();
+            int i_inut_fuel_resistor_value = o_application.get_fuel_gauge_input()->get_fuel_sensor_resistor_value();
 
-            int i32_calculated_fuel_level_sensor = o_application.m_p_o_fuel_gauge_input->get_fuel_sensor_value();
-            int i32_average_fuel_level_sensor = o_application.m_p_o_fuel_gauge_input->get_current_averaged_fuel_sensor_value();
-            int i32_raw_fuel_level_sensor = o_application.m_p_o_fuel_gauge_input->get_current_raw_fuel_sensor_value();
+            int i32_calculated_fuel_level_sensor = o_application.get_fuel_gauge_input()->get_fuel_sensor_value();
+            int i32_average_fuel_level_sensor = o_application.get_fuel_gauge_input()->get_current_averaged_fuel_sensor_value();
+            int i32_raw_fuel_level_sensor = o_application.get_fuel_gauge_input()->get_current_raw_fuel_sensor_value();
 
-            int i32_manually_set_fuel_level = o_application.m_i32_fuel_gauge_output_manual_value;
-            int i32_voltage_cluster = o_application.m_p_o_fuel_gauge_output->get_voltage_output();
-            int i32_voltage_dac = o_application.m_p_o_fuel_gauge_output->get_voltage_dac();
+            int i32_manually_set_fuel_level = o_application.get_manual_fuel_gauge_output_value();
+            int i32_voltage_cluster = o_application.get_fuel_gauge_output()->get_voltage_output();
+            int i32_voltage_dac = o_application.get_fuel_gauge_output()->get_voltage_dac();
             int i32_dac_amplifier = static_cast<int>(o_application.get_dataset().get_dac_out_amplifying_factor());
             char pi8_buffer[512] = "";
 

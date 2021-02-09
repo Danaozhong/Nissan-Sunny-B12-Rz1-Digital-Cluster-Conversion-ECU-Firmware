@@ -49,42 +49,37 @@ namespace app
         
         m_bo_program_running = true;
 
-        auto test_start_time = std::chrono::high_resolution_clock::now();
-        
         //make sure frequencies are matched (input is wired to output!)
         m_po_speed_sensor_converter_under_test->set_output_pulses_per_kmph_in_mili_hertz(m_po_speed_sensor_converter_under_test->get_input_pulses_per_kmph_in_mili_hertz());
         
         // set to manual mode to be able to feed in predefined speed values
         m_po_speed_sensor_converter_under_test->set_speed_output_mode(OUTPUT_MODE_MANUAL);
         
-        //while(true == m_bo_program_running)
+        uint32_t u32_test_step = 0u;
+        for (auto itr = m_ao_test_steps.begin(); itr != m_ao_test_steps.end(); ++itr)
         {
-            uint32_t u32_test_step = 0;
-            for (auto itr = m_ao_test_steps.begin(); itr != m_ao_test_steps.end(); ++itr)
-            {
-                u32_test_step++;
-                
-                m_po_speed_sensor_converter_under_test->set_manual_speed(itr->u32_input_speed_mph);
-                std_ex::sleep_for(itr->o_calibration_time);
-                const int32_t ci32_actual_speed = m_po_speed_sensor_converter_under_test->get_current_vehicle_speed();
-                const int32_t ci32_set_speed = static_cast<int32_t>(itr->u32_input_speed_mph);
-                
-                const uint32_t cu32_error = static_cast<uint32_t>(std::abs(ci32_set_speed - ci32_actual_speed));
-                
-                printf("[%u/%u] Set speed: %u.%02u km/h, read speed: %u.%02u km/h, error: %u, test result: ",
-                    u32_test_step, m_ao_test_steps.size(),
-                    static_cast<unsigned int>(ci32_set_speed / 1000), static_cast<unsigned int>(ci32_set_speed % 1000),
-                    static_cast<unsigned int>(ci32_actual_speed / 1000), static_cast<unsigned int>(ci32_actual_speed % 1000),
-                    static_cast<unsigned int>(cu32_error));
+            u32_test_step++;
+            
+            m_po_speed_sensor_converter_under_test->set_manual_speed(itr->u32_input_speed_mph);
+            std_ex::sleep_for(itr->o_calibration_time);
+            const int32_t ci32_actual_speed = m_po_speed_sensor_converter_under_test->get_current_vehicle_speed();
+            const int32_t ci32_set_speed = static_cast<int32_t>(itr->u32_input_speed_mph);
+            
+            const uint32_t cu32_error = static_cast<uint32_t>(std::abs(ci32_set_speed - ci32_actual_speed));
+            
+            printf("[%u/%u] Set speed: %u.%02u km/h, read speed: %u.%02u km/h, error: %u, test result: ",
+                static_cast<unsigned int>(u32_test_step), static_cast<unsigned int>(m_ao_test_steps.size()),
+                static_cast<unsigned int>(ci32_set_speed / 1000), static_cast<unsigned int>(ci32_set_speed % 1000),
+                static_cast<unsigned int>(ci32_actual_speed / 1000), static_cast<unsigned int>(ci32_actual_speed % 1000),
+                static_cast<unsigned int>(cu32_error));
 
-                if (cu32_error > itr->u32_maximum_error_mph)
-                {
-                    printf("[FAILED]\n\r");
-                }
-                else
-                {
-                    printf("[SUCCESS]\n\r");
-                }
+            if (cu32_error > itr->u32_maximum_error_mph)
+            {
+                printf("[FAILED]\n\r");
+            }
+            else
+            {
+                printf("[SUCCESS]\n\r");
             }
         }
         

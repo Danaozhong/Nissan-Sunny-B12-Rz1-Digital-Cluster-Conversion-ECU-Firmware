@@ -22,10 +22,22 @@
 namespace app
 {
     MainApplication::MainApplication()
-        : m_en_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION),
-          m_i32_fuel_gauge_output_manual_value(0),
+        : m_p_uart(nullptr), m_po_os_console(nullptr), m_po_os_io_interface(nullptr),
+          m_po_exception_handler(nullptr),
+#ifdef USE_TRACE
+          m_po_trace(nullptr),
+#endif
+          m_p_adc(nullptr), m_p_dac(nullptr), m_p_pwm(nullptr), m_p_pwm_ic(nullptr),
+          m_p_o_fuel_gauge_input(nullptr), m_p_o_fuel_gauge_output(nullptr),
+          m_en_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION),
+          m_po_speed_sensor_converter(nullptr),
           m_o_cyclic_thread_low_prio_100ms("CycLow100ms", 1, 0x400, std::chrono::milliseconds(100)),
-          m_o_cyclic_thread_100ms("Cyc100ms", 2, 0x800, std::chrono::milliseconds(100))
+          m_o_cyclic_thread_100ms("Cyc100ms", 2, 0x800, std::chrono::milliseconds(100)),
+          m_i32_fuel_sensor_read_value(0),
+          m_i32_fuel_gauge_output_manual_value(0),
+#ifdef USE_NVDH
+          m_po_nonvolatile_data_handler(nullptr)
+#endif /* USE_NVDH */
     {}
 
 
@@ -371,10 +383,15 @@ namespace app
         update_fuel_sensor_output();
     }
 
-    void MainApplication::set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value)
+    void MainApplication::set_manual_fuel_gauge_output_value(int32_t i32_fuel_gauge_output_value)
     {
-        m_i32_fuel_gauge_output_manual_value = _i32_fuel_gauge_output_value;
+        m_i32_fuel_gauge_output_manual_value = i32_fuel_gauge_output_value;
         update_fuel_sensor_output();
+    }
+    
+    int32_t MainApplication::get_manual_fuel_gauge_output_value() const
+    {
+        return m_i32_fuel_gauge_output_manual_value;
     }
 
     const app::Dataset& MainApplication::get_dataset() const
@@ -385,6 +402,16 @@ namespace app
     app::Dataset& MainApplication::get_dataset()
     {
         return m_o_dataset;
+    }
+
+    const app::FuelGaugeInputFromADC* MainApplication::get_fuel_gauge_input() const
+    {
+        return m_p_o_fuel_gauge_input;
+    }
+
+    const app::FuelGaugeOutput* MainApplication::get_fuel_gauge_output() const
+    {
+        return m_p_o_fuel_gauge_output;
     }
 
     app::EOLData& MainApplication::get_eol_data()

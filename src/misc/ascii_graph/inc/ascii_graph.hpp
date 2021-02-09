@@ -40,10 +40,10 @@ namespace ASCIIGraphNs
         void draw_frame();
         void draw_labels();
 
-        void write_absolute_cell(int32_t x, int32_t y, char value);
+        void write_absolute_cell(uint32_t x, uint32_t y, char value);
         void write_cell(uint32_t u32_absolute_position, char value);
-        void write_cell(int32_t col, int32_t row, char value);
-        void write_cells(int32_t x, int32_t y, char* src, size_t size);
+        void write_cell(uint32_t col, uint32_t row, char value);
+        void write_cells(uint32_t x, uint32_t y, char* src, size_t size);
 
         auto calculate_dataset_x_value_from_col(int32_t i32_col)->int32_t;
 

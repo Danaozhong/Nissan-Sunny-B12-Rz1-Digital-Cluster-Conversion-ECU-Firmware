@@ -1,66 +1,60 @@
-
+#include "trace_if.h"
 #include "stm32_pwm.hpp"
 
-/** @addtogroup DAC_SimpleConversion
-  * @{
-  */
-
-/* Private typedef -----------------------------------------------------------*/
-#define  PERIOD_VALUE       (uint32_t)(665 - 1)  /* Period Value  */
-#define  PULSE1_VALUE       (uint32_t)(PERIOD_VALUE/2)        /* Capture Compare 1 Value  */
-
-
+#include <cassert>
 
 namespace drivers
 {
+    STM32PWM::STM32PWM(TIM_TypeDef* pt_timer_unit, uint32_t u32_timer_channel,
+            GPIO_TypeDef* pt_gpio_block, uint16_t u16_gpio_pin)
+    : m_u32_timer_channel(u32_timer_channel),
+      m_u32_configured_frequency_millihertz(123u), // set a random initial value, is set to 0 later
+      m_pt_gpio_block(pt_gpio_block),
+      m_u16_gpio_pin(u16_gpio_pin)
+    {
+        
+        TRACE_DECLARE_CONTEXT("PWM");
+        
+        /* Do the port configuration */
+        
+        /*##-1- Enable peripherals and GPIO Clocks #################################*/
+        /* TIMx Peripheral clock enable */
+        if (TIM1 == pt_timer_unit)
+        {
+            __HAL_RCC_TIM1_CLK_ENABLE();
+        }
+        else if (TIM2 == pt_timer_unit)
+        {
+            __HAL_RCC_TIM2_CLK_ENABLE();
+        }
+        else if (TIM3 == pt_timer_unit)
+        {
+            __HAL_RCC_TIM3_CLK_ENABLE();
+        }
 
-	STM32PWM::STM32PWM(TIM_TypeDef* pt_timer_unit, uint32_t u32_timer_channel,
-			GPIO_TypeDef* pt_gpio_block, uint16_t u16_gpio_pin)
-	: m_u32_timer_channel(u32_timer_channel),
-	  m_u32_configured_frequency_millihertz(123u), // set a random initial value, is set to 0 later
-	  m_pt_gpio_block(pt_gpio_block),
-	  m_u16_gpio_pin(u16_gpio_pin)
-	{
-		/* Do the port configuration */
-
-		/*##-1- Enable peripherals and GPIO Clocks #################################*/
-		/* TIMx Peripheral clock enable */
-		if (TIM1 == pt_timer_unit)
-		{
-			__HAL_RCC_TIM1_CLK_ENABLE();
-		}
-		else if (TIM2 == pt_timer_unit)
-		{
-			__HAL_RCC_TIM2_CLK_ENABLE();
-		}
-		else if (TIM3 == pt_timer_unit)
-		{
-			__HAL_RCC_TIM3_CLK_ENABLE();
-		}
-
-		/*  enable all GPIO Channels Clock requested */
-		if (GPIOA == pt_gpio_block)
-		{
-			__HAL_RCC_GPIOA_CLK_ENABLE();
-		}
-		else if (GPIOB == pt_gpio_block)
-		{
-			__HAL_RCC_GPIOB_CLK_ENABLE();
-		}
-		else if (GPIOC == pt_gpio_block)
-		{
-			__HAL_RCC_GPIOC_CLK_ENABLE();
-		}
+        /*  enable all GPIO Channels Clock requested */
+        if (GPIOA == pt_gpio_block)
+        {
+            __HAL_RCC_GPIOA_CLK_ENABLE();
+        }
+        else if (GPIOB == pt_gpio_block)
+        {
+            __HAL_RCC_GPIOB_CLK_ENABLE();
+        }
+        else if (GPIOC == pt_gpio_block)
+        {
+            __HAL_RCC_GPIOC_CLK_ENABLE();
+        }
 
 #ifdef HAL_TIM_MODULE_ENABLED
-	     o_timer_handle.Instance = pt_timer_unit;
+         o_timer_handle.Instance = pt_timer_unit;
 #endif
-	     // set a frequency of 0
-	     set_frequency(0);
-	}
+         // set a frequency of 0
+         set_frequency(0);
+    }
 
-	int32_t STM32PWM::configure_gpio_as_pwm()
-	{
+    int32_t STM32PWM::configure_gpio_as_pwm()
+    {
         GPIO_InitTypeDef   GPIO_InitStruct;
 
         /* Common configuration for all channels */
@@ -83,52 +77,53 @@ namespace drivers
         }
         else
         {
+            TRACE_LOG("TIM", LOGLEVEL_ERROR, "The selected timer unit is not supported!");
+            assert(false);
             // TODO cover other cases
         }
 
-
+        // unconfigure previous config, and reconfigure the pin as PWM
         HAL_GPIO_DeInit(m_pt_gpio_block, m_u16_gpio_pin);
         HAL_GPIO_Init(m_pt_gpio_block, &GPIO_InitStruct);
         return 0;
-	}
+    }
 
-	int32_t STM32PWM::configure_gpio_as_high()
-	{
-	    HAL_GPIO_DeInit(m_pt_gpio_block, m_u16_gpio_pin);
+    int32_t STM32PWM::configure_gpio_as_high()
+    {
+        HAL_GPIO_DeInit(m_pt_gpio_block, m_u16_gpio_pin);
 
-	    /* reconfigure the pin to output / push pull */
+        /* reconfigure the pin to output / push pull */
         GPIO_InitTypeDef   GPIO_InitStruct;
         GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
         GPIO_InitStruct.Pull = GPIO_PULLUP;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
         GPIO_InitStruct.Pin = m_u16_gpio_pin;
-	    HAL_GPIO_Init(m_pt_gpio_block, &GPIO_InitStruct);
+        HAL_GPIO_Init(m_pt_gpio_block, &GPIO_InitStruct);
 
-	    // set GPIO to high
-	    HAL_GPIO_WritePin(m_pt_gpio_block, m_u16_gpio_pin, GPIO_PIN_RESET);
-	    return 0;
-	}
+        // set GPIO to low/high
+#if 0
+        // use this if you want the GPIO pin to be high on frequency 0
+        HAL_GPIO_WritePin(m_pt_gpio_block, m_u16_gpio_pin, GPIO_PIN_SET);
+#endif
+        HAL_GPIO_WritePin(m_pt_gpio_block, m_u16_gpio_pin, GPIO_PIN_RESET);
+        return 0;
+    }
 
-	int32_t STM32PWM::reconfigure_pwm(uint32_t u32_frequency, uint32_t u32_duty_cycle)
-	{
+    int32_t STM32PWM::reconfigure_pwm(uint32_t u32_frequency, uint32_t u32_duty_cycle)
+    {
         if (0 == u32_frequency || u32_duty_cycle > 1000)
         {
             return -1;
         }
 
-	    /* Compute the prescaler value to have TIM3 counter clock equal to 24000000 Hz */
-        // uhPrescalerValue = (uint32_t)(SystemCoreClock / 24000000) - 1;
-
-        // 350 Hz
-        //uhPrescalerValue = (uint32_t)(SystemCoreClock / 240000) - 1;
-
+        /* Compute the prescaler value to have TIM3 counter clock equal to 24000000 Hz */
         // 3.5 Hz
         //uhPrescalerValue = (uint32_t)(SystemCoreClock / 2400) - 1; // 2km/h 3,6Hz
         //uhPrescalerValue = (uint32_t)(SystemCoreClock / 24000) - 1; // 10km/h 36,1 Hz
         //uhPrescalerValue = (uint32_t)(SystemCoreClock / 240000) - 1; // 86km/h -- 360,9Hz
         //uhPrescalerValue = (uint32_t)(SystemCoreClock / 480000) - 1; // 171km/h  -- 721Hz
         //uhPrescalerValue = (uint32_t)(SystemCoreClock / 960000) - 1; // 180km/h/h  -- 1444kHz
-	    const uint32_t u32_timer_clock = 24000;
+        const uint32_t u32_timer_clock = 24000;
 
         u32_prescaler_value = static_cast<uint32_t>(SystemCoreClock / u32_timer_clock) - 1;
 
@@ -176,8 +171,6 @@ namespace drivers
         + ClockDivision = 0
         + Counter direction = Up
         */
-
-
         o_timer_handle.Init.Prescaler         = u32_prescaler_value;
         o_timer_handle.Init.Period            = u32_timer_value;
         o_timer_handle.Init.ClockDivision     = 0;
@@ -188,6 +181,7 @@ namespace drivers
         if (HAL_TIM_PWM_Init(&o_timer_handle) != HAL_OK)
         {
             /* Initialization Error */
+            TRACE_LOG("PWM", LOGLEVEL_ERROR, "PWM initialization failed!");
             return -2;
         }
 
@@ -206,6 +200,7 @@ namespace drivers
         if (HAL_TIM_PWM_ConfigChannel(&o_timer_handle, &sConfig, m_u32_timer_channel) != HAL_OK)
             {
             /* Configuration Error */
+            TRACE_LOG("PWM", LOGLEVEL_ERROR, "PWM channel configuration failed!");
             return -3;
         }
         else
@@ -215,30 +210,31 @@ namespace drivers
             if (HAL_TIM_PWM_Start(&o_timer_handle, m_u32_timer_channel) != HAL_OK)
             {
                 /* PWM Generation Error */
+                TRACE_LOG("PWM", LOGLEVEL_ERROR, "PWM start failed!");
                 return -4;
             }
         }
         return 0;
-	}
+    }
 
-	STM32PWM::~STM32PWM()
-	{
-		// TODO remove everything hardware related
-	}
+    STM32PWM::~STM32PWM()
+    {
+        // TODO deinitialize hardware, currently not supported
+    }
 
-	void STM32PWM::set_frequency(uint32_t u32_frequency_mhz)
-	{
-	    if (m_u32_configured_frequency_millihertz != u32_frequency_mhz)
+    void STM32PWM::set_frequency(uint32_t u32_frequency_mhz)
+    {
+        if (m_u32_configured_frequency_millihertz != u32_frequency_mhz)
         {
-	        if (0 == m_u32_configured_frequency_millihertz)
-	        {
-	            // reconfigure GPIO from normal GPIO to PWM output
-	            configure_gpio_as_pwm();
-	        }
+            if (0 == m_u32_configured_frequency_millihertz)
+            {
+                // reconfigure GPIO from normal GPIO to PWM output
+                configure_gpio_as_pwm();
+            }
             HAL_TIM_PWM_Stop(&o_timer_handle, m_u32_timer_channel);  // Stop PWM
             if (0 != u32_frequency_mhz)
             {
-                reconfigure_pwm(u32_frequency_mhz, 500);  // re-initialize the Timer2
+                reconfigure_pwm(u32_frequency_mhz, 500); // re-initialize the Timer2 with 50% duty cycle
             }
             else
             {
@@ -247,15 +243,10 @@ namespace drivers
             }
             m_u32_configured_frequency_millihertz = u32_frequency_mhz;
         }
-	}
+    }
 
-	void STM32PWM::set_duty_cycle(uint32_t u32_duty_cycle)
-	{
-		// TODO
-	}
-
-	void STM32PWM::Error_Handler(void)
-	{
-
-	}
+    void STM32PWM::set_duty_cycle(uint32_t u32_duty_cycle)
+    {
+        // not supported at the moment
+    }
 }

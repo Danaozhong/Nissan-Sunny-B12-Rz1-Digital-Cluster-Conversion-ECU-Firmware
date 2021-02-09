@@ -134,29 +134,29 @@ namespace ASCIIGraphNs
 
     void ASCIIGraph::draw_frame()
     {
-        for (int32_t i32_row = 0; i32_row < m_u32_diagram_y_span; ++i32_row)
+        for (uint32_t u32_row = 0; u32_row < m_u32_diagram_y_span; ++u32_row)
         {
             // draw the y axis. Start with the vertical line
-            write_cell(0, i32_row, 179); // vertical dash
+            write_cell(0, u32_row, 179); // vertical dash
             // draw the dashes
-            if (i32_row % m_u32_diag_y_dashes_spacing == 0)
+            if (u32_row % m_u32_diag_y_dashes_spacing == 0)
             {
-                write_cell(0, i32_row, 180); //vertical dash with horizontal line
+                write_cell(0, u32_row, 180); //vertical dash with horizontal line
             }
-            if (i32_row == m_u32_diagram_y_span - 1)
+            if (u32_row == m_u32_diagram_y_span - 1)
             {
-                write_cell(0, i32_row, 'A');
+                write_cell(0, u32_row, 'A');
             }
         }
 
         // Draw the x axis. Start with the ------ line.
-        for (int32_t i32_i = 1; i32_i < m_u32_diagram_x_span - 1; ++i32_i)
+        for (uint32_t u32_i = 1; u32_i < m_u32_diagram_x_span - 1; ++u32_i)
         {
-            write_cell(i32_i, m_u32_x_axis_row, 196); // horizontal line
+            write_cell(u32_i, m_u32_x_axis_row, 196); // horizontal line
             // draw the dashes
-            if (i32_i % m_u32_diag_x_dashes_spacing == 0)
+            if (u32_i % m_u32_diag_x_dashes_spacing == 0)
             {
-                write_cell(i32_i, m_u32_x_axis_row, 194); // horizontal line with key marker
+                write_cell(u32_i, m_u32_x_axis_row, 194); // horizontal line with key marker
             }
         }
         write_cell(m_u32_diagram_x_span - 1, m_u32_x_axis_row, '>');
@@ -198,15 +198,16 @@ namespace ASCIIGraphNs
         if (u32_horizontal_labels_max_length > 2)
         {
             char ac_label_buffer[u32_horizontal_labels_max_length] = "";
-            for (int32_t i32_i = 0; i32_i < m_u32_diag_x_num_of_dashes; ++i32_i)
+            for (uint32_t u32_i = 0; u32_i < m_u32_diag_x_num_of_dashes; ++u32_i)
             {
-                const int32_t i32_col = i32_i * m_u32_diag_x_dashes_spacing;
+                const uint32_t u32_col = u32_i * m_u32_diag_x_dashes_spacing;
                 // print the label in a string
                 snprintf(ac_label_buffer, u32_horizontal_labels_max_length, "%i",
-                        static_cast<int>(calculate_dataset_x_value_from_col(i32_col)));
+                        static_cast<int>(calculate_dataset_x_value_from_col(u32_col)));
 
                 // and memcpy it into place
-                write_cells(std::max(int32_t(0), i32_col - static_cast<int32_t>(strlen(ac_label_buffer)) / 2 + m_i32_diagram_x),
+                write_cells(static_cast<uint32_t>(std::max(int32_t(0), 
+                static_cast<int32_t>(u32_col) - static_cast<int32_t>(strlen(ac_label_buffer)) / 2 + m_i32_diagram_x)),
                     m_u32_x_axis_row - 1, // y position
                     ac_label_buffer, // source is our label buffer
                     strlen(ac_label_buffer) // copy the entire string
@@ -216,8 +217,12 @@ namespace ASCIIGraphNs
         }
     }
 
-    void ASCIIGraph::write_absolute_cell(int32_t x, int32_t y, char value)
+    void ASCIIGraph::write_absolute_cell(uint32_t x, uint32_t y, char value)
     {
+        if (y >= m_u32_diagram_y_span)
+        {
+            return;
+        }
         const int32_t i32_memory_offset = static_cast<int32_t>((m_u32_diagram_y_span - y - 1) * m_u32_line_length + x);
         write_cell(i32_memory_offset, value);
     }
@@ -226,18 +231,18 @@ namespace ASCIIGraphNs
 
     void ASCIIGraph::write_cell(uint32_t u32_absolute_position, char value)
     {
-        const int32_t i32_buffer_location = -static_cast<int32_t>(m_u_buffer_offset)+ static_cast<int32_t>(u32_absolute_position);
+        const int32_t i32_buffer_location = static_cast<int32_t>(u32_absolute_position) - static_cast<int32_t>(m_u_buffer_offset);
         if (i32_buffer_location >= 0 && i32_buffer_location < static_cast<int32_t>(this->m_u_buffer_size))
         {
             *(m_pc_current_buffer + i32_buffer_location) = value;
         }
     }
-    void ASCIIGraph::write_cell(int32_t col, int32_t row, char value)
+    void ASCIIGraph::write_cell(uint32_t col, uint32_t row, char value)
     {
         write_absolute_cell(col + m_i32_diagram_x, row, value);
     }
 
-    void ASCIIGraph::write_cells(int32_t x, int32_t y, char* src, size_t size)
+    void ASCIIGraph::write_cells(uint32_t x, uint32_t y, char* src, size_t size)
     {
         for (size_t i = 0; i < size; ++i)
         {

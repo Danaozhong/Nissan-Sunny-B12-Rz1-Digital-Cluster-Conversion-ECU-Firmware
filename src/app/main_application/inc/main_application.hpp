@@ -88,8 +88,6 @@ namespace app
 
         OSServices::OSConsoleGenericIOInterface& get_stdio();
 
-
-
         /** Use this to select the mode in which the speed signal is sent out to the cluster.
          * use OUTPUT_MODE_CONVERSION to derive the speed signal from the input speed sensor,
          * alternatively; use OUTPUT_MODE_MANUAL to manually configure a speed value. */
@@ -100,13 +98,19 @@ namespace app
          * \param[in] i32_speed_in_mph  The velocity in meters / hour.
          */
         void set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value);
-
+        
+        int32_t get_manual_fuel_gauge_output_value() const;
+        
         const app::Dataset& get_dataset() const;
         app::Dataset& get_dataset();
+        
+        const app::FuelGaugeInputFromADC* get_fuel_gauge_input() const;
+        
+        const app::FuelGaugeOutput* get_fuel_gauge_output() const;
 
         app::EOLData& get_eol_data();
 
-    //private:
+    private:
         // prevent copying
         MainApplication(MainApplication &other) = delete;
 

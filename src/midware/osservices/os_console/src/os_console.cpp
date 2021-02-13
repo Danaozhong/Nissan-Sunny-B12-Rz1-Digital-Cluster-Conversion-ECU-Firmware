@@ -74,10 +74,17 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 #ifdef configRECORD_STACK_HIGH_ADDRESS
             u32_stack_size = uxTaskGetStackSize(pxTaskStatusArray[x].xHandle);
 #endif
+            uint32_t u32_stack_usage_bytes = u32_stack_size;
+            
             uint32_t u32_stack_usage = 100;
             if (0 != u32_stack_size)
             {
-                u32_stack_usage = (pxTaskStatusArray[x].usStackHighWaterMark * 100) / u32_stack_size;
+                /* FreeRTOS high water mark is actually the number of free stack, therefore we need to invert it */
+                if (pxTaskStatusArray[x].usStackHighWaterMark <= u32_stack_size)
+                {
+                    u32_stack_usage_bytes = u32_stack_size - pxTaskStatusArray[x].usStackHighWaterMark;
+                    u32_stack_usage = (u32_stack_usage_bytes * 100) / u32_stack_size;
+                }
             }
 
 
@@ -86,7 +93,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
             snprintf( pcWriteBuffer, u32_buffer_size - strlen(p_i8_output_buffer) - 1, "%-10s  %-10s  %-4u  %08x/%08x %3u%%  %-2u\r\n",
                     pxTaskStatusArray[ x ].pcTaskName, ai8_status_str,
                     static_cast<unsigned int>(pxTaskStatusArray[ x ].uxCurrentPriority),
-                    static_cast<unsigned int>(pxTaskStatusArray[ x ].usStackHighWaterMark),
+                    static_cast<unsigned int>(u32_stack_usage_bytes),
                     static_cast<unsigned int>(u32_stack_size),
                     static_cast<unsigned int>(u32_stack_usage),
                     ( unsigned int ) pxTaskStatusArray[ x ].xTaskNumber ); /*lint !e586 sprintf() allowed as this is compiled with many compilers and this is a utility function only - not part of the core kernel implementation. */

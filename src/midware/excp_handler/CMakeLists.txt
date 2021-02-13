@@ -6,12 +6,15 @@ SET(MODULE_SOURCES
 
 add_library(excp_handler STATIC ${MODULE_SOURCES})
 
-target_link_libraries(excp_handler trace)
 if (USE_NVDH)
-    target_link_libraries(excp_handler nonvolatile_data_handler)
+    target_link_libraries(excp_handler PUBLIC nonvolatile_data_handler)
 endif()
-target_link_libraries(excp_handler util_algorithms)
-target_link_libraries(excp_handler libtable)
+target_link_libraries(excp_handler PUBLIC
+    util_algorithms
+    libtable
+    trace
+    watchdog  # To be able to trigger a reset, if needed
+)
 
 target_include_directories(excp_handler PUBLIC
     inc

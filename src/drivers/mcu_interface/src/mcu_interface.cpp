@@ -1,10 +1,10 @@
-#include "sysclock.hpp"
+#include "mcu_interface.hpp"
 #include "stm32fxxx.h"
 
 
 namespace drivers
 {
-    void SysClock::configure()
+    void McuInterface::configure_system_clock()
     {
 #ifdef USE_STM32F3_DISCO
         SystemClock_Config_STM32_F3_DISCOVERY();
@@ -19,11 +19,37 @@ namespace drivers
 #endif
     }
     
-    uint32_t SysClock::u32_get_sysclock() const
+    uint32_t McuInterface::u32_get_sysclock() const
     {
         return HAL_RCC_GetHCLKFreq();
     }
     
+    SystemResetReason McuInterface::get_reset_reason() const
+    {
+        if (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDGRST) != RESET || __HAL_RCC_GET_FLAG(RCC_FLAG_WWDGRST) != RESET)
+        {
+            // watchdog reset
+            return RESET_REASON_WATCHDOG_RESET;
+        }
+        
+        if (__HAL_RCC_GET_FLAG(RCC_FLAG_SFTRST) != RESET)
+        {
+            return RESET_REASON_SOFTWARE_RESET;
+        }
+        
+        if (__HAL_RCC_GET_FLAG(RCC_FLAG_LPWRRST) != RESET)
+        {
+            return RESET_REASON_POWER_FAIL;
+        }
+        
+        if (__HAL_RCC_GET_FLAG(RCC_FLAG_PORRST) != RESET)
+        {
+            return RESET_REASON_POWER_ON_RESET;
+        }
+        
+        // unknown reset reason
+        return RESET_REASON_UNKNOWN;
+    }
 
 #ifdef STM32_FAMILY_F3
 #ifdef USE_STM32F3_DISCO
@@ -43,7 +69,7 @@ namespace drivers
       * @param  None
       * @retval None
       */
-    void SysClock::SystemClock_Config_STM32_F3_DISCOVERY(void)
+    void McuInterface::SystemClock_Config_STM32_F3_DISCOVERY(void)
     {
         RCC_ClkInitTypeDef RCC_ClkInitStruct;
         RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -89,7 +115,7 @@ namespace drivers
       * @param  None
       * @retval None
       */
-    void SysClock::SystemClock_Config_STM32F303_NUCLEO_32(void)
+    void McuInterface::SystemClock_Config_STM32F303_NUCLEO_32(void)
     {
         RCC_ClkInitTypeDef RCC_ClkInitStruct;
         RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -135,7 +161,7 @@ namespace drivers
       * @param  None
       * @retval None
       */
-    void SysClock::SystemClock_Config_STM32F303xC(void)
+    void McuInterface::SystemClock_Config_STM32F303xC(void)
     {
         RCC_ClkInitTypeDef RCC_ClkInitStruct;
         RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -188,7 +214,7 @@ namespace drivers
       * @param  None
       * @retval None
       */
-    void SysClock::SystemClock_Config_STM32F429xx(void)
+    void McuInterface::SystemClock_Config_STM32F429xx(void)
     {
         RCC_ClkInitTypeDef RCC_ClkInitStruct;
         RCC_OscInitTypeDef RCC_OscInitStruct;

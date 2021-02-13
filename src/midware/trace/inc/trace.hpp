@@ -6,7 +6,7 @@
 #include <vector>
 #include <cstddef>
 
-//#define TRACE_USE_OWN_THREAD
+#define TRACE_USE_OWN_THREAD
 
 #ifdef TRACE_USE_OWN_THREAD
 #include "ex_thread.hpp"
@@ -14,12 +14,13 @@
 #include "os_console.hpp"
 #include "trace_if.h"
 
-#define TRACE_BUFFER_LENGTH (512)
+#include <mutex>
+
+#define TRACE_BUFFER_LENGTH (2048)
 #define TRACE_CONTEXT_STR_LEN (5u)
 
 namespace midware
 {
-
     class TraceContext
     {
     public:
@@ -58,6 +59,8 @@ namespace midware
         void debug_printf(const char *, ...);
 
         void debug_printf_internal(const char *, va_list args);
+
+        void debug_printf(const char* buffer, size_t len);
 
         /** An IO interface can be used by several tracers, hence needs to be a pointer */
         int32_t add_trace_io_interface(OSServices::OSConsole* po_trace_io_interface);

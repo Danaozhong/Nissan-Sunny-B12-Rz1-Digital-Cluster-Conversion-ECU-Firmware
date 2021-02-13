@@ -37,8 +37,8 @@ add_definitions(
     -D_BSD_SOURCE
     -D_GCC_MULTITHREAD_FREERTOS_ENABLE
     -DconfigRECORD_STACK_HIGH_ADDRESS=1
-    -DDEBUG
     -DUSE_HAL_DRIVER
+    -DHAL_IWDG_MODULE_ENABLED
 )
 
 if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
@@ -50,10 +50,7 @@ endif()
 SET(PROJECT_SOURCES
     main.cpp
     stm32f3xx_it.c
-    #system_stm32f3xx.c
 )
-
-
 
 add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 
@@ -101,8 +98,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     app/dataset/inc
 )
 
-add_subdirectory(drivers/sysclock)
-list(APPEND EXTRA_LIBS sysclock)
+add_subdirectory(drivers/mcu_interface)
+list(APPEND EXTRA_LIBS mcu_interface)
 
 if (USE_TRACE)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
@@ -123,6 +120,9 @@ list(APPEND EXTRA_LIBS event_handler)
 
 add_subdirectory(midware/util_algorithms)
 list(APPEND EXTRA_LIBS util_algorithms)
+
+add_subdirectory(midware/watchdog)
+list(APPEND EXTRA_LIBS watchdog)
 
 add_subdirectory(drivers/uart)
 list(APPEND EXTRA_LIBS uart)

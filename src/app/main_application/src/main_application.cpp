@@ -12,6 +12,8 @@
 #include "eol_command.hpp"
 #include "trace_if.h"
 #include "pwm_tester.hpp"
+#include "watchdog.hpp"
+#include "mcu_interface.hpp"
 
 #define MAIN_APPLICATION_MEASURE_STARTUP_TIME
 
@@ -31,8 +33,8 @@ namespace app
           m_p_o_fuel_gauge_input(nullptr), m_p_o_fuel_gauge_output(nullptr),
           m_en_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION),
           m_po_speed_sensor_converter(nullptr),
-          m_o_cyclic_thread_low_prio_100ms("CycLow100ms", 1, 0x400, std::chrono::milliseconds(100)),
-          m_o_cyclic_thread_100ms("Cyc100ms", 2, 0x800, std::chrono::milliseconds(100)),
+          m_o_cyclic_thread_low_prio_100ms("CycLow100ms", 1, 0x200, std::chrono::milliseconds(100)),
+          m_o_cyclic_thread_100ms("Cyc100ms", 2, 0x200, std::chrono::milliseconds(100)),
           m_i32_fuel_sensor_read_value(0),
           m_i32_fuel_gauge_output_manual_value(0),
 #ifdef USE_NVDH
@@ -254,6 +256,36 @@ namespace app
         this->m_po_os_console->register_command(pwm_tester_command);
 #endif
 
+
+        // check the startup reason
+        const auto startup_reason = drivers::McuInterface::get_instance().get_reset_reason();
+        
+        printf("reset reason: ");
+        switch (startup_reason)
+        {
+            case drivers::RESET_REASON_WATCHDOG_RESET:
+                printf("watchdog reset\n\r");
+                ExceptionHandler_handle_exception(EXCP_MODULE_APP, EXCP_TYPE_APP_WATCHDOG_RESET, false, __FILE__, __LINE__, 0u);
+                break;
+            case drivers::RESET_REASON_SOFTWARE_RESET:
+                printf("SW reset\n\r");
+                ExceptionHandler_handle_exception(EXCP_MODULE_APP, EXCP_TYPE_APP_SOFTWARE_RESET, false, __FILE__, __LINE__, 0u);
+                break;
+            case drivers::RESET_REASON_POWER_FAIL:
+                printf("power fail\n\r");
+                ExceptionHandler_handle_exception(EXCP_MODULE_APP, EXCP_TYPE_APP_POWER_FAIL_RESET, false, __FILE__, __LINE__, 0u);
+                break;
+            case drivers::RESET_REASON_POWER_ON_RESET:
+                printf("Power on\n\r");
+                break;
+            case drivers::RESET_REASON_UNKNOWN:
+                printf("unknown\n\r");
+                ExceptionHandler_handle_exception(EXCP_MODULE_APP, EXCP_TYPE_APP_UNKNOWN_RESET, false, __FILE__, __LINE__, 0u);
+                break;
+            
+        }
+        
+
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
         au32_startup_times[StartupTimeStartupCompleted] = std_ex::get_timestamp_in_ms();
 
@@ -274,7 +306,7 @@ namespace app
         }
 
         // give the system some time to print out the current trace buffer
-        std_ex::sleep_for(std::chrono::milliseconds(100));
+        std_ex::sleep_for(std::chrono::milliseconds(50));
 
         {
             char buffer[128];
@@ -285,10 +317,7 @@ namespace app
 
                 i32_ret_val = i32_lib_table_draw_table(&table, buffer, 128, u32_offet);
                 u32_offet += 127;
-                DEBUG_PRINTF(buffer);
-
-                // again, give the trace task some time to push the data to the UART
-                std_ex::sleep_for(std::chrono::milliseconds(10));
+                printf(buffer);
             }
         }
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
@@ -317,11 +346,15 @@ namespace app
                 p_stm32_uart->uart_process_cycle();
             }
         }
-        
+
+#if 0
         if (nullptr != m_po_trace)
         {
             m_po_trace->cycle();
         }
+#endif
+        // trigger the watchdog
+        midware::Watchdog::get_instance().trigger();
     }
 
     void MainApplication::cycle_100ms()

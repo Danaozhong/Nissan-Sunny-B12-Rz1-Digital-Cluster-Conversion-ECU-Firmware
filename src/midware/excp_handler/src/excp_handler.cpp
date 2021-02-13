@@ -6,6 +6,7 @@
 #include "util_algorithms.hpp"
 #include "trace_if.h"
 #include "libtable.h"
+#include "watchdog.hpp"
 
 
 namespace
@@ -160,29 +161,35 @@ namespace midware
 
     void ExceptionHandler::handle_exception(const Exception &o_excp)
     {
-        // first, store the exception in the list of exceptions
+        // since almost anything below could fail, if this is a fatal exception, first disable the watchdog to make sure the system resets
+        if (true == o_excp.m_bo_critical)
+        {
+            midware::Watchdog::get_instance().trigger_reset();
+        }
+        
+        // print the exception
+        char excp_buffer[100] = {0};
+        o_excp.print(excp_buffer, 100);
+        printf("Exception Handler: exception triggered!\r\n %s\r\n", excp_buffer);
+        
+        // store the exception in the list of exceptions
         auto itr = store_exception_in_list(o_excp);
         // increase count, and set current timestamp
         itr->m_u32_occurence_count++;
         //itr->m_u64_timestamp = std::chrono::high_resolution_clock::now().; // TODO update this when a time measurement library is available
 
-        // print the exception
-        char excp_buffer[100] = {0};
-        o_excp.print(excp_buffer, 100);
-        DEBUG_PRINTF("Exception Handler: exception triggered!\r\n %s\r\n", excp_buffer);
-
-        // TODO move this part into the section that will trigger the reset after timeout, or before going to sleep.
-        // update the exception information in flash
-        // TODO this should be done anynchronously, doing flash writes from this process is not performant
         if (OSServices::ERROR_CODE_SUCCESS != store_into_data_flash())
         {
             // don't handle an exception here, could lead to a stack overflow. Find something better
-            DEBUG_PRINTF("Exception Handler: storing the exceptions in flash failed!\n\r");
+            printf("Exception Handler: storing the exceptions in flash failed!\n\r");
         }
 
         // Afterwards, when all information is safely stored in EEPROM, process the exception
         if (true == o_excp.m_bo_critical)
         {
+            // halt the current task to allow debugging
+            vTaskSuspend(NULL);
+            
             while(true)
             {
                 // infinite while, wait for reset by watchdog
@@ -603,6 +610,15 @@ extern "C"
         }
         else
         {
+            // very early exception before startup. This should not happen, and the system should at least reset if it is critical
+            if (bo_critical)
+            {
+                midware::Watchdog::get_instance().trigger_reset();
+                printf("fatal exception triggered very early at startup, initiating reset.");
+                while(true)
+                {
+                }
+            }
             u32_non_counted_exceptions++;
         }
     }

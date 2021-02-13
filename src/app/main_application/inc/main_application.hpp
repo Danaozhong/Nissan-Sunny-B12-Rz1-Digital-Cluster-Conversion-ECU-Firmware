@@ -155,6 +155,7 @@ namespace app
 
         int32_t m_i32_fuel_sensor_read_value;
         int32_t m_i32_fuel_gauge_output_manual_value;
+                
 #ifdef USE_NVDH
         std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
 #endif /* USE_NVDH */

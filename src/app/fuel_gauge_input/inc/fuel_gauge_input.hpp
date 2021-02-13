@@ -103,6 +103,7 @@ namespace app
 
         uint32_t m_u32_input_unexpected_higher_error_counter;
         uint32_t m_u32_input_unexpected_lower_error_counter;
+        uint32_t m_u32_input_slightly_lower_counter;
 
         int32_t m_i32_current_fuel_value;
 

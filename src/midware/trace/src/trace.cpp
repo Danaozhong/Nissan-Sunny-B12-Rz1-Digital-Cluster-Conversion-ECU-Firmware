@@ -71,7 +71,7 @@ namespace midware
         auto main_func = std::bind(&Trace::trace_main, this);
 
         // create the thread which will asynchronously send out all the messages
-        m_po_io_thread = new std_ex::thread(main_func, "TRACE_DebugPrint", 1, 1024);
+        m_po_io_thread = new std_ex::thread(main_func, "TRACE_DebugPrint", 1, 0x300);
 #endif
         return OSServices::ERROR_CODE_SUCCESS;
     }
@@ -168,8 +168,26 @@ namespace midware
         va_end(args);
     }
 
+    void Trace::debug_printf(const char* buffer, size_t len)
+    {
+        std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
+        const size_t u_initial_buffer_usage = m_u_buffer_usage; // make a copy, as it could be modified in the meantime
+        char* pi8_print_buffer_position = m_pa_out_buffer + u_initial_buffer_usage;
+
+
+        const size_t u_remaining_buffer_size = TRACE_BUFFER_LENGTH - u_initial_buffer_usage - 1;
+
+        const size_t bytes_to_copy = std::min(u_remaining_buffer_size, len);
+
+        memcpy(pi8_print_buffer_position, buffer, bytes_to_copy);
+        pi8_print_buffer_position[u_initial_buffer_usage + bytes_to_copy] = '\0';
+        // recalculated buffer usage.
+        m_u_buffer_usage = u_initial_buffer_usage + bytes_to_copy;
+    }
+
     void Trace::debug_printf_internal(const char* format_str, va_list args)
     {
+        std::lock_guard<std::mutex> guard(m_trace_buffer_mutex);
         /* This function does not use a mutex lock, because the critical size variable is only increased
          * m_u_buffer_usage after the buffer was updated. Since this function is actually called from
          * application context, it must run as fast as possible to not block the caller. */
@@ -183,14 +201,12 @@ namespace midware
 
         // Use a vsnprintf() to print the string into the trace buffer, then immediately return.
         char* pi8_print_buffer_position = m_pa_out_buffer + m_u_buffer_usage;
-        const size_t u_remaining_buffer_size = TRACE_BUFFER_LENGTH - m_u_buffer_usage;
+        const size_t u_remaining_buffer_size = TRACE_BUFFER_LENGTH - m_u_buffer_usage - 1;
 
         vsnprintf(pi8_print_buffer_position, u_remaining_buffer_size, format_str, args);
 
         // recalculated buffer usage.
         m_u_buffer_usage = strnlen(m_pa_out_buffer, TRACE_BUFFER_LENGTH);
-
-        // TODO check if the message was completely written
     }
 
     int32_t Trace::add_trace_io_interface(OSServices::OSConsole* po_trace_io_interface)
@@ -290,7 +306,7 @@ namespace midware
         {
             cycle();
             // load balancing
-            std_ex::sleep_for(std::chrono::milliseconds(100));
+            std_ex::sleep_for(std::chrono::milliseconds(50));
         }
     }
 #endif
@@ -360,6 +376,14 @@ extern "C"
         }
     }
 
+    void Trace_debug_printf_non_terminated(const char* buffer, uint32_t len)
+    {
+        midware::Trace* po_default_trace = midware::Trace::get_default_trace();
+        if (po_default_trace != nullptr)
+        {
+            m_p_system_default_trace->debug_printf(buffer, len);
+        }
+    }
 
     int32_t Trace_declare_context(const char* context)
     {

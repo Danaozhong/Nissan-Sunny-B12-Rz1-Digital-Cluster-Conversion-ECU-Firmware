@@ -18,6 +18,8 @@ target_link_libraries(main_application PUBLIC
     console_commands
     pwm_tester
     os_threads
+    watchdog
+    mcu_interface
 )
 
 target_include_directories(main_application PUBLIC

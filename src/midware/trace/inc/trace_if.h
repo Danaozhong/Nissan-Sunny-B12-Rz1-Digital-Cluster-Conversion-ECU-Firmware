@@ -16,6 +16,7 @@ extern "C"
 
 #ifdef TRACE_DEBUG_PRINTF_ENABLED
 #define DEBUG_PRINTF(...) (Trace_debug_printf(__VA_ARGS__))
+#define DEBUG_PRINTF_NON_TERMINATED(buffer, len) (Trace_debug_printf_non_terminated(buffer, len))
 #else
 #define DEBUG_PRINTF(...)
 #endif
@@ -44,6 +45,7 @@ typedef enum
 /** This function will printout a trace log over the standard debug interface */
 void Trace_debug_printf(const char *, ...);
 
+void Trace_debug_printf_non_terminated(const char* buffer, uint32_t len);
 
 int32_t Trace_declare_context(const char* context);
 

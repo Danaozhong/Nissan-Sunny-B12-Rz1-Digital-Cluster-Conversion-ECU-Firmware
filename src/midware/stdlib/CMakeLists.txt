@@ -9,4 +9,5 @@ target_link_libraries(stdlib PUBLIC
     stm32_peripherals
     freertos
     trace
+    excp_handler
 )

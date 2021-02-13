@@ -20,6 +20,10 @@
 // after how many seconds the reading should not be tolerated anymore
 #define FUEL_GAUGE_INPUT_ERROR_COUNTER_THRESHOLD  (30) // seconds
 
+
+// Threshold of how many read cycles should indicate a slighly less fuel value than what is currently set, before the fuel gauge output is updated.
+#define FUEL_GAUGE_INPUT_FUEL_LOWER_COUNTER_THRESHOLD  (5) // seconds
+
 using namespace midware;
 
 namespace app
@@ -64,6 +68,7 @@ namespace app
        m_en_state(FuelGaugeInputSMStarting),
        m_u32_input_unexpected_higher_error_counter(0u),
        m_u32_input_unexpected_lower_error_counter(0u),
+       m_u32_input_slightly_lower_counter(0u),
        m_i32_current_fuel_value(0),
        m_o_fuel_input_characteristic(o_fuel_input_characteristic),
       m_o_voltage_divider(100000, 3300), // 100 Ohm (value representation is in mOhm), 3V3 supply
@@ -186,13 +191,6 @@ namespace app
                     int32_t averaged_weighted_fuel_input = static_cast<int32_t>(Algorithms::get_weighted_average<std::vector<std::pair<int32_t, int32_t> >::iterator, int64_t>
                     (m_ai32_averaged_fuel_readings_buffer.begin(), m_ai32_averaged_fuel_readings_buffer.end()));
 
-                    // check if the fuel value should be updated
-                    if (get_fuel_sensor_value() > averaged_weighted_fuel_input + FUEL_GAUGE_INPUT_PERCENTAGE_UPDATE_THRESHOLD)
-                    {
-                        // there is a slight distance between the currently set fuel sensor value and what is expected, update fuel sensor value
-                        TRACE_LOG("FLIN", LOGLEVEL_INFO,"Fuel reading is slightly reduced, set to %i\r\n", averaged_weighted_fuel_input);
-                        set_fuel_sensor_value(averaged_weighted_fuel_input);
-                    }
 
                     //  compare to large differences, and increase the error counters accordingly
                     if (get_fuel_sensor_value() + FUEL_GAUGE_INPUT_PERCENTAGE_THRESHOLD_UP < averaged_weighted_fuel_input)
@@ -233,9 +231,35 @@ namespace app
                         {
                             m_u32_input_unexpected_lower_error_counter = 0;
                         }
+                        
+                        // check if the fuel value has slightly decreased
+                        if (get_fuel_sensor_value() > averaged_weighted_fuel_input + FUEL_GAUGE_INPUT_PERCENTAGE_UPDATE_THRESHOLD)
+                        {
+                            // if yes, increase the counter
+                            m_u32_input_slightly_lower_counter++;
+
+                        }
+                        else if (m_u32_input_unexpected_lower_error_counter > 0)
+                        {
+                            m_u32_input_slightly_lower_counter--;
+                        }
+                        
+                        // if the read value is constantly slightly lower that what is expected, reduce the displayed fuel value in small steps.
+                        if (m_u32_input_slightly_lower_counter > FUEL_GAUGE_INPUT_FUEL_LOWER_COUNTER_THRESHOLD)
+                        {
+                            m_u32_input_slightly_lower_counter = 0;
+                            const int32_t ci32_new_fuel_value = std::max(static_cast<int32_t>(0), get_fuel_sensor_value() - FUEL_GAUGE_INPUT_PERCENTAGE_UPDATE_THRESHOLD);
+                            /* there is a slight distance between the currently set fuel sensor value 
+                            and what is read from the sensor. Reduce the displayed value in small steps */
+                            TRACE_LOG("FLIN", LOGLEVEL_INFO,"Fuel reading is slightly reduced, set to %i\r\n", ci32_new_fuel_value);
+                            set_fuel_sensor_value(ci32_new_fuel_value);
+                        }
                     }
 
-                    // check if the error counters have exceeded their thresholds
+                    /* Check if the error counters have exceeded their thresholds, and the
+                    actual sensor value has consistenly been much larger or smaller to what 
+                    is currently displayed. If this is the case, reset the fuel gauge, and
+                    recalibrate the sensor data. */
                     if (m_u32_input_unexpected_higher_error_counter > FUEL_GAUGE_INPUT_ERROR_COUNTER_THRESHOLD)
                     {
                         // refill detected!
@@ -254,9 +278,10 @@ namespace app
                     TRACE_LOG("FLIN", LOGLEVEL_WARNING, "Refill detected, start recalibration...\r\n");
 
                     // clear all error counters
-                    m_u32_input_unexpected_lower_error_counter = 0;
-                    m_u32_input_unexpected_lower_error_counter = 0;
-
+                    m_u32_input_unexpected_lower_error_counter = 0u;
+                    m_u32_input_unexpected_lower_error_counter = 0u;
+                    m_u32_input_slightly_lower_counter = 0u;
+                    
                     // and start a new calibration
                     m_en_state = FuelGaugeInputSMStarting;
                     break;
@@ -267,14 +292,17 @@ namespace app
                     TRACE_LOG("FLIN", LOGLEVEL_ERROR, "Too low fuel value detected, start recalibration...\r\n");
 
                     // clear all error counters
-                    m_u32_input_unexpected_lower_error_counter = 0;
-                    m_u32_input_unexpected_lower_error_counter = 0;
+                    m_u32_input_unexpected_lower_error_counter = 0u;
+                    m_u32_input_unexpected_lower_error_counter = 0u;
+                    m_u32_input_slightly_lower_counter = 0u;
 
                     // and start a new calibration
                     m_en_state = FuelGaugeInputSMStarting;
                     break;
                 }
             case FuelGaugeInputSMStarting:
+                // nothing to do here.
+                break;
             default:
                 TRACE_LOG("FLIN", LOGLEVEL_ERROR, "Unexpected state!");
             }

@@ -45,6 +45,9 @@ class STM32HardwareUART : public GenericUART
         virtual size_t write(const uint8_t *a_u8_buffer, size_t size);
 
         void uart_process_cycle();
+#ifdef DRIVER_UART_HAS_OWN_TASK
+        void uart_main();
+#endif
     private:
         uint8_t m_au8_rx_buffer[STM32UART_BUFFER_SIZE];
 

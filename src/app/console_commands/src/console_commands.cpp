@@ -280,7 +280,13 @@ namespace app
        MainApplication& o_application  = MainApplication::get();
        if (u32_num_of_params > 0)
        {
-           if (0 == strcmp(params[0], "write_flash"))
+           if (0 == strcmp(params[0], "show"))
+           {
+               p_o_io_interface << "DATASET INFO\n\r";
+               p_o_io_interface << "default dataset version: " << o_application.get_dataset().get_default_dataset_version_no() << "\n\r";
+               p_o_io_interface << "loaded dataset version: " << o_application.get_dataset().get_read_dataset_version_no() << "\n\r";
+           }
+           else if (0 == strcmp(params[0], "write_flash"))
            {
                int32_t i32_ret_val = o_application.get_dataset().write_dataset(*o_application.get_nonvolatile_data_handler());
 

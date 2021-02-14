@@ -360,10 +360,9 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
 
     int32_t read_bool_input(OSConsoleGenericIOInterface& po_io_interface, bool &ret_val)
     {
-        const char ESC_KEY = 27;
+        const char CHAR_ESC_KEY = 27;
         
-        bool valid_input_given = false;
-        while (false == valid_input_given)
+        while (true)
         {
             po_io_interface.wait_for_input_to_be_available(std::chrono::milliseconds(100000));
             char input = static_cast<char>(po_io_interface.read());
@@ -371,18 +370,19 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
             {
                 ret_val = true;
                 return OSServices::ERROR_CODE_SUCCESS;
-            } else if ('n' == input)
+            }
+            else if ('n' == input)
             {
                 ret_val = false;
                 return OSServices::ERROR_CODE_SUCCESS;
             }
-            else if (ESC_KEY == input)
+            else if (CHAR_ESC_KEY == input)
             {
-                valid_input_given = false;
+                break;
             }
             else
             {
-                po_io_interface << "Invalid input. Enter either \'y\', \'n\'n, or press ESC to abort.\n\r";
+                po_io_interface << "Invalid input. Enter either \'y\', \'n\', or press ESC to abort.\n\r";
             }
         }
         return OSServices::ERROR_CODE_UNEXPECTED_VALUE;

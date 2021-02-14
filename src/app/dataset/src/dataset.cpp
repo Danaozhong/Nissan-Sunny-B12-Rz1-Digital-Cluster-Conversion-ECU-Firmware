@@ -2,7 +2,7 @@
 #include "os_console.hpp"
 namespace app
 {
-    const uint32_t Dataset::cu32_version_number = 100u;
+    const uint32_t Dataset::cu32_version_number = 101u;
 
     int32_t Dataset::write_dataset(midware::NonvolatileDataHandler &o_nonvolatile_data_handler)
     {
@@ -107,9 +107,9 @@ namespace app
         }
 
         // make sure the dataset has a version number which we can understand
-        uint32_t u32_read_version_number = 0u;
-        std::memcpy(&u32_read_version_number,  au8_buffer.data() + 4, 4);
-        if (u32_read_version_number != Dataset::cu32_version_number)
+        m_u32_read_dataset_version_no = 0u;
+        std::memcpy(&m_u32_read_dataset_version_no,  au8_buffer.data() + 4, 4);
+        if (m_u32_read_dataset_version_no > Dataset::cu32_version_number)
         {
             return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
         }
@@ -194,6 +194,8 @@ namespace app
         m_u32_input_pulses_per_kmph_mHz = 700u;
         m_u32_output_pulses_per_kmph_mHz = 4200u;
         m_u32_dac_out_amplifying_factor = 2000u;
+
+        m_u32_read_dataset_version_no = Dataset::cu32_version_number;
     }
 
     const app::CharacteristicCurve<int32_t, int32_t>& Dataset::get_fuel_input_lookup_table() const
@@ -244,5 +246,15 @@ namespace app
     void Dataset::set_dac_out_amplifying_factor(uint32_t u32_amplifying_factor)
     {
         m_u32_dac_out_amplifying_factor = u32_amplifying_factor;
+    }
+
+    uint32_t Dataset::get_read_dataset_version_no() const
+    {
+        return m_u32_read_dataset_version_no;
+    }
+
+    uint32_t Dataset::get_default_dataset_version_no() const
+    {
+        return Dataset::cu32_version_number;
     }
 }

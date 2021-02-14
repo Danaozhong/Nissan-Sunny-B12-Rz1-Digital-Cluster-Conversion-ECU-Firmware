@@ -39,6 +39,10 @@ namespace app
         uint32_t get_dac_out_amplifying_factor() const;
 
         void set_dac_out_amplifying_factor(uint32_t u32_amplifying_factor);
+
+        uint32_t get_read_dataset_version_no() const;
+
+        uint32_t get_default_dataset_version_no() const;
     private:
         static const uint32_t cu32_version_number;
 
@@ -49,6 +53,8 @@ namespace app
         uint32_t m_u32_output_pulses_per_kmph_mHz;
 
         uint32_t m_u32_dac_out_amplifying_factor;
+
+        uint32_t m_u32_read_dataset_version_no;
 
     };
 }

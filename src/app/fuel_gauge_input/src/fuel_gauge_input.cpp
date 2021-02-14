@@ -1,28 +1,17 @@
-
 #include "fuel_gauge_input.hpp"
 #include "excp_handler_if.h"
 #include "os_console.hpp"
 #include "trace_if.h"
 #include "util_algorithms.hpp"
 
-// allow up to 10% deviation of the values
-#define FUEL_GAUGE_INPUT_READINGS_MAX_DISTANCE (1000) // % * 100
-#define FUEL_GAUGE_INPUT_READINGS_INVALID_DATA_DISTANCE (2500) // % * 100
 
-// specified the max. distance of the current reading from the current set value to consider the reading invalid
-#define FUEL_GAUGE_INPUT_PERCENTAGE_THRESHOLD_UP (1000) // % u* 100
-#define FUEL_GAUGE_INPUT_PERCENTAGE_THRESHOLD_DOWN (1000) // % * 100
+#ifndef FUEL_GAUGE_INPUT_AVERAGING_SIZE
+#error "FUEL_GAUGE_INPUT_AVERAGING_SIZE is not defined. verify correct Cmake generation."
+#endif
 
-
-// If the averaged fuel reading is differing by more than the threshold below from the displayed value, update the displayed value
-#define FUEL_GAUGE_INPUT_PERCENTAGE_UPDATE_THRESHOLD (50) // the threshold in 100*%, when the fuel value should be updated
-
-// after how many seconds the reading should not be tolerated anymore
-#define FUEL_GAUGE_INPUT_ERROR_COUNTER_THRESHOLD  (30) // seconds
-
-
-// Threshold of how many read cycles should indicate a slighly less fuel value than what is currently set, before the fuel gauge output is updated.
-#define FUEL_GAUGE_INPUT_FUEL_LOWER_COUNTER_THRESHOLD  (5) // seconds
+#ifndef FUEL_GAUGE_INPUT_NUM_OF_AVERAGES
+#error "FUEL_GAUGE_INPUT_NUM_OF_AVERAGES is not defined!"
+#endif
 
 using namespace midware;
 

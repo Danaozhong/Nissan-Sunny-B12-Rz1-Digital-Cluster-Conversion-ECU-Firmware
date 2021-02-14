@@ -10,7 +10,7 @@
 app::SpeedSensorConverter* po_speed_sensor_converter_instance = nullptr;
 void speed_sensor_pwm_input_capture_callback(drivers::GenericPWM_IC* p_ic_obj, uint32_t u32_read_frequency, uint32_t u32_read_duty_cyclce)
 {
-    /* TODO you could do a mapping here, but let's be simple */
+    /* One could do a mapping here, but let's be simple, since we are only using one PWM IC for now. */
     if (nullptr != po_speed_sensor_converter_instance)
     {
         po_speed_sensor_converter_instance->pwm_input_capture_callback(u32_read_frequency, u32_read_duty_cyclce);
@@ -31,7 +31,7 @@ namespace app
                 .u16_pwm_ic_prescaler = 2048 - 1/* will deliver good results from 1km/h to about 80km/h */
             },
             {
-                .u32_vehicle_speed_mph_lower_threshold = 40*1000, /* dropping below 50km/h, activate low speed mode */
+                .u32_vehicle_speed_mph_lower_threshold = 40*1000, /* dropping below 40km/h, activate low speed mode */
                 .en_lower_capture_mode =SPEED_INPUT_CAPTURE_MODE_LOW_SPEED,
                 .u32_vehicle_speed_mph_upper_threshold = 0, /* not used */
                 .en_higher_capture_mode = SPEED_INPUT_CAPTURE_NUM_OF_MODES,

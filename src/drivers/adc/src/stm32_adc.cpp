@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "stm32_adc.hpp"
 #include "trace_if.h"
 
@@ -61,7 +63,7 @@ namespace drivers
 
         /* Configuration of ADCx init structure: ADC parameters and regular group */
 #ifdef HAL_ADC_MODULE_ENABLED
-        // TODO make sure to zero-initialize the structure
+        std::memset(&m_adc_handle, 0, sizeof(m_adc_handle));
         m_adc_handle.State = 0u;
         m_adc_handle.Instance = pt_adc_peripheral;
 

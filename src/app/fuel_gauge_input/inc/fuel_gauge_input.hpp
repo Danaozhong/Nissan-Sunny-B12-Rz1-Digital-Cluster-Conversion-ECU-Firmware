@@ -5,14 +5,6 @@
 #include "lookup_table.hpp"
 #include "event_handler.hpp"
 
-#ifndef FUEL_GAUGE_INPUT_AVERAGING_SIZE
-#error "FUEL_GAUGE_INPUT_AVERAGING_SIZE is not defined. verify correct Cmake generation."
-#endif
-
-#ifndef FUEL_GAUGE_INPUT_NUM_OF_AVERAGES
-#error "FUEL_GAUGE_INPUT_NUM_OF_AVERAGES is not defined!"
-#endif
-
 namespace app
 {
     /** Helper class to calculate the voltage / resistor values at a voltage divider */

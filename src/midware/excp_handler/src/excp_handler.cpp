@@ -176,7 +176,7 @@ namespace midware
         auto itr = store_exception_in_list(o_excp);
         // increase count, and set current timestamp
         itr->m_u32_occurence_count++;
-        //itr->m_u64_timestamp = std::chrono::high_resolution_clock::now().; // TODO update this when a time measurement library is available
+        itr->m_u64_timestamp = 0; // timestamps are useless at the moment, since the time is not known
 
         if (OSServices::ERROR_CODE_SUCCESS != store_into_data_flash())
         {

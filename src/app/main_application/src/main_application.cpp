@@ -15,8 +15,6 @@
 #include "watchdog.hpp"
 #include "mcu_interface.hpp"
 
-#define MAIN_APPLICATION_MEASURE_STARTUP_TIME
-
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
 #include "libtable.h"
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
@@ -114,11 +112,6 @@ namespace app
         au32_startup_times[StartupTimeUARTInitComplete] = std_ex::get_timestamp_in_ms();
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
-        // start the cyclic tasks
-        TRACE_DECLARE_CONTEXT("SPD");
-        m_o_cyclic_thread_low_prio_100ms.start();
-        m_o_cyclic_thread_100ms.start();
-        
         // Create the debug console
         m_po_os_io_interface = new OSServices::OSConsoleUartIOInterface(m_p_uart);
         m_po_os_console = new OSServices::OSConsole(*m_po_os_io_interface);
@@ -156,15 +149,24 @@ namespace app
         au32_startup_times[StartupTimeTraceInitComplete] = std_ex::get_timestamp_in_ms();
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 #endif
+        // create a logging context for the application
+        TRACE_DECLARE_CONTEXT("APP");
 
+        // create a logging context for the scheduler
+        TRACE_DECLARE_CONTEXT("SPD");
+
+        m_o_cyclic_thread_low_prio_100ms.start();
+        m_o_cyclic_thread_100ms.start();
+
+        // start the cyclic tasks
         m_po_exception_handler = new midware::ExceptionHandler();
         m_po_exception_handler->set_as_default_exception_handler();
 
 #ifdef USE_NVDH
-        // initialize non-volatile memory (uses 1 block of size 1024) TODO move config to CMake
-        m_po_nonvolatile_data_handler = std::make_shared<midware::NonvolatileDataHandler>(1u, 1024u);
+        // initialize non-volatile memory (uses 1 block of size 1024)
+        m_po_nonvolatile_data_handler = std::make_shared<midware::NonvolatileDataHandler>(APP_NUM_OF_NVM_BLOCKS_TO_USE, 1024u);
 
-        // Configure the default sections for the module. Size must be < total size (header
+        // Configure the default sections for the module. Size + header must be < total size of nonvolatile memory.
         std::vector<midware::FlashSection> default_flash_sections =
         {
             midware::FlashSection{"EOL", 64u},
@@ -260,29 +262,28 @@ namespace app
         // check the startup reason
         const auto startup_reason = drivers::McuInterface::get_instance().get_reset_reason();
         
-        printf("reset reason: ");
+        TRACE_LOG("APP", LOGLEVEL_INFO, "reset reason: ");
         switch (startup_reason)
         {
             case drivers::RESET_REASON_WATCHDOG_RESET:
-                printf("watchdog reset\n\r");
+                TRACE_LOG("APP", LOGLEVEL_INFO, "watchdog reset\n\r");
                 ExceptionHandler_handle_exception(EXCP_MODULE_APP, EXCP_TYPE_APP_WATCHDOG_RESET, false, __FILE__, __LINE__, 0u);
                 break;
             case drivers::RESET_REASON_SOFTWARE_RESET:
-                printf("SW reset\n\r");
+                TRACE_LOG("APP", LOGLEVEL_INFO, "SW reset\n\r");
                 ExceptionHandler_handle_exception(EXCP_MODULE_APP, EXCP_TYPE_APP_SOFTWARE_RESET, false, __FILE__, __LINE__, 0u);
                 break;
             case drivers::RESET_REASON_POWER_FAIL:
-                printf("power fail\n\r");
+                TRACE_LOG("APP", LOGLEVEL_INFO, "power fail\n\r");
                 ExceptionHandler_handle_exception(EXCP_MODULE_APP, EXCP_TYPE_APP_POWER_FAIL_RESET, false, __FILE__, __LINE__, 0u);
                 break;
             case drivers::RESET_REASON_POWER_ON_RESET:
-                printf("Power on\n\r");
+                TRACE_LOG("APP", LOGLEVEL_INFO, "Power on\n\r");
                 break;
             case drivers::RESET_REASON_UNKNOWN:
-                printf("unknown\n\r");
+                TRACE_LOG("APP", LOGLEVEL_INFO, "unknown\n\r");
                 ExceptionHandler_handle_exception(EXCP_MODULE_APP, EXCP_TYPE_APP_UNKNOWN_RESET, false, __FILE__, __LINE__, 0u);
                 break;
-            
         }
         
 
@@ -290,7 +291,6 @@ namespace app
         au32_startup_times[StartupTimeStartupCompleted] = std_ex::get_timestamp_in_ms();
 
         /* Print out the startup times on the UART interface */
-
         tst_lib_table table;
         i32_lib_table_initialize_table(&table);
 
@@ -478,14 +478,8 @@ namespace app
 
     int32_t MainApplication::init_speed_converter()
     {
-        // TODO this is the configuration for the STM32 discovery, change to support the small board
-#ifdef STM32F429xx
-        m_p_pwm = new drivers::STM32PWM(TIM5, TIM_CHANNEL_4, GPIOA, GPIO_PIN_3);
-        m_p_pwm_ic = new drivers::STM32PWM_IC(TIM2, TIM_CHANNEL_2, TIM_CHANNEL_3, 1u, 65535u);
-#else
         m_p_pwm = new drivers::STM32PWM(TIM3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_6);
-        m_p_pwm_ic = new drivers::STM32PWM_IC(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 1023u, 65535u);
-#endif
+        m_p_pwm_ic = new drivers::STM32PWM_IC(TIM4, TIM_CHANNEL_1, TIM_CHANNEL_2, 2047u, 0xFFFFu);
 
         int32_t i32_ret_val = m_p_pwm_ic->init();
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
@@ -497,7 +491,6 @@ namespace app
         m_po_speed_sensor_converter = new SpeedSensorConverter(m_p_pwm, m_p_pwm_ic,
                 get_dataset().get_input_pulses_per_kmph_mHz(),
                 get_dataset().get_output_pulses_per_kmph_mHz());
-
 
         return OSServices::ERROR_CODE_SUCCESS;
     }
@@ -511,19 +504,14 @@ namespace app
     {
         // create the low-level hardware interfaces
         m_p_adc = new drivers::STM32ADC(drivers::ADCResolution::ADC_RESOLUTION_12BIT, ADC2, ADC_CHANNEL_2, GPIOA, GPIO_PIN_5);
-#ifdef STM32F303xC
         m_p_dac = new drivers::STM32DAC(DAC1, GPIOA, GPIO_PIN_4);
-#else
-        m_p_dac = new drivers::STM32DAC(DAC1, GPIOA, GPIO_PIN_4);
-#endif
 
-        // start the data output thread
-
+        // create the objects that handle the fuel conversion...
         m_p_o_fuel_gauge_output = new app::FuelGaugeOutput(m_p_dac,
                 get_dataset().get_fuel_output_lookup_table(),
                 get_dataset().get_dac_out_amplifying_factor(),
                 0);
-        // start the data acquisition thread
+        // and speed conversion.
         m_p_o_fuel_gauge_input = new app::FuelGaugeInputFromADC(m_p_adc,
                 get_dataset().get_fuel_input_lookup_table());
 

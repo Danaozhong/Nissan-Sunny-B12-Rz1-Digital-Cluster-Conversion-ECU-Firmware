@@ -79,7 +79,7 @@ namespace drivers
         {
             TRACE_LOG("TIM", LOGLEVEL_ERROR, "The selected timer unit is not supported!");
             assert(false);
-            // TODO cover other cases
+            // implement other cases, when needed
         }
 
         // unconfigure previous config, and reconfigure the pin as PWM
@@ -219,7 +219,13 @@ namespace drivers
 
     STM32PWM::~STM32PWM()
     {
-        // TODO deinitialize hardware, currently not supported
+        HAL_TIM_PWM_Stop(&o_timer_handle, m_u32_timer_channel);  // Stop PWM
+        
+        if (HAL_TIM_PWM_DeInit(&o_timer_handle) != HAL_OK)
+        {
+            /* De-initialization Error */
+            TRACE_LOG("PWM", LOGLEVEL_ERROR, "PWM deinitialization failed!");
+        }
     }
 
     void STM32PWM::set_frequency(uint32_t u32_frequency_mhz)

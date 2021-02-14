@@ -6,7 +6,7 @@
 
 namespace
 {
-    /* Todo move this to configuration file */
+    /* This is a key marker to indicate the start of the data section */
     static uint32_t _eeprom_emulation_start __attribute__ ((section (".eeprom_emulation"))) __attribute__ ((__used__)) = 0xAABBCCDD; //0xABCDEF;
 }
 namespace midware
@@ -136,11 +136,10 @@ namespace midware
     {
         int32_t i32_ret_val = try_to_load();
 
-        // TODO check if there
         if (OSServices::ERROR_CODE_SUCCESS != i32_ret_val)
         {
             // restore empty default configuration
-            uint32_t u32_minimum_buffer_size = cu32_block_information_size + cu32_header_size;
+            const uint32_t u32_minimum_buffer_size = cu32_block_information_size + cu32_header_size;
             m_flash_sections.clear();
             m_au8_data_shadow.resize(u32_minimum_buffer_size);
 
@@ -174,12 +173,10 @@ namespace midware
     }
     int32_t NonvolatileDataHandler::try_to_load()
     {
-        //m_flash_sections.clear();
-
         m_au8_data_shadow.resize(m_u32_flash_block_size * m_u16_num_of_flash_blocks);
         for (uint16_t u16_block = 0; u16_block < m_u16_num_of_flash_blocks; u16_block++)
         {
-            if (false == EE_Reads(0, m_u32_flash_block_size / 4, reinterpret_cast<uint32_t*>(m_au8_data_shadow.data() + u16_block * m_u32_flash_block_size))) /* _EEPROM_FLASH_PAGE_SIZE is missing here TODO */
+            if (false == EE_Reads(0, m_u32_flash_block_size / 4, reinterpret_cast<uint32_t*>(m_au8_data_shadow.data() + u16_block * m_u32_flash_block_size))) /* _EEPROM_FLASH_PAGE_SIZE is missing here TODO EE library so far only supports one single page */
             {
                 return OSServices::ERROR_CODE_INTERNAL_ERROR;
             }
@@ -364,7 +361,7 @@ namespace midware
                 u32_block_size_in_words++;
             }
 
-           if (false == EE_Reads(0, u32_block_size_in_words, au32_buffer.data())) /* _EEPROM_FLASH_PAGE_SIZE is missing here TODO */
+           if (false == EE_Reads(0, u32_block_size_in_words, au32_buffer.data())) /* _EEPROM_FLASH_PAGE_SIZE is missing here TODO EE library so far only supports one block */
            {
                ExceptionHandler_handle_exception(EXCP_MODULE_NONVOLATILE_DATA, EXCP_TYPE_NONVOLATILE_DATA_READ_FAILED, false, __FILE__, __LINE__, 0u);
                return OSServices::ERROR_CODE_INTERNAL_ERROR;

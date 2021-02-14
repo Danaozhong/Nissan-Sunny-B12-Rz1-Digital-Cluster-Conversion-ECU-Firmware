@@ -428,7 +428,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
         // query complete, convert to time_t struct
         std::tm timeinfo = {0};
         timeinfo.tm_year = i32_year - 1900;
-        timeinfo.tm_mon = i32_month - 1; // TODO Check boundary
+        timeinfo.tm_mon = i32_month - 1;
         timeinfo.tm_mday = i32_day;
         timeinfo.tm_hour = i32_hour;
         timeinfo.tm_min = i32_minute;

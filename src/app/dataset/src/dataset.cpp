@@ -2,7 +2,6 @@
 #include "os_console.hpp"
 namespace app
 {
-
     const uint32_t Dataset::cu32_version_number = 100u;
 
     int32_t Dataset::write_dataset(midware::NonvolatileDataHandler &o_nonvolatile_data_handler)
@@ -69,7 +68,7 @@ namespace app
         }
         if (OSServices::ERROR_CODE_SUCCESS != lb_store_characteristic_curve(m_o_fuel_gauge_input_characteristic, 200))
         {
-            // don't write the new dataset - it is too large. TODO give exception
+            // don't write the new dataset - it is too large.
             return OSServices::ERROR_CODE_NOT_ENOUGH_MEMORY;
         }
 

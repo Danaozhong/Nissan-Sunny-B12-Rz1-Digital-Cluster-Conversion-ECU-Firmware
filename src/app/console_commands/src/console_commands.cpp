@@ -77,12 +77,13 @@ namespace app
                 display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
-
-            // TODO use something better than atoi
-            uint32_t u32_speed_value = atoi(params[1]);
-
-            // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
-            po_speed_sensor_converter->set_manual_speed(1000 * u32_speed_value);
+            const long int li_speed_value = std::strtol(params[1], nullptr, 10);
+            if (li_speed_value < 250 && li_speed_value >= 0)
+            {    
+                const uint32_t u32_speed_value = static_cast<uint32_t>(li_speed_value);
+                // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
+                po_speed_sensor_converter->set_manual_speed(1000 * u32_speed_value);
+            }
         }
         else if (0 == strcmp(params[0], "show"))
         {
@@ -96,12 +97,9 @@ namespace app
             snprintf(pi8_buffer, 1024, "Speed Sensor Conversion Characteristics:\n\r"
                     "\n\r"
                     "  Measured vehicle speed:  %ukm/h\n\r"
-                    //"  Measured PWM frequency: %u.%u Hz\n\r"
                     "  Displayed vehicle speed:  %ikm/h\n\r"
                     "  Display PWM frequency: %u.%02u Hz\n\r",
                     u_current_vehicle_speed,
-                    //u_input_frequency / 1000u,
-                    //u_input_frequency % 1000u,
                     i_displayed_speed,
                     u_output_frequency / 1000u,
                     u_output_frequency % 1000u
@@ -168,16 +166,18 @@ namespace app
                 display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
+            
+            const long int li_fuel_value = std::strtol(params[1], nullptr, 10);
+            if (li_fuel_value > -10 && li_fuel_value < 120)
+            {
+                const int32_t i32_fuel_value = li_fuel_value * 100;
+                // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
+                o_application.set_manual_fuel_gauge_output_value(i32_fuel_value);
 
-            // TODO use something better than atoi
-            int32_t i32_fuel_value = atoi(params[1]) * 100;
-
-            // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
-            o_application.set_manual_fuel_gauge_output_value(i32_fuel_value);
-
-            char pi8_buffer[128];
-            snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", static_cast<int>(o_application.get_manual_fuel_gauge_output_value()));
-            p_o_io_interface << pi8_buffer;
+                char pi8_buffer[128];
+                snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", static_cast<int>(o_application.get_manual_fuel_gauge_output_value()));
+                p_o_io_interface << pi8_buffer;
+            }
         }
         else if (0 == strcmp(params[0], "show"))
         {

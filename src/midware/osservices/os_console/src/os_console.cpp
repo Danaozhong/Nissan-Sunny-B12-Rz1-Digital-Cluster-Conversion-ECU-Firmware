@@ -353,7 +353,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
     {
         char ai8_bootscreen[] = "\n\r\n\r"
                 "FreeRTOS Platform\n\r"
-                "(c) 2019 zenon engineering\n\r";
+                "(c) 2019-2021 zenon engineering\n\r";
 
         m_po_io_interface << ai8_bootscreen;
     }

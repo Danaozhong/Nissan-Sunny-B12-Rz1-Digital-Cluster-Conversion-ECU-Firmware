@@ -40,8 +40,9 @@
 #include "thread_gthread.h"
 
 #include <list>
+#if !defined _GLIBCXX_TUPLE && !defined _GLIBCXX_OPTIONAL
 #include <algorithm>
-
+#endif
 namespace free_rtos_std
 {
 

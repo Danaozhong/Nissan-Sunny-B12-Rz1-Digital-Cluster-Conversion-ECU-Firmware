@@ -27,7 +27,7 @@ namespace app
     }
 
 
-    void EOLData::set_nonvolatile_data_handler(std::shared_ptr<midware::NonvolatileDataHandler> o_data_handler, const char* section_name)
+    void EOLData::set_nonvolatile_data_handler(midware::NonvolatileDataHandler* o_data_handler, const char* section_name)
     {
         m_po_nonvolatile_data_handler = o_data_handler;
         strncpy(m_cu8_flash_section_name, section_name, 8);
@@ -85,7 +85,7 @@ namespace app
 
     int32_t EOLData::write_eol_data_to_flash()
     {
-        if (this->is_eol_data_written() == true)
+        if (this->is_eol_data_written() == true || nullptr == m_po_nonvolatile_data_handler)
         {
             // EOL data are already written. Data can only be written once.
             return OSServices::ERROR_CODE_INTERNAL_ERROR;

@@ -178,7 +178,7 @@ namespace drivers
         return 0xFFFF;
     }
 
-    uint32_t STM32ADC::read_adc_value()
+    std::optional<uint32_t> STM32ADC::read_adc_value()
     {
 #ifdef HAL_ADC_MODULE_ENABLED
         // trigger conversion
@@ -192,7 +192,7 @@ namespace drivers
             TRACE_LOG("ADC", LOGLEVEL_ERROR, "ADC Conversion failed!");
         }
 #endif
-        return 0u;
+        return std::nullopt;
     }
 }
 

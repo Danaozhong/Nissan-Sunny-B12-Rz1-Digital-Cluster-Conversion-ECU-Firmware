@@ -52,7 +52,7 @@ namespace midware
         void deinit();
 
 #ifdef USE_NVDH
-        void set_nonvolatile_data_handler(std::shared_ptr<midware::NonvolatileDataHandler>, const char* section_name);
+        void set_nonvolatile_data_handler(midware::NonvolatileDataHandler*, const char* section_name);
 #endif /* USE_NVD */
         void handle_exception(
                 ExceptionModuleID en_module_id,
@@ -99,7 +99,7 @@ namespace midware
        // size_t m_u_data_flash_buffer_size;
 #ifdef USE_NVDH
         char m_cu8_flash_section_name[8];
-        std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
+        midware::NonvolatileDataHandler* m_po_nonvolatile_data_handler;
 #endif /* USE_NVDH */
     };
 

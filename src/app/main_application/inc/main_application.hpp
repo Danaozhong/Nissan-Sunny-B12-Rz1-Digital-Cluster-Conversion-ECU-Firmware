@@ -49,78 +49,86 @@ namespace app
         /** Constructor */
         MainApplication();
 
-        void startup_from_reset();
+        auto startup_from_reset() -> void;
 
-        void startup_from_wakeup();
+        auto startup_from_wakeup() -> void;
 
-        void go_to_sleep();
+        auto go_to_sleep() -> void;
 
-        void init_hardware();
+        auto init_hardware() -> void;
 
-        void deinit_hardware();
+        auto deinit_hardware() -> void;
 
         /** Callback used when the fuel sensor input has detected an input level change */
-        void fuel_sensor_input_received(int32_t i32_value);
+        auto fuel_sensor_input_received(int32_t i32_value) -> void;
 
-        void update_fuel_sensor_output();
+        auto update_fuel_sensor_output() -> void;
 
         /** Singleton accessor */
-        static MainApplication& get();
+        static auto get() -> MainApplication&;
 
-        SpeedSensorConverter* get_speed_sensor_converter() const;
+        auto get_speed_sensor_converter() const -> SpeedSensorConverter*;
 
         /** Cyclic container to be executed every 100ms, under a low task priority */
-        void cycle_low_prio_100ms();
+        auto cycle_low_prio_100ms() -> void;
 
         /** Cyclic container to be executed every 100ms */
-        void cycle_100ms();
+        auto cycle_100ms() -> void;
 
         /** Cyclic container to be executed every 1 second */
-        void cycle_1000ms();
+        auto cycle_1000ms() -> void;
 
         /** this thread will take care of user I/O interface, and user commands */
-        void console_thread();
+        auto console_thread() -> void;
 
 #ifdef USE_NVDH
-        std::shared_ptr<midware::NonvolatileDataHandler> get_nonvolatile_data_handler() const;
+        /** \brief Returns the data handler for accessing nonvolatile data */
+        auto get_nonvolatile_data_handler() const -> midware::NonvolatileDataHandler*;
 #endif
-        OSServices::OSConsole* get_os_console();
+        /** \brief Retuns a pointer to the console interface */
+        auto get_os_console() -> OSServices::OSConsole*;
 
-        OSServices::OSConsoleGenericIOInterface& get_stdio();
+        /** \brief Returns the standard I/O interface configured for the OS console object */
+        auto get_stdio() -> OSServices::OSConsoleGenericIOInterface&;
 
         /** Use this to select the mode in which the speed signal is sent out to the cluster.
          * use OUTPUT_MODE_CONVERSION to derive the speed signal from the input speed sensor,
          * alternatively; use OUTPUT_MODE_MANUAL to manually configure a speed value. */
-        void set_fuel_gauge_output_mode(FuelGaugeOutputMode en_speed_output_mode);
+        auto set_fuel_gauge_output_mode(FuelGaugeOutputMode en_speed_output_mode) -> void;
 
-        /** When the speed sensor conversion is in manual mode, use this function to set the manual
+        /** \brief When the speed sensor conversion is in manual mode, use this function to set the manual
          * speed value.
          * \param[in] i32_speed_in_mph  The velocity in meters / hour.
          */
-        void set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value);
+        auto set_manual_fuel_gauge_output_value(int32_t _i32_fuel_gauge_output_value) -> void;
         
-        int32_t get_manual_fuel_gauge_output_value() const;
+        /** \brief returns the currently configured manual speeed in meters / hour. */
+        auto get_manual_fuel_gauge_output_value() const -> int32_t;
         
-        const app::Dataset& get_dataset() const;
-        app::Dataset& get_dataset();
+        /** \brief Returns the dataset (const). */
+        auto get_dataset() const -> const app::Dataset&;
         
-        const app::FuelGaugeInputFromADC* get_fuel_gauge_input() const;
+        /** \brief Returns the dataset (nonconst). */
+        auto get_dataset() -> app::Dataset&;
         
-        const app::FuelGaugeOutput* get_fuel_gauge_output() const;
+        auto get_fuel_gauge_input() const -> const app::FuelGaugeInputFromADC*;
+        
+        auto get_fuel_gauge_output() const -> const app::FuelGaugeOutput*;
 
-        app::EOLData& get_eol_data();
+        auto get_eol_data() -> app::EOLData&;
 
     private:
         // prevent copying
         MainApplication(MainApplication &other) = delete;
 
-        int32_t init_speed_converter();
+        auto init_speed_converter() -> int32_t;
 
-        int32_t deinit_speed_converter();
+        auto deinit_speed_converter() -> int32_t;
 
-        int32_t init_fuel_level_converter();
-        int32_t deinit_fuel_level_converter();
+        auto init_fuel_level_converter() -> int32_t;
+        auto deinit_fuel_level_converter() -> int32_t;
 
+        /** \brief the UART object used */
         drivers::GenericUART* m_p_uart;
         OSServices::OSConsole* m_po_os_console;
         OSServices::OSConsoleGenericIOInterface* m_po_os_io_interface;
@@ -148,7 +156,6 @@ namespace app
         CyclicThreadLowPrio100ms m_o_cyclic_thread_low_prio_100ms;
         CyclicThread100ms m_o_cyclic_thread_100ms;
         
-        
         app::Dataset m_o_dataset;
 
         app::EOLData m_o_eol_data;
@@ -157,10 +164,8 @@ namespace app
         int32_t m_i32_fuel_gauge_output_manual_value;
                 
 #ifdef USE_NVDH
-        std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
+        midware::NonvolatileDataHandler* m_po_nonvolatile_data_handler;
 #endif /* USE_NVDH */
     };
-
-
 }
 #endif /* _MAIN_APPLICATION_HPP_ */

@@ -76,23 +76,26 @@ namespace app
 
     void FuelGaugeInputFromADC::cycle_100ms()
     {
-        uint32_t u32_adc_value = m_p_adc->read_adc_value();
-        TRACE_LOG("FLIN", LOGLEVEL_DEBUG, "Current ADC value: %u\r\n", u32_adc_value);
+        auto ref_u32_adc_value = m_p_adc->read_adc_value();
+        if (ref_u32_adc_value)
+        {
+            const uint32_t u32_adc_value = *ref_u32_adc_value;
+            TRACE_LOG("FLIN", LOGLEVEL_DEBUG, "Current ADC value: %u\r\n", u32_adc_value);
 
-        // covert to voltage
-        m_i32_adc_pin_voltage = (m_o_voltage_divider.get_supply_voltage() * u32_adc_value) / m_p_adc->get_adc_max_value();
-        TRACE_LOG("FLIN", LOGLEVEL_DEBUG, "Current ADC voltage: %i.%iV\r\n", m_i32_adc_pin_voltage / 1000, m_i32_adc_pin_voltage % 1000);
+            // covert to voltage
+            m_i32_adc_pin_voltage = (m_o_voltage_divider.get_supply_voltage() * u32_adc_value) / m_p_adc->get_adc_max_value();
+            TRACE_LOG("FLIN", LOGLEVEL_DEBUG, "Current ADC voltage: %i.%iV\r\n", m_i32_adc_pin_voltage / 1000, m_i32_adc_pin_voltage % 1000);
 
-        // convert to resistor value of the fuel sensor (in mOhm)
-        m_i32_fuel_sensor_resistor_value = m_o_voltage_divider.get_resistor_2_value(m_i32_adc_pin_voltage);
-        TRACE_LOG("FLIN", LOGLEVEL_DEBUG, "Current resistor value: %i mOhm\r\n", m_i32_fuel_sensor_resistor_value);
+            // convert to resistor value of the fuel sensor (in mOhm)
+            m_i32_fuel_sensor_resistor_value = m_o_voltage_divider.get_resistor_2_value(m_i32_adc_pin_voltage);
+            TRACE_LOG("FLIN", LOGLEVEL_DEBUG, "Current resistor value: %i mOhm\r\n", m_i32_fuel_sensor_resistor_value);
 
-        // find the percentage
-        const int32_t i32_read_fuel_percentage = m_o_fuel_input_characteristic.get_x(m_i32_fuel_sensor_resistor_value);
-        TRACE_LOG("FLIN", LOGLEVEL_DEBUG,"Current fuel input level: %i%%*100\r\n", i32_read_fuel_percentage);
+            // find the percentage
+            const int32_t i32_read_fuel_percentage = m_o_fuel_input_characteristic.get_x(m_i32_fuel_sensor_resistor_value);
+            TRACE_LOG("FLIN", LOGLEVEL_DEBUG,"Current fuel input level: %i%%*100\r\n", i32_read_fuel_percentage);
 
-        m_ai32_raw_last_read_fuel_percentages.push_back(i32_read_fuel_percentage);
-
+            m_ai32_raw_last_read_fuel_percentages.push_back(i32_read_fuel_percentage);
+        }
         bool bo_new_averaged_value_reached = false;
 
         if (m_ai32_raw_last_read_fuel_percentages.size() >= FUEL_GAUGE_INPUT_AVERAGING_SIZE)

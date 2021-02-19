@@ -12,7 +12,7 @@
 #include "watchdog.hpp"
 
 
-void MAIN_startup_thread(void*)
+auto MAIN_startup_thread(void*) -> void
 {
     // create our main application.
     app::MainApplication& o_application = app::MainApplication::get();
@@ -21,7 +21,7 @@ void MAIN_startup_thread(void*)
     vTaskDelete(NULL);
 }
 
-int main(void)
+auto main(void) -> int
 {
     // configure the system clock
     drivers::McuInterface::get_instance().configure_system_clock();

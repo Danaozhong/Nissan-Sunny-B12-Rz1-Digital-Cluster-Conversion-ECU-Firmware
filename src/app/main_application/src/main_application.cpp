@@ -164,7 +164,7 @@ namespace app
 
 #ifdef USE_NVDH
         // initialize non-volatile memory (uses 1 block of size 1024)
-        m_po_nonvolatile_data_handler = std::make_shared<midware::NonvolatileDataHandler>(APP_NUM_OF_NVM_BLOCKS_TO_USE, 1024u);
+        m_po_nonvolatile_data_handler = new midware::NonvolatileDataHandler(APP_NUM_OF_NVM_BLOCKS_TO_USE, 1024u);
 
         // Configure the default sections for the module. Size + header must be < total size of nonvolatile memory.
         std::vector<midware::FlashSection> default_flash_sections =
@@ -394,10 +394,10 @@ namespace app
 
 
 #ifdef USE_NVDH
-        std::shared_ptr<midware::NonvolatileDataHandler> MainApplication::get_nonvolatile_data_handler() const
-        {
-            return m_po_nonvolatile_data_handler;
-        }
+    auto MainApplication::get_nonvolatile_data_handler() const -> midware::NonvolatileDataHandler*
+    {
+        return m_po_nonvolatile_data_handler;
+    }
 #endif
 
     OSServices::OSConsole* MainApplication::get_os_console()

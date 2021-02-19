@@ -139,7 +139,7 @@ namespace midware
 
     }
 #ifdef USE_NVDH
-    void ExceptionHandler::set_nonvolatile_data_handler(std::shared_ptr<midware::NonvolatileDataHandler> o_data_handler, const char* section_name)
+    void ExceptionHandler::set_nonvolatile_data_handler(midware::NonvolatileDataHandler* o_data_handler, const char* section_name)
     {
         m_po_nonvolatile_data_handler = o_data_handler;
         strncpy(m_cu8_flash_section_name, section_name, 8);

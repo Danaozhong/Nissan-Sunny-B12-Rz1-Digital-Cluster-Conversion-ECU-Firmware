@@ -2,7 +2,6 @@
 #define _EOL_HPP_
 
 #include "nonvolatile_data_handler.hpp"
-#include <memory>
 #include <chrono>
 
 #define EOL_SERIAL_NO_STR_LEN  20
@@ -16,7 +15,7 @@ namespace app
         EOLData();
         ~EOLData();
 
-        void set_nonvolatile_data_handler(std::shared_ptr<midware::NonvolatileDataHandler>, const char* section_name);
+        void set_nonvolatile_data_handler(midware::NonvolatileDataHandler*, const char* section_name);
         int32_t eol_init();
 
         int32_t read_eol_data_from_flash();
@@ -45,7 +44,7 @@ namespace app
         char m_cu8_flash_section_name[8];
 
         /** Pointer to the non-volatile data handler storing the EOL data */
-        std::shared_ptr<midware::NonvolatileDataHandler> m_po_nonvolatile_data_handler;
+        midware::NonvolatileDataHandler* m_po_nonvolatile_data_handler;
 
         bool m_bo_fuel_sensor_licensed;
         bool m_bo_speed_sensor_licensed;

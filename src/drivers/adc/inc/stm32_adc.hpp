@@ -4,6 +4,8 @@
 #include "generic_adc.hpp"
 #include "hwheader.h"
 
+#include <optional>
+
 namespace drivers
 {
     class STM32ADC : public GenericADC
@@ -28,7 +30,7 @@ namespace drivers
         /**
         \brief Triggers an ADC conversion, and returns the read ADC value.
         */
-        virtual uint32_t read_adc_value();
+        virtual std::optional<uint32_t> read_adc_value();
     private:
 #ifdef HAL_ADC_MODULE_ENABLED
         /// The handle to the ADC object.

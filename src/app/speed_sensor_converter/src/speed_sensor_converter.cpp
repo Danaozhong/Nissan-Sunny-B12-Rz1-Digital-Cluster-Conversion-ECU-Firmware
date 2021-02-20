@@ -205,12 +205,15 @@ namespace app
             m_u8_input_array_position %= SPEED_SENSOR_READINGS_BUFFER_LENGTH;
 
             m_u32_num_of_pwm_captures++;
+#if 0 /* We are in an interrupt context here, do not print out anything */
             if (u32_vehicle_speed < 6000)
             {
                 // avoid too much logs - only print for speeds < 3km/h
                 TRACE_LOG("SPD", LOGLEVEL_DEBUG, "IC cb %u m/h\n\r", (new_measurement.u32_frequency * 1000) / m_u32_input_pulses_per_kmph_mHz);
             }
+#endif
         }
+#if 0 /* We are in an interrupt context here, do not print out anything */
         else
         {
             TRACE_LOG("SPD", LOGLEVEL_ERROR, "IC cb %u m/h, incorrect duty cycle: %u\n\r",
@@ -219,6 +222,7 @@ namespace app
                     u32_duty_cycle);
 
         }
+#endif
     }
 
     void SpeedSensorConverter::cycle()

@@ -120,7 +120,7 @@ namespace drivers
 
     int32_t STM32PWM_IC::set_prescaler(uint16_t u16_prescaler)
     {
-        if (m_u16_prescaler != u16_prescaler)
+        if (m_u16_prescaler != u16_prescaler || false == m_bo_initialized)
         {
             m_u16_prescaler = u16_prescaler;
     

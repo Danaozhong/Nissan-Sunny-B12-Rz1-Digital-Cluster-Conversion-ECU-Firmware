@@ -6,6 +6,8 @@
 
 #include <cmath>
 
+// Specifies the minimum speed difference to the already displayed speed value, in order to update the displayed speed. Unit is m/h.
+#define SPEED_SENSOR_UPDATE_THRESHOLD  (500)  // 0.5km/h
 
 app::SpeedSensorConverter* po_speed_sensor_converter_instance = nullptr;
 void speed_sensor_pwm_input_capture_callback(drivers::GenericPWM_IC* p_ic_obj, uint32_t u32_read_frequency, uint32_t u32_read_duty_cyclce)
@@ -432,8 +434,13 @@ namespace app
                 }
                 else
                 {
-                    // display the filtered value.
-                    m_u32_current_vehicle_speed_mph = u32_avg;
+                    /* the new value makes sense. Nevertheless, let's only update the value if it differs
+                    by more than a minimum difference to avoid restarting the PWM. */
+                    if (m_u32_current_vehicle_speed_mph < 3000 /* always update for low speeds */
+                        || (std::abs(static_cast<int32_t>(m_u32_current_vehicle_speed_mph) - static_cast<int32_t>(u32_avg)) > SPEED_SENSOR_UPDATE_THRESHOLD))
+                    {
+                        m_u32_current_vehicle_speed_mph = u32_avg;
+                    }
                 }
             }
             else

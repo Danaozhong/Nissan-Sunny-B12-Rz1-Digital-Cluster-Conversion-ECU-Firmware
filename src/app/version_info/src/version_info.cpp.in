@@ -10,7 +10,7 @@ namespace app
 
     const char* get_version_info()
     {
-        return "v00.02.pre 2021_02_14";
+        return "v01.00.rel 2021_03_12";
     }
     
     const char* get_build_type()

@@ -1,6 +1,6 @@
 
 
-option(APP_MEASURE_STARTUP_TIME "Measure the startup time and print it out on the UART" ON)
+option(APP_MEASURE_STARTUP_TIME "Measure the startup time and print it out on the UART" OFF)
 
 # Specify how many flash blocks to use to write nonvolatile data. Each block has a size of 1024
 set(APP_NUM_OF_NVM_BLOCKS_TO_USE 1)

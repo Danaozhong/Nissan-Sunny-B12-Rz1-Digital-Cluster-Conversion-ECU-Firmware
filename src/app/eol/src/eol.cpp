@@ -118,11 +118,11 @@ namespace app
         au8_buffer[8] = cu8_bitmask_eol_written;
 
         uint16_t u16_license_info = 0u;
-        if (is_speed_sensor_licensed())
+        if (m_bo_speed_sensor_licensed)
         {
             u16_license_info |= cu16_bitmask_speed_licensed;
         }
-        if (is_fuel_sensor_licensed())
+        if (m_bo_fuel_sensor_licensed)
         {
             u16_license_info |= cu16_bitmask_fuel_licensed;
         }

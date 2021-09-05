@@ -1,0 +1,51 @@
+name: Build Firmware
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "src"
+    container:
+      image: 'danaozhong/nissan-sunny-rz1-digital-cluster-conversion:latest'
+      
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_typeh
+      run: |
+        mkdir -p bin_${{env.BUILD_TYPE}}
+        cd bin_${{env.BUILD_TYPE}}
+        cmake -DSTM32_CUBE_F3_PATH=$STM32_FW_F3 -DSTM32_TOOLCHAIN_PATH=$ARM_TOOLCHAIN -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ..
+
+    - name: Build
+      # Build your program with the given configuration
+      run: |
+        cd bin_${{env.BUILD_TYPE}}
+        cmake --build .
+        ls -la
+
+    - name: Upload Built STM32 Binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: binaries
+        path: |
+          src/bin_${{env.BUILD_TYPE}}/**/*.map
+          src/bin_${{env.BUILD_TYPE}}/**/*.elf

@@ -14,7 +14,7 @@ namespace drivers
         virtual void set_frequency(uint32_t u32_frequency_mhz) = 0;
 
         /** Function to set the duty cycle of the PWM */
-        virtual void set_duty_cycle(uint32_t u32_duty_cycle) = 0;
+        virtual void set_duty_cycle(uint16_t u16_duty_cycle) = 0;
     };
 
 }

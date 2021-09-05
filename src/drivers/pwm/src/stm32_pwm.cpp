@@ -9,6 +9,7 @@ namespace drivers
             GPIO_TypeDef* pt_gpio_block, uint16_t u16_gpio_pin)
     : m_u32_timer_channel(u32_timer_channel),
       m_u32_configured_frequency_millihertz(123u), // set a random initial value, is set to 0 later
+      m_u16_configured_duty_cycle(500u), // set to 50% initially
       m_pt_gpio_block(pt_gpio_block),
       m_u16_gpio_pin(u16_gpio_pin)
     {
@@ -109,9 +110,9 @@ namespace drivers
         return 0;
     }
 
-    int32_t STM32PWM::reconfigure_pwm(uint32_t u32_frequency, uint32_t u32_duty_cycle)
+    int32_t STM32PWM::reconfigure_pwm(uint32_t u32_frequency, uint16_t u16_duty_cycle)
     {
-        if (0 == u32_frequency || u32_duty_cycle > 1000)
+        if (0 == u32_frequency || u16_duty_cycle > 1000u)
         {
             return -1;
         }
@@ -196,7 +197,7 @@ namespace drivers
         sConfig.OCIdleState  = TIM_OCIDLESTATE_RESET;
 
         /* Set the pulse value for channel 1 */
-        sConfig.Pulse = u32_timer_value * u32_duty_cycle / 1000;
+        sConfig.Pulse = u32_timer_value * static_cast<uint32_t>(u16_duty_cycle) / 1000;
         if (HAL_TIM_PWM_ConfigChannel(&o_timer_handle, &sConfig, m_u32_timer_channel) != HAL_OK)
             {
             /* Configuration Error */
@@ -240,7 +241,7 @@ namespace drivers
             HAL_TIM_PWM_Stop(&o_timer_handle, m_u32_timer_channel);  // Stop PWM
             if (0 != u32_frequency_mhz)
             {
-                reconfigure_pwm(u32_frequency_mhz, 500); // re-initialize the Timer2 with 50% duty cycle
+                reconfigure_pwm(u32_frequency_mhz, m_u16_configured_duty_cycle); // re-initialize the Timer2
             }
             else
             {
@@ -251,8 +252,11 @@ namespace drivers
         }
     }
 
-    void STM32PWM::set_duty_cycle(uint32_t u32_duty_cycle)
-    {
-        // not supported at the moment
-    }
+	void STM32PWM::set_duty_cycle(uint16_t u16_duty_cycle)
+	{
+	    m_u16_configured_duty_cycle = u16_duty_cycle;
+
+		// TODO do not update for now, this will be done at some later stage.
+	}
+
 }

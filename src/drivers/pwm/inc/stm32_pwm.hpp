@@ -20,7 +20,7 @@ namespace drivers
         /** Sets the frequency. Unit is milli hertz */
         virtual void set_frequency(uint32_t u32_frequency_millihertz);
 
-        virtual void set_duty_cycle(uint32_t u32_duty_cycle);
+        virtual void set_duty_cycle(uint16_t u16_duty_cycle);
 
     private:
         int32_t calculate_prescaler_value(uint32_t u32_frequency_mhz) const;
@@ -31,7 +31,7 @@ namespace drivers
         /** Configures the given GPIO pin as high (used for frequency 0) */
         int32_t configure_gpio_as_high();
 
-        int32_t reconfigure_pwm(uint32_t u32_frequency, uint32_t u32_duty_cycle);
+        int32_t reconfigure_pwm(uint32_t u32_frequency, uint16_t u16_duty_cycle);
 
 #ifdef HAL_TIM_MODULE_ENABLED
         /* Timer handler declaration */
@@ -44,9 +44,11 @@ namespace drivers
 
         uint32_t u32_timer_value;
 
-        // currently configured frequency
+        /// currently configured frequency
         uint32_t m_u32_configured_frequency_millihertz;
 
+		/// currently configured duty cycle (in % * 10).
+		uint16_t m_u16_configured_duty_cycle;
         GPIO_TypeDef* m_pt_gpio_block;
         uint16_t m_u16_gpio_pin;
 

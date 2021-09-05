@@ -24,6 +24,13 @@ namespace app
         OUTPUT_MODE_REPLAY
     };
 
+    /** The type of speed sensor used in the vehicle */
+    enum SpeedSensorVariant
+    {
+        SPEED_SENSOR_8000RPM,
+        SPEED_SENSOR_9000RPM
+    };
+    
     /** The PWM IC is switched to a different prescaler, depending on the vehicle speed.
      *
      */
@@ -113,6 +120,11 @@ namespace app
         drivers::GenericPWM_IC* m_p_output_pwm_input_capture;
 
         std::atomic<SpeedOutputMode> m_en_current_speed_output_mode;
+
+        /** What kind of variant of speed sensor is installed in this vehicle. This
+         * has an impact on the signal shape (PWM and duty cycle).
+         */
+        SpeedSensorVariant m_en_speed_sensor_variant;
 
         /**
          * The manually set vehicle speed in meter/hour. Only valid if OUTPUT_MODE_MANUAL is set.

@@ -10,7 +10,6 @@
 #include "generic_pwm_ic.hpp"
 #include "replay_curve.hpp"
 
-
 /* Number of PWM Input Capture readings to be buffered */
 #define SPEED_SENSOR_READINGS_BUFFER_LENGTH 10
 
@@ -86,13 +85,12 @@ namespace app
         /** Returns the current vehicle speed in m/h, as read from the sensor */
         uint32_t get_current_vehicle_speed() const;
         
-        
-        
         uint32_t get_input_pulses_per_kmph_in_mili_hertz() const;
+        
         void set_input_pulses_per_kmph_in_mili_hertz(uint32_t value);
-        
-        
+
         uint32_t get_output_pulses_per_kmph_in_mili_hertz() const;
+        
         void set_output_pulses_per_kmph_in_mili_hertz(uint32_t value);
 
         /** callback executed when the PWM IC reads a frequency */

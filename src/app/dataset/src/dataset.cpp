@@ -192,7 +192,8 @@ namespace app
         // for speed conversion
         //m_u32_input_pulses_per_kmph_mHz = 4200u; // for testing direct feedback only (input pin connected to output pin)
         m_u32_input_pulses_per_kmph_mHz = 700u;
-        m_u32_output_pulses_per_kmph_mHz = 4200u;
+        m_u32_output_pulses_per_kmph_mHz = 2800u; // Use this value for the 9000rpm digital cluster
+        //m_u32_output_pulses_per_kmph_mHz = 4200u; // Use this value for the 8000rpm digital cluster
         m_u32_dac_out_amplifying_factor = 2000u;
 
         m_u32_read_dataset_version_no = Dataset::cu32_version_number;

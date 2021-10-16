@@ -488,7 +488,6 @@ namespace app
             uint16_t duty_cycle = 500u; // 50%
             m_p_output_pwm->set_duty_cycle(duty_cycle);
 
-            
             // change the pwm frequency on the output side
             m_p_output_pwm->set_frequency(m_u32_new_output_frequency_mHz);
         }

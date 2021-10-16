@@ -252,11 +252,9 @@ namespace drivers
         }
     }
 
-	void STM32PWM::set_duty_cycle(uint16_t u16_duty_cycle)
-	{
-	    m_u16_configured_duty_cycle = u16_duty_cycle;
-
-		// TODO do not update for now, this will be done at some later stage.
-	}
-
+    void STM32PWM::set_duty_cycle(uint16_t u16_duty_cycle)
+    {
+        m_u16_configured_duty_cycle = u16_duty_cycle;
+        // TODO do not update for now, this will be done at some later stage.
+    }
 }

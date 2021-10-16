@@ -2,7 +2,7 @@
 #include "os_console.hpp"
 namespace app
 {
-    const uint32_t Dataset::cu32_version_number = 102u;
+    const uint32_t Dataset::cu32_version_number = 101u;
 
     int32_t Dataset::write_dataset(midware::NonvolatileDataHandler &o_nonvolatile_data_handler)
     {
@@ -192,7 +192,8 @@ namespace app
         // for speed conversion
         //m_u32_input_pulses_per_kmph_mHz = 4200u; // for testing direct feedback only (input pin connected to output pin)
         m_u32_input_pulses_per_kmph_mHz = 700u;
-        m_u32_output_pulses_per_kmph_mHz = 2800u; //4200u;
+        m_u32_output_pulses_per_kmph_mHz = 2800u; // Use this value for the 9000rpm digital cluster
+        //m_u32_output_pulses_per_kmph_mHz = 4200u; // Use this value for the 8000rpm digital cluster
         m_u32_dac_out_amplifying_factor = 2000u;
 
         m_u32_read_dataset_version_no = Dataset::cu32_version_number;

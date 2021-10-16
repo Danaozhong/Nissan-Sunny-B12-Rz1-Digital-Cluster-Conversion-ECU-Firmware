@@ -48,7 +48,6 @@ namespace app
                 uint32_t u32_input_pulses_per_kmph_mHz,
                 uint32_t u32_output_pulses_per_kmph_mHz)
     : m_p_output_pwm(p_output_pwm), m_p_output_pwm_input_capture(p_output_pwm_input_capture),
-      m_en_speed_sensor_variant(SPEED_SENSOR_9000RPM),
       m_en_current_speed_output_mode(OUTPUT_MODE_CONVERSION),
       m_i32_manual_speed(0), 
       m_u32_current_vehicle_speed_mph(0u),
@@ -487,29 +486,6 @@ namespace app
         {
             m_u32_new_output_frequency_mHz = i32_set_speed * m_u32_output_pulses_per_kmph_mHz;
             uint16_t duty_cycle = 500u; // 50%
-
-            if (SPEED_SENSOR_9000RPM == m_en_speed_sensor_variant)
-            {
-                /* for the 9k rpm cluster, the duty cycle is not 50/50, but is depending
-                 * on the frequency. The low duration is basically always 0.5ms.
-                 * Resulting unit should be ms, that's why *1000, and the frequency is
-                 * given in milihertz, therefore another 1000.
-                 */
-                const uint32_t total_duration_in_ms = 1000 * 1000 /  m_u32_new_output_frequency_mHz;
-                if (0 != total_duration_in_ms)
-                {
-                    duty_cycle = 500 / total_duration_in_ms; // 0.5ms
-
-                    if (duty_cycle >= 1000)
-                    {
-                        ExceptionHandler_handle_exception(EXCP_MODULE_SPEED_SENSOR_CONVERTER,
-                                EXCP_TYPE_SPEED_SENSOR_CONVERTER_VALID_SPEED_RANGE_EXCEEEDED,
-                                false, __FILE__, __LINE__, static_cast<uint32_t>(duty_cycle));
-                        duty_cycle = 100u;
-                    }
-                }
-            }
-
             m_p_output_pwm->set_duty_cycle(duty_cycle);
 
             

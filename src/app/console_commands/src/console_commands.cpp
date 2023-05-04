@@ -1,7 +1,8 @@
-#include "console_commands.hpp"
-#include "main_application.hpp"
 #include <cstring>
 #include <ctime>   // localtime
+
+#include "console_commands.hpp"
+#include "main_application.hpp"
 #include "version_info.hpp"
 #include "trace_if.h"
 #include "ascii_graph.hpp"
@@ -11,33 +12,26 @@ using namespace OSServices;
 namespace app
 {
 
-    void CommandSpeed::display_usage(OSConsoleGenericIOInterface& p_o_io_interface)
-    {
+    void CommandSpeed::display_usage(OSConsoleGenericIOInterface& p_o_io_interface) {
         p_o_io_interface<< "Wrong usage command, or wrong parameters.";
     }
 
-    int32_t CommandSpeed::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
-    {
-
+    auto CommandSpeed::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface) -> int32_t {
         auto po_speed_sensor_converter = MainApplication::get().get_speed_sensor_converter();
-        if (nullptr == po_speed_sensor_converter)
-        {
-            // internal error
+        if (nullptr == po_speed_sensor_converter) {
+            // internal error, speed sensor converter module not created
             return OSServices::ERROR_CODE_INTERNAL_ERROR;
         }
 
-        if (u32_num_of_params == 0)
-        {
+        if (u32_num_of_params == 0) {
             // parameter error, no parameter provided
             display_usage(p_o_io_interface);
             return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
         }
 
-        if (0 == strcmp(params[0], "mode"))
-        {
+        if (0 == strcmp(params[0], "mode")) {
             // change the speed operating mode
-            if (u32_num_of_params != 2)
-            {
+            if (u32_num_of_params != 2) {
                 p_o_io_interface << "Please provide a parameter to option \"mode\". Possible parameters are:\n\r"
                         "   manual: Allows manually setting a vehicle speed using the console.\r\n"
                         "   conversion: Converts the speed sensor input (default)\r\n"
@@ -46,51 +40,40 @@ namespace app
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
 
-            if (0 == strcmp(params[1], "manual"))
-            {
+            if (0 == strcmp(params[1], "manual")) {
+                // set the indicated speed to a fixed, manually entered value
                 po_speed_sensor_converter->set_speed_output_mode(OUTPUT_MODE_MANUAL);
                 p_o_io_interface << "Speed conversion mode set to manual data input via console.\n\r";
 
-            }
-            else if (0 == strcmp(params[1], "conversion"))
-            {
+            } else if (0 == strcmp(params[1], "conversion")) {
+                // convert the vehicle speed from the sensor
                 po_speed_sensor_converter->set_speed_output_mode(OUTPUT_MODE_CONVERSION);
                 p_o_io_interface << "Speed conversion mode set to sensor data conversion.\n\r";
-            }
-            else if (0 == strcmp(params[1], "replay"))
-            {
+            } else if (0 == strcmp(params[1], "replay")) {
                 po_speed_sensor_converter->set_speed_output_mode(OUTPUT_MODE_REPLAY);
                 p_o_io_interface << "Speed conversion starts replaying test curve.\n\r";
-            }
-            else
-            {
+            } else {
                 p_o_io_interface << "Please provide a parameter.\r\n";
                 display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_PARAMETER_WRONG;
             }
-        }
-        else if (0 == strcmp(params[0], "manual"))
-        {
+        } else if (0 == strcmp(params[0], "manual")) {
             // set a manual speed value
-            if (u32_num_of_params != 2)
-            {
+            if (u32_num_of_params != 2) {
                 display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
             const long int li_speed_value = std::strtol(params[1], nullptr, 10);
-            if (li_speed_value < 250 && li_speed_value >= 0)
-            {    
+            if (li_speed_value < 250 && li_speed_value >= 0) {
+                // only support realistic speed values    
                 const uint32_t u32_speed_value = static_cast<uint32_t>(li_speed_value);
                 // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
                 po_speed_sensor_converter->set_manual_speed(1000 * u32_speed_value);
             }
-        }
-        else if (0 == strcmp(params[0], "show"))
-        {
-            // print all the parameters
+        } else if (0 == strcmp(params[0], "show")) {
+            // print all the parameters on the UART
             unsigned int u_current_vehicle_speed = static_cast<unsigned int>(po_speed_sensor_converter->get_current_vehicle_speed()) / 1000;
             int i_displayed_speed = static_cast<int>(po_speed_sensor_converter->get_current_displayed_speed());
-            //int i_input_speed = static_cast<int>(po_speed_sensor_converter->get_current_input_speed());
             unsigned int u_output_frequency  = static_cast<unsigned int>(po_speed_sensor_converter->get_current_output_frequency());
 
             char pi8_buffer[1024] = "";
@@ -106,70 +89,53 @@ namespace app
                     );
 
             p_o_io_interface << pi8_buffer;
-
         }
-
         // if no early return, the command was executed successfully.
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
 
-    void CommandFuel::display_usage(OSConsoleGenericIOInterface& p_o_io_interface)
-    {
+    auto CommandFuel::display_usage(OSConsoleGenericIOInterface& p_o_io_interface) -> void {
         p_o_io_interface << "Wrong usage command, or wrong parameters. Supported parameters are: mode, show, diag_in, diag_out.";
     }
 
-    int32_t CommandFuel::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
-    {
+    auto CommandFuel::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface) -> int32_t {
         MainApplication& o_application  = MainApplication::get();
-
-        if (u32_num_of_params == 0)
-        {
+        if (u32_num_of_params == 0) {
             // parameter error, no parameter provided
             display_usage(p_o_io_interface);
             return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
         }
 
-        if (0 == strcmp(params[0], "mode"))
-        {
+        if (0 == strcmp(params[0], "mode")) {
             // change the speed operating mode
-            if (u32_num_of_params != 2)
-            {
+            if (u32_num_of_params != 2) {
                 display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
-
-            if (0 == strcmp(params[1], "manual"))
-            {
+            if (0 == strcmp(params[1], "manual")) {
                 o_application.set_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_MANUAL);
-
                 p_o_io_interface << "Fuel signal set to manual conversion, fuel value is"
                         << o_application.get_manual_fuel_gauge_output_value()
                         << ".";
-            }
-            else if (0 == strcmp(params[1], "conversion"))
-            {
+            } else if (0 == strcmp(params[1], "conversion")) {
                 o_application.set_fuel_gauge_output_mode(FUEL_GAUGE_OUTPUT_MODE_CONVERSION);
                 p_o_io_interface << "Fuel signal set to vehicle  data conversion.";
-            }
-            else
-            {
+            } else {
                 display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_PARAMETER_WRONG;
             }
-        }
-        else if (0 == strcmp(params[0], "manual"))
-        {
+        } else if (0 == strcmp(params[0], "manual")) {
             // set a manual speed value
-            if (u32_num_of_params != 2)
-            {
+            if (u32_num_of_params != 2) {
                 display_usage(p_o_io_interface);
                 return OSServices::ERROR_CODE_NUM_OF_PARAMETERS;
             }
             
             const long int li_fuel_value = std::strtol(params[1], nullptr, 10);
-            if (li_fuel_value > -10 && li_fuel_value < 120)
-            {
+            // only fuel values between -10% ("more than empty") and 110% ("overfilled")
+            // are supported.
+            if (li_fuel_value > -10 && li_fuel_value < 120) {
                 const int32_t i32_fuel_value = li_fuel_value * 100;
                 // convert from kilometer per hour to meter per hour, and pass on to the speed sensor converter object
                 o_application.set_manual_fuel_gauge_output_value(i32_fuel_value);
@@ -178,9 +144,7 @@ namespace app
                 snprintf(pi8_buffer, 128, "Fuel signal set to manual conversion, fuel value is %i", static_cast<int>(o_application.get_manual_fuel_gauge_output_value()));
                 p_o_io_interface << pi8_buffer;
             }
-        }
-        else if (0 == strcmp(params[0], "show"))
-        {
+        } else if (0 == strcmp(params[0], "show")) {
             // print all the parameters
             int i_inut_adc_voltage = o_application.get_fuel_gauge_input()->get_adc_voltage();
             int i_inut_fuel_resistor_value = o_application.get_fuel_gauge_input()->get_fuel_sensor_resistor_value();
@@ -222,9 +186,7 @@ namespace app
                     (i32_dac_amplifier % 1000) / 10
                     );
             p_o_io_interface << pi8_buffer;
-        }
-        else if (0 == strcmp(params[0], "diag_in"))
-        {
+        } else if (0 == strcmp(params[0], "diag_in")) {
             p_o_io_interface << "Fuel Input Characteristics\n\r\n\r";
             p_o_io_interface << "x axis: fuel level in %% * 100\n\r";
             p_o_io_interface << "y axis: resistor value in mOhm\n\r\n\r";
@@ -239,16 +201,13 @@ namespace app
             while (0 != o_ascii_diagram.draw(o_fuel_input_lookup_table,
                     ac_buffer,
                     s_buffer_size,
-                    s_buffer_offset))
-            {
+                    s_buffer_offset)) {
                 // keep looping until the entire diagram is printed.
                 s_buffer_offset += s_buffer_size - 1;
                 p_o_io_interface << ac_buffer;
             }
             p_o_io_interface << ac_buffer;
-        }
-        else if (0 == strcmp(params[0], "diag_out"))
-        {
+        } else if (0 == strcmp(params[0], "diag_out")) {
             p_o_io_interface << "Fuel Input Characteristics\n\r\n\r";
             p_o_io_interface << "x axis: fuel level in %% * 100\n\r";
             p_o_io_interface << "y axis: sensor voltage in mV\n\r\n\r";
@@ -262,8 +221,7 @@ namespace app
             while (0 != o_ascii_diagram.draw(o_fuel_output_lookup_table,
                     ac_buffer,
                     s_buffer_size,
-                    s_buffer_offset))
-            {
+                    s_buffer_offset)) {
                 // keep looping until the entire diagram is printed.
                 s_buffer_offset += s_buffer_size - 1;
                 p_o_io_interface << ac_buffer;
@@ -275,44 +233,31 @@ namespace app
     }
 
 
-    int32_t CommandDataset::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
-   {
+    auto CommandDataset::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface) -> int32_t  {
        MainApplication& o_application  = MainApplication::get();
-       if (u32_num_of_params > 0)
-       {
-           if (0 == strcmp(params[0], "show"))
-           {
+       if (u32_num_of_params > 0) {
+           if (0 == strcmp(params[0], "show")) {
                p_o_io_interface << "DATASET INFO\n\r";
                p_o_io_interface << "default dataset version: " << o_application.get_dataset().get_default_dataset_version_no() << "\n\r";
                p_o_io_interface << "loaded dataset version: " << o_application.get_dataset().get_read_dataset_version_no() << "\n\r";
-           }
-           else if (0 == strcmp(params[0], "write_flash"))
-           {
+           } else if (0 == strcmp(params[0], "write_flash")) {
                int32_t i32_ret_val = o_application.get_dataset().write_dataset(*o_application.get_nonvolatile_data_handler());
 
-               if (OSServices::ERROR_CODE_SUCCESS == i32_ret_val)
-               {
+               if (OSServices::ERROR_CODE_SUCCESS == i32_ret_val) {
                    p_o_io_interface << "dataset written successfully.\n\r";
                    return OSServices::ERROR_CODE_SUCCESS;
                }
                p_o_io_interface << "Error writing dataset to flash!\n\r";
                return OSServices::ERROR_CODE_INTERNAL_ERROR;
-
-           }
-           else if (0 == strcmp(params[0], "load_flash"))
-           {
+           } else if (0 == strcmp(params[0], "load_flash")) {
                int32_t i32_ret_val = o_application.get_dataset().load_dataset(*o_application.get_nonvolatile_data_handler());
-
-               if (OSServices::ERROR_CODE_SUCCESS == i32_ret_val)
-               {
+               if (OSServices::ERROR_CODE_SUCCESS == i32_ret_val) {
                    p_o_io_interface << "dataset loaded successfully.\n\r";
                    return OSServices::ERROR_CODE_SUCCESS;
                }
                p_o_io_interface << "Error loading dataset from flash!\n\r";
                return OSServices::ERROR_CODE_INTERNAL_ERROR;
-           }
-           else if (0 == strcmp(params[0], "load_default"))
-           {
+           } else if (0 == strcmp(params[0], "load_default")) {
                /* overwrite the current dataset with the default one */
                o_application.get_dataset().load_default_dataset();
                p_o_io_interface << "Default dataset loaded to RAM.\n\r";
@@ -323,8 +268,7 @@ namespace app
        return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
    }
 
-    void CommandDataset::print_usage(OSConsoleGenericIOInterface& p_o_io_interface) const
-    {
+    void CommandDataset::print_usage(OSConsoleGenericIOInterface& p_o_io_interface) const {
         p_o_io_interface << "Datset command\n\r";
         p_o_io_interface << "Supported parameters:\n\r";
         p_o_io_interface << "write_flash - writes the currently configured dataset into flash.\n\r";
@@ -332,8 +276,7 @@ namespace app
         p_o_io_interface << "load_default - overwrites the dataset in RAM with the default values.:\n\r";
     }
 
-    int32_t CommandVersion::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
-    {
+    int32_t CommandVersion::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface) {
         p_o_io_interface << "\n\r\n\r";
         p_o_io_interface << app::get_app_name() << "\n\r\n\r";
         p_o_io_interface << app::get_version_info() << "\n\r";
@@ -344,12 +287,9 @@ namespace app
         app::MainApplication& o_application = app::MainApplication::get();
         auto eol_data = o_application.get_eol_data();
         p_o_io_interface << "Serial No #" << eol_data.get_serial_no() << "\n\r";
-        if (!eol_data.is_eol_data_written())
-        {
+        if (!eol_data.is_eol_data_written()) {
             p_o_io_interface << "EOL data not written - developer build\n\r";
-        }
-        else
-        {
+        } else {
             p_o_io_interface << "EOL data written\n\r";
         }
         // write the timestamp of the EOL data write
@@ -359,25 +299,19 @@ namespace app
         std::strftime(timestamp_buffer, 32, "%a, %d.%m.%Y %H:%M:%S", ptm);
 
         p_o_io_interface << "EOL data written on " << timestamp_buffer << "\n\r";
-        if (!eol_data.is_fuel_sensor_licensed())
-        {
+        if (!eol_data.is_fuel_sensor_licensed()) {
             p_o_io_interface << "   WARNING: fuel sensor conversion is not licensed, and will eventually cease to function.\n\r";
         }
-        if (!eol_data.is_speed_sensor_licensed())
-        {
+        if (!eol_data.is_speed_sensor_licensed()) {
             p_o_io_interface << "   WARNING: speed sensor conversion is not licensed, and will eventually cease to function.\n\r";
         }
         return OSServices::ERROR_CODE_SUCCESS;
    }
 
-    int32_t CommandTrace::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface)
-    {
-        if (u32_num_of_params > 0)
-        {
-            if (0 == strcmp(params[0], "loglevel"))
-            {
-                if (u32_num_of_params != 3)
-                {
+    auto CommandTrace::command_main(const char** params, uint32_t u32_num_of_params, OSConsoleGenericIOInterface& p_o_io_interface) -> int32_t {
+        if (u32_num_of_params > 0) {
+            if (0 == strcmp(params[0], "loglevel")) {
+                if (u32_num_of_params != 3) {
                     return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
                 }
                 const TraceLogLevel log_level = midware::TraceHelper::loglevel_from_string(params[2]);
@@ -386,6 +320,5 @@ namespace app
         }
         return OSServices::ERROR_CODE_SUCCESS;
    }
-
 }
 

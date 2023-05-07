@@ -17,21 +17,17 @@ _eccmram = .;\n\
         ")
 endif()
 
-# Clemens begin - flash section for data storage
-if(1)
-    set(STM32_EEPROM_EMULATION_SIZE 1024)
-    set (STM32_EEPROM_EMULATION_SECTION "
-.eeprom_emulation (NOLOAD) : AT (${FLASH_ORIGIN} + ${FLASH_SIZE} - ${STM32_EEPROM_EMULATION_SIZE})\n\
-{\n\
-. = ALIGN(4);\n\
-KEEP(*(.eeprom_emulation));\n\
-. = ALIGN(4);\n\
-} >FLASH\n\
- ")
-
+if((NOT RAM_SHARE_SIZE) OR (RAM_SHARE_SIZE STREQUAL "0K"))
+    set(RAM_SHARE_DEFINITION "")
+    set(RAM_SHARE_SECTION "")
+else()
+    set(RAM_SHARE_DEFINITION "    RAM_SHARED (rw) : ORIGIN = ${RAM_SHARE_ORIGIN}, LENGTH = ${RAM_SHARE_SIZE}\n")
+    set(RAM_SHARE_SECTION "
+MAPPING_TABLE (NOLOAD) : { *(MAPPING_TABLE) } >RAM_SHARED\n\
+MB_MEM1 (NOLOAD)       : { *(MB_MEM1) } >RAM_SHARED\n\
+MB_MEM2 (NOLOAD)       : { _sMB_MEM2 = . ; *(MB_MEM2) ; _eMB_MEM2 = . ; } >RAM_SHARED\n\
+    ")
 endif()
-# Clemens end 
-
 
 set(SCRIPT_TEXT 
 "ENTRY(Reset_Handler)\n\
@@ -45,6 +41,7 @@ MEMORY\n\
     FLASH (rx)      : ORIGIN = ${FLASH_ORIGIN}, LENGTH = ${FLASH_SIZE}\n\
     RAM (xrw)      : ORIGIN = ${RAM_ORIGIN}, LENGTH = ${RAM_SIZE}\n\
 ${CCRAM_DEFINITION}\n\
+${RAM_SHARE_DEFINITION}\n\
 }\n\
 \n\
 SECTIONS\n\
@@ -121,7 +118,6 @@ SECTIONS\n\
     _edata = .;\n\
   } >RAM AT> FLASH\n\
 ${CCRAM_SECTION}\n\
-${STM32_EEPROM_EMULATION_SECTION}\n\
   . = ALIGN(4);\n\
   .bss :\n\
   {\n\
@@ -154,6 +150,7 @@ ${STM32_EEPROM_EMULATION_SECTION}\n\
   }\n\
 \n\
   .ARM.attributes 0 : { *(.ARM.attributes) }\n\
+${RAM_SHARE_SECTION}\n\
 }"
 )
 file(WRITE "${LINKER_SCRIPT}" "${SCRIPT_TEXT}")

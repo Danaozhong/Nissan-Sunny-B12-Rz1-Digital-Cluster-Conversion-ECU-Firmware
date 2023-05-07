@@ -33,6 +33,7 @@ find_library(GCCLIBSTDCXXNANO libstdc++_nano.a REQUIRED)
 add_definitions(
     -DSTM32_FAMILY_F3
     -DSTM32F303xC
+    -D_GLIBCXX_HAS_GTHREADS=1
 )
 add_definitions(
     -D_BSD_SOURCE

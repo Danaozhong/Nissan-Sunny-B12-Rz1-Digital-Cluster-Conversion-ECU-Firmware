@@ -21,7 +21,7 @@ jobs:
       run:
         working-directory: "src"
     container:
-      image: 'danaozhong/nissan-sunny-rz1-digital-cluster-conversion:latest'
+      image: 'danaozhong/nissan-sunny-rz1-digital-cluster-conversion:master'
       
 
     steps:

@@ -18,7 +18,7 @@ add_library(freertos STATIC ${MODULE_SOURCES})
 target_include_directories(freertos PUBLIC
     adapt
     adapt/CMSIS_RTOS
-    src/freertos
+    src/include
     src
     src/portable/GCC/ARM_CM4F
 )

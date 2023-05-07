@@ -5393,3 +5393,26 @@ static void prvAddCurrentTaskToDelayedList( TickType_t xTicksToWait,
     #endif
 
 #endif /* if ( configINCLUDE_FREERTOS_TASK_C_ADDITIONS_H == 1 ) */
+
+
+
+// Added by Clemens 2023-05-17 to measure the stack usage per task
+
+StackType_t uxTaskGetStackSize( TaskHandle_t xTask )
+{
+    TCB_t *pxTCB;
+    StackType_t uxReturn;
+
+    pxTCB = prvGetTCBFromHandle( xTask );
+    #if( portSTACK_GROWTH < 0 )
+    {
+        uxReturn = pxTCB->pxEndOfStack - pxTCB->pxStack + 1UL;
+    }
+    #else /* portSTACK_GROWTH */
+    {
+        uxReturn = pxTCB->pxStack - pxTCB->pxEndOfStack + 1UL;
+    }
+    #endif /* portSTACK_GROWTH */
+
+    return uxReturn;
+}

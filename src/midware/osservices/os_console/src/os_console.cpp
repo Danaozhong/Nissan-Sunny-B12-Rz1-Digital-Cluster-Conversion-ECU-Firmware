@@ -1,5 +1,7 @@
 #include "os_console.hpp"
 #include "stm32fxxx.h"
+#include "task_stack_usage.h"
+
 namespace OSServices
 {
 
@@ -151,23 +153,23 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
               xpsFree = xpsFree->spsNext;
               xlHeapFree += xpsFree->sulSize;
            }
-           xlHeapTotal = (long) __sfe ("HEAP") – (long) __sfb ("HEAP");
-           xlHeapUsed = xlHeapTotal – xlHeapFree;
+           xlHeapTotal = (long) __sfe ("HEAP") - (long) __sfb ("HEAP");
+           xlHeapUsed = xlHeapTotal - xlHeapFree;
 
         // Header
 
            printf ("Heap             | Free stack         | Free memoryrn");
-           xlRomSize = (long) __sfb ("ROM0_END") – (long) __sfb ("ROM0_START") + 1;
-           xlRamSize = (long) __sfb ("RAM_END") – (long) __sfb ("RAM_START") + 1;
+           xlRomSize = (long) __sfb ("ROM0_END") - (long) __sfb ("ROM0_START") + 1;
+           xlRamSize = (long) __sfb ("RAM_END") - (long) __sfb ("RAM_START") + 1;
 
         // Used heap, FIQ stack, and free flash
 
            for (xplStack = (long *) &Stack_FIQ;
                  xplStack < (long *) &StackTop_FIQ && *xplStack == RAM_TEST;
                  ++xplStack);
-           xlMemory = (long) __sfb ("ROM0_END") – (long) __sfb ("ROM0_TOP") + 1;
+           xlMemory = (long) __sfb ("ROM0_END") - (long) __sfb ("ROM0_TOP") + 1;
            printf ("   Used:  %5d  |    FIQ: %5d      |    Flash:    %6d (%d%%)rn",
-                 xlHeapUsed, 4 * (xplStack – (long *) &Stack_FIQ), xlMemory,
+                 xlHeapUsed, 4 * (xplStack - (long *) &Stack_FIQ), xlMemory,
                  100 * xlMemory / xlRomSize);
 
         // Free heap, IRQ stack, and free RAM
@@ -175,9 +177,9 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
            for (xplStack = (long *) &Stack_IRQ;
                  xplStack < (long *) &StackTop_IRQ && *xplStack == RAM_TEST;
                  ++xplStack);
-           xlMemory = (int) __sfe ("RAM_END") – (int) __sfb ("RAM_TOP") + 1;
+           xlMemory = (int) __sfe ("RAM_END") - (int) __sfb ("RAM_TOP") + 1;
            printf ("   Free:  %5d  |    IRQ: %5d      |    RAM:      %6d (%d%%)rn",
-                 xlHeapFree, 4 * (xplStack – (long *) &Stack_IRQ), xlMemory,
+                 xlHeapFree, 4 * (xplStack - (long *) &Stack_IRQ), xlMemory,
                  100 * xlMemory / xlRamSize);
 
         // Total heap, SVC stack, and free heap + RAM
@@ -186,7 +188,7 @@ int32_t CommandListTasks::command_main(const char** params, uint32_t u32_num_of_
                  xplStack < (long *) &StackTop_SVC && *xplStack == RAM_TEST;
                  ++xplStack);
            printf ("   TOTAL: %5d  |    SVC: %5d      |    Heap+RAM: %6d (%d%%)rn",
-                 xlHeapTotal, 4 * (xplStack – (long *) &Stack_SVC),
+                 xlHeapTotal, 4 * (xplStack - (long *) &Stack_SVC),
                  xlMemory + xlHeapFree, 100 * (xlMemory + xlHeapFree) / xlRamSize);
         }
 #endif

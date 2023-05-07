@@ -8,8 +8,8 @@
 #include <cstring>
 
 /* FreeRTOS OS calls */
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "include/FreeRTOS.h"
+#include "include/task.h"
 
 #include "generic_uart.hpp"
 #include "os_console.hpp"

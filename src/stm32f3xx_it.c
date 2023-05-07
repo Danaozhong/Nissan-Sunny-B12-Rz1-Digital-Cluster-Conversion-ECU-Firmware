@@ -39,8 +39,8 @@
 //#include "main.h"
 #include "stm32fxxx_it.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "include/FreeRTOS.h"
+#include "include/task.h"
 
 /** @addtogroup STM32F3xx_HAL_Examples
   * @{

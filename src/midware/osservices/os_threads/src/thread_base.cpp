@@ -1,8 +1,8 @@
 #include "thread_base.hpp"
 #include "trace_if.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "include/FreeRTOS.h"
+#include "include/task.h"
 
 #include "ex_thread.hpp"
 
@@ -101,8 +101,9 @@ namespace os_services
         {
             static_cast<CyclicThread*>(arg)->thread_main();
         }
-        // return inside a ask is not possible in FreeRTOS. Need to delete myself from FreeRTOS
-        // before being able to terminate
+        // return inside a task main is not possible in FreeRTOS. The task
+        // explicitly eeeds to delete itself from FreeRTOS
+        // before being able to return.
         vTaskDelete(nullptr);
     }
 }

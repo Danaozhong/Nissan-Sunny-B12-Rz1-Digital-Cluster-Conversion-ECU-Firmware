@@ -28,7 +28,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(CMSIS COMPONENTS STM32F303CCT6 REQUIRED)
 find_package(HAL COMPONENTS STM32F303CCT6 REQUIRED)
 find_library(GCCLIBSTDCXXNANO libstdc++_nano.a REQUIRED)
-  
 
 add_definitions(
     -DSTM32_FAMILY_F3
@@ -75,11 +74,11 @@ include_directories(
 )
 add_subdirectory(drivers/stm32_peripherals)
 
-
 add_subdirectory(midware/cppstdlib)
 add_subdirectory(midware/FreeRTOS)
 add_subdirectory(midware/std_ex)
 add_subdirectory(midware/stdlib)
+add_subdirectory(midware/libstdc++_gcc/v11)
 
 link_libraries(
     stm32_peripherals
@@ -91,6 +90,7 @@ link_libraries(
     freertos
     cppstdlib
     stdcppex
+    std++_freertos
     stdlib)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC

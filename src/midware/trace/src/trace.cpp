@@ -17,8 +17,8 @@
 
 #include "stm32f3xx.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "include/FreeRTOS.h"
+#include "include/task.h"
 
 /* Own header */
 #include "trace.hpp"

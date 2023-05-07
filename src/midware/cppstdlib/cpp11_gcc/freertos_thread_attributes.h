@@ -18,17 +18,33 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-#ifndef __FREERTOS_GTHR_KEY_H__
-#define __FREERTOS_GTHR_KEY_H__
+#ifndef FREERTOS_THREAD_ATTRIBUTES_H__
+#define FREERTOS_THREAD_ATTRIBUTES_H__
+
+#include "FreeRTOS.h"
 
 namespace free_rtos_std
 {
-struct Key;
 
-int freertos_gthread_key_create(Key **keyp, void (*dtor)(void *));
-int freertos_gthread_key_delete(Key *key);
-void *freertos_gthread_getspecific(Key *key);
-int freertos_gthread_setspecific(Key *key, const void *ptr);
-} // namespace free_rtos_std
+  struct attributes
+  {
+    // Name length limit is defined by configMAX_TASK_NAME_LEN
+    const char *taskName = "Task";
 
-#endif //__FREERTOS_GTHR_KEY_H__
+#ifdef configDEFAULT_STD_THREAD_STACK_SIZE
+    configSTACK_DEPTH_TYPE stackWordCount{configDEFAULT_STD_THREAD_STACK_SIZE};
+#else
+    // Default stack size is 512 words, so 2 kB
+    configSTACK_DEPTH_TYPE stackWordCount{512U};
+#endif
+
+    UBaseType_t priority = tskIDLE_PRIORITY + 1;
+  };
+
+  constexpr attributes attr_stack_size(configSTACK_DEPTH_TYPE size) { return {.stackWordCount = size}; }
+  constexpr attributes attr_priority(UBaseType_t priority) { return {.priority = priority}; }
+  constexpr attributes attr_name(const char *n) { return {.taskName = n}; }
+
+}
+
+#endif // FREERTOS_THREAD_ATTRIBUTES_H__

@@ -12,8 +12,8 @@
 #include <thread>
 #include <type_traits>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "include/FreeRTOS.h"
+#include "include/task.h"
 #include <functional>
 
 

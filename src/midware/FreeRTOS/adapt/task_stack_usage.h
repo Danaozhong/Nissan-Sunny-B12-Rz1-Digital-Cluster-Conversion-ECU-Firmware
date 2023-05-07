@@ -16,11 +16,17 @@
  * @return The stack size (in words) associated with xTask.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "include/FreeRTOS.h"
 #include "include/task.h"
 
 StackType_t uxTaskGetStackSize( TaskHandle_t xTask ) PRIVILEGED_FUNCTION;
 
+#ifdef __cplusplus
+} /* Extern "C" */
+#endif
 
 #endif

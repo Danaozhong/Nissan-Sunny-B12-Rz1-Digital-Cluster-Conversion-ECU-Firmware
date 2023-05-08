@@ -88,7 +88,6 @@ link_libraries(
 link_libraries(
     freertos
     cppstdlib
-    stdcppex
     std++_freertos
     stdlib)
 

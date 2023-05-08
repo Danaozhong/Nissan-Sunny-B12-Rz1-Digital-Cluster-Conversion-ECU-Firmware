@@ -31,6 +31,16 @@ auto main(void) -> int
     // create the watchdog
     midware::Watchdog::get_instance().activate(2000); // set the watchdog with a timeout of 1 second.
     
+    // configure the FreeRTOS heap
+    HeapRegion_t xHeapRegions[] = {
+        // CCM RAM - 8kB
+        { reinterpret_cast<uint8_t*>(0x1'000'000UL), 0x2000 },
+        // SRAM - 40kB
+        { reinterpret_cast<uint8_t*>(0x2'000'000UL), 0xA000 },
+        { nullptr, 0 } // Terminates the array.
+    };
+    vPortDefineHeapRegions( xHeapRegions ); 
+    
     // create the port configuration object, and configure the processor ports
     drivers::STM32F303CCT6UcPorts* po_uc_port_configuration = new drivers::STM32F303CCT6UcPorts();
     po_uc_port_configuration->configure();

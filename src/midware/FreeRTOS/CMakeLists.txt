@@ -10,7 +10,7 @@ SET(MODULE_SOURCES
     src/timers.c
     
     src/portable/GCC/ARM_CM4F/port.c
-    src/portable/MemMang/heap_4.c
+    src/portable/MemMang/heap_5.c
 )
 
 add_library(freertos STATIC ${MODULE_SOURCES})

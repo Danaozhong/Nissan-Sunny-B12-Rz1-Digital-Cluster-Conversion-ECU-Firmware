@@ -16,7 +16,6 @@
 
 /* Own headers */
 #include "generic_uart.hpp"
-#include "ex_thread.hpp"
 
 #define STM32UART_BUFFER_SIZE  (8u) // Todo move to cmake 
 

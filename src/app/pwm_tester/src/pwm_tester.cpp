@@ -61,7 +61,7 @@ namespace app
             u32_test_step++;
             
             m_po_speed_sensor_converter_under_test->set_manual_speed(itr->u32_input_speed_mph);
-            std_ex::sleep_for(itr->o_calibration_time);
+            std::this_thread::sleep_for(itr->o_calibration_time);
             const int32_t ci32_actual_speed = m_po_speed_sensor_converter_under_test->get_current_vehicle_speed();
             const int32_t ci32_set_speed = static_cast<int32_t>(itr->u32_input_speed_mph);
             

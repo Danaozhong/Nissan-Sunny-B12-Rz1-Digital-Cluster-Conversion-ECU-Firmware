@@ -12,18 +12,22 @@
 #include <cstring>
 #include <mutex>
 
-#include "generic_uart.hpp"
 
+#include "generic_uart.hpp"
 
 #include "stm32f3xx.h"
 
 #include "include/FreeRTOS.h"
 #include "include/task.h"
+#include "thread_with_attributes.h"
 
 /* Own header */
 #include "trace.hpp"
 #include "os_console.hpp"
 
+#ifdef TRACE_USE_OWN_THREAD
+#include <functional>
+#endif
 
 namespace
 {
@@ -52,40 +56,28 @@ namespace midware
 
     int32_t Trace::init()
     {
-#ifdef TRACE_USE_OWN_THREAD
-        if (nullptr != m_po_io_thread)
-        {
-            // module already initialized
-            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
-        }
-
-        // clear all variables
-
-        m_bo_terminate_thread = false;
-#endif
         m_u8_number_of_buffer_overflows = 0u;
         m_u_buffer_usage = 0u;
         memset(m_pa_out_buffer, 0u, TRACE_BUFFER_LENGTH);
 
 #ifdef TRACE_USE_OWN_THREAD
+        m_bo_terminate_thread = false;
         auto main_func = std::bind(&Trace::trace_main, this);
 
         // create the thread which will asynchronously send out all the messages
-        m_po_io_thread = new std_ex::thread(main_func, "TRACE_DebugPrint", 1, 0x300);
+        m_po_io_thread = free_rtos_std::std_thread(
+            free_rtos_std::attributes{
+                .taskName = "TRACE_DebugPrint",
+                .stackWordCount = 0x300u,
+                .priority = 1,
+            },
+            main_func);
 #endif
         return OSServices::ERROR_CODE_SUCCESS;
     }
 
     int32_t Trace::deinit()
     {
-#ifdef TRACE_USE_OWN_THREAD
-        if (nullptr == m_po_io_thread)
-        {
-            // module already deinitialized
-            return OSServices::ERROR_CODE_UNEXPECTED_VALUE;
-        }
-#endif
-
         m_ao_trace_contexts.clear();
 
         // check if we are he default tracer:
@@ -97,9 +89,7 @@ namespace midware
         // wait for the thread to terminate
 #ifdef TRACE_USE_OWN_THREAD
         m_bo_terminate_thread = true;
-        m_po_io_thread->join();
-        delete m_po_io_thread;
-        m_po_io_thread = nullptr;
+        m_po_io_thread.join();
 #endif
 
         return OSServices::ERROR_CODE_SUCCESS;
@@ -306,7 +296,7 @@ namespace midware
         {
             cycle();
             // load balancing
-            std_ex::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
 #endif

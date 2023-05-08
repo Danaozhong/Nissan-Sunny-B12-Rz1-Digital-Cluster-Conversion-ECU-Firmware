@@ -5,7 +5,6 @@
 #include <chrono>
 #include <mutex>
 
-#include "ex_thread.hpp"
 #include "generic_pwm.hpp"
 #include "generic_pwm_ic.hpp"
 #include "replay_curve.hpp"
@@ -151,7 +150,7 @@ namespace app
 
 #ifdef SPEED_CONVERTER_USE_OWN_TASK
         void speed_sensor_converter_main();
-        std_ex::thread* m_p_data_conversion_thread;
+        std::thread* m_p_data_conversion_thread;
         std::atomic<bool> m_bo_terminate_thread;
 #endif
     };

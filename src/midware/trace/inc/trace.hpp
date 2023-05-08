@@ -9,7 +9,7 @@
 #define TRACE_USE_OWN_THREAD
 
 #ifdef TRACE_USE_OWN_THREAD
-#include "ex_thread.hpp"
+#include <thread>
 #endif
 #include "os_console.hpp"
 #include "trace_if.h"
@@ -91,9 +91,8 @@ namespace midware
 #ifdef TRACE_USE_OWN_THREAD
         /** This thread is low priority, and whenever active, will take the buffered trace data to send
          * it out over the IO interfaces asynchronously. That way performance of the calling module is
-         * not affected.
-         * This is a normal pointer to save memory. */
-        std_ex::thread* m_po_io_thread;
+         * not affected. */
+        std::thread m_po_io_thread;
 #endif
 
         /** This buffer will buffer trace messages from the moment the application issues a trace

@@ -7,7 +7,6 @@
 
 #include <cstring>
 #include <thread>
-#include "ex_thread.hpp"
 #include "stm32_uart.hpp"
 #include <functional>
 #include <map>

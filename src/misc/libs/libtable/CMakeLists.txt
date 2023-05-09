@@ -1,3 +1,11 @@
+
+cmake_minimum_required(VERSION 3.1)
+
+project(
+  libtable
+  VERSION 1.0
+  LANGUAGES C)
+
 add_library(libtable
     libtable.c)
 
@@ -7,8 +15,8 @@ target_include_directories(libtable
 )
 
 set_target_properties(libtable
-    PROPERTIES VERSION ${libtable_VERSION}
-    SOVERSION ${libtable_SOVERSION})
+    PROPERTIES VERSION "${libtable_VERSION}"
+    SOVERSION "${libtable_SOVERSION}")
 
 
 include(GNUInstallDirs)

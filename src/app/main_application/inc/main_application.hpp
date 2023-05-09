@@ -26,7 +26,6 @@
 #include "nonvolatile_data_handler.hpp"
 #endif /* USE_NVDH */
 #include "os_console.hpp"
-#include "ex_thread.hpp"
 #include "dataset.hpp"
 #ifdef USE_TRACE
 #include "trace.hpp"

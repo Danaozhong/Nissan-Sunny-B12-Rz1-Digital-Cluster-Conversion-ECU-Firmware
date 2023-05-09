@@ -76,7 +76,6 @@ add_subdirectory(drivers/stm32_peripherals)
 
 add_subdirectory(midware/cppstdlib)
 add_subdirectory(midware/FreeRTOS)
-add_subdirectory(midware/std_ex)
 add_subdirectory(midware/stdlib)
 add_subdirectory(midware/libstdc++_gcc/v11)
 
@@ -89,7 +88,6 @@ link_libraries(
 link_libraries(
     freertos
     cppstdlib
-    stdcppex
     std++_freertos
     stdlib)
 

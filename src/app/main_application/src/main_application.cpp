@@ -16,6 +16,7 @@
 #include "mcu_interface.hpp"
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
+#include "freertos_time.h"
 #include "libtable.h"
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
@@ -91,7 +92,7 @@ namespace app
     {
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
         uint32_t au32_startup_times[StartupTimeNumOfElements] = { 0 };
-        au32_startup_times[StartupTimeBegin] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeBegin] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
         // create the UART interface to be able to log low-level debug messages
     #ifdef USE_STM32_F3_DISCO
@@ -109,14 +110,14 @@ namespace app
         // ...open UART connection.
         m_p_uart->connect(115200, drivers::UART_WORD_LENGTH_8BIT, drivers::UART_STOP_BITS_1, drivers::UART_FLOW_CONTROL_NONE);
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeUARTInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeUARTInitComplete] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
         // Create the debug console
         m_po_os_io_interface = new OSServices::OSConsoleUartIOInterface(m_p_uart);
         m_po_os_console = new OSServices::OSConsole(*m_po_os_io_interface);
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeConsoleInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeConsoleInitComplete] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
 #ifdef USE_CAN
@@ -130,7 +131,7 @@ namespace app
         /* Register CAN diagnostics commands on the UART */
         m_po_os_console->register_command(new app::CommandCAN());
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeCANInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeCANInitComplete] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 #endif
 
@@ -146,7 +147,7 @@ namespace app
         m_po_trace->set_as_default_trace();
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeTraceInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeTraceInitComplete] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 #endif
         // create a logging context for the application
@@ -188,7 +189,7 @@ namespace app
         m_po_exception_handler->set_nonvolatile_data_handler(m_po_nonvolatile_data_handler, "EXCP");
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeNVDHInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeNVDHInitComplete] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 #endif /* USE_NVDH */
 
@@ -196,7 +197,7 @@ namespace app
         m_po_exception_handler->init();
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeExcpHandlerInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeExcpHandlerInitComplete] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
         // register the command to debug the exception handler on the os console
@@ -227,7 +228,7 @@ namespace app
 #endif
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeDatasetInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeDatasetInitComplete] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
         // initialization below is for the application
@@ -235,7 +236,7 @@ namespace app
         init_speed_converter();
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeApplInitComplete] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeApplInitComplete] = free_rtos_std::time().ticks;
 #endif /* MAIN_APPLICATION_MEASURE_STARTUP_TIME */
 
         // print further bootscreen info (SW version, EOL data, etc.)
@@ -288,7 +289,7 @@ namespace app
         
 
 #ifdef MAIN_APPLICATION_MEASURE_STARTUP_TIME
-        au32_startup_times[StartupTimeStartupCompleted] = std_ex::get_timestamp_in_ms();
+        au32_startup_times[StartupTimeStartupCompleted] = free_rtos_std::time().ticks;
 
         /* Print out the startup times on the UART interface */
         tst_lib_table table;
@@ -306,7 +307,7 @@ namespace app
         }
 
         // give the system some time to print out the current trace buffer
-        std_ex::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
         {
             char buffer[128];
@@ -388,7 +389,7 @@ namespace app
                 p_console->run();
             }
             // load balancing
-            std_ex::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 

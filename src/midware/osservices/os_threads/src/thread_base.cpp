@@ -4,10 +4,9 @@
 #include "include/FreeRTOS.h"
 #include "include/task.h"
 
-#include "ex_thread.hpp"
-
 #include <cstring>
 #include <algorithm>
+#include <thread>
 
 namespace os_services
 {
@@ -62,7 +61,7 @@ namespace os_services
         
         while (m_terminate != m_is_running)
         {
-            std_ex::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         TRACE_LOG("SCHD", LOGLEVEL_DEBUG, "Thread %s stopped", m_name);
     }
@@ -89,7 +88,7 @@ namespace os_services
                     static_cast<unsigned int>(sleep_delta.count()),
                     static_cast<unsigned int>(actual_cycle_time.count()));
 
-            std_ex::sleep_for(sleep_delta);
+            std::this_thread::sleep_for(sleep_delta);
         }
         
         m_is_running = false;

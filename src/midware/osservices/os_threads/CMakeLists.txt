@@ -9,7 +9,6 @@ add_library(os_threads STATIC ${MODULE_SOURCES})
 target_link_libraries(os_threads PUBLIC 
     freertos
     trace
-    stdcppex
 )
 
 
